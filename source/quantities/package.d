@@ -27,8 +27,8 @@ be defined by the user.
 
 Contains two modules:
 <ol>
-    <li><a href="/units/base.html">units.base</a>: general declarations</li>
-    <li><a href="/units/si.html">units.si</a>: SI specific declarations</li>
+    <li><a href="/quantities/base.html">quantities.base</a>: general declarations</li>
+    <li><a href="/quantities/si.html">quantities.si</a>: SI specific declarations</li>
 </ol>
 
 Requires: DMD 2.065+
@@ -36,7 +36,7 @@ Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Standards: $(LINK http://www.bipm.org/en/si/si_brochure/)
-Source: $(LINK https://github.com/biozic/units)
+Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities;
 

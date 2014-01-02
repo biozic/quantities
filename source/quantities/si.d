@@ -6,7 +6,7 @@ Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Standards: $(LINK http://www.bipm.org/en/si/si_brochure/)
-Source: $(LINK https://github.com/biozic/units)
+Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.si;
 

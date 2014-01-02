@@ -5,7 +5,7 @@ This module defines the base types for unit and quantity handling.
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-Source: $(LINK https://github.com/biozic/units)
+Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
