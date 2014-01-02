@@ -19,9 +19,6 @@ version (unittest)
 version (Have_tested) import tested;
 else struct name { string dummy; }
 
-version (D_Ddoc) version = QuantityConstructors;
-version (NoQuantityConstructors) {} else version = QuantityConstructors;
-
 /++
 A quantity type, which holds a value and some dimensions.
 
@@ -56,30 +53,20 @@ struct Quantity(alias dim, N = double)
         static assert(d == dim, format("Dimension error: %s is not compatible with %s", d, dim));
     }
 
-    version (QuantityConstructors)
+    ///
+    this(T)(T other)
+        if (isQuantityType!T)
     {
-        /++
-        Create a new quantity from another one (if the dimensions are the same)
-        or from a scalar value.
-
-        NB. These constructors prevent value-propagation optimization with DMD,
-        so they can be versioned out with version = NoQuantityConstructors. LDC    
-        and GDC seem to be OK to optimize with them.
-        +/
-        this(T)(T other)
-            if (isQuantityType!T)
-        {
-            mixin checkDim!(T.dimensions);
-            _value = other._value;
-        }
-
-        /// ditto
-        this(T)(T value)
-            if (isNumeric!T)
-        {
-            _value = value;
-        }    
+        mixin checkDim!(T.dimensions);
+        _value = other._value;
     }
+
+    /// ditto
+    this(T)(T value)
+        if (isNumeric!T)
+    {
+        _value = value;
+    }    
 
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
@@ -518,20 +505,7 @@ unittest
     
     alias Surface = Store!(square!meter, float);
     assert(is(Surface.valueType == float));
-
-    // See Quantity.this for an explaination about NoQuantityConstructors
-    version (NoQuantityConstructors)
-    {
-        // Use the store function to construct a new variable
-        Surface s = 4 * square!meter.store!float;
-        // Following assignments take care of conversion
-        s = 10 * hectare;
-    }
-    else
-    {
-        // Construct a new variable from another quantity
-        Surface s = 4 * square!meter;
-    }
+    Surface s = 4 * square!meter;
 }
 
 /// Equivalent of the method Quantity.store for dimensionless quantities.

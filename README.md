@@ -1,12 +1,12 @@
 ## About `quantities`
 
-The purpose of this D package is to perform automatic compile-time dimensional
-checking when dealing with quantities and units.
+The purpose of this small D package is to perform automatic compile-time
+dimensional checking when dealing with quantities and units.
 
 In order to remain simple, there is no actual distinction between units and
 quantities, so there are no distinct quantity and unit types. All operations
 are actually done on quantities. For example, `meter` is both the unit _meter_
-and the quantity _1 meter_. New quantities can be derived from other ones using
+and the quantity _1 m_. New quantities can be derived from other ones using
 operators or dedicated functions.
 
 By design, a dimensionless quantity must be expressed with a builtin numeric
