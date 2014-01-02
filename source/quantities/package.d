@@ -1,7 +1,7 @@
 // Written in the D programming language
 /++
-The purpose of this package is to perform automatic compile-time dimensional
-checking when dealing with _quantities and units.
+The purpose of this D package is to perform automatic compile-time dimensional
+checking when dealing with quantities and units.
 
 In order to remain simple, there is no actual distinction between units and
 _quantities, so there are no distinct quantity and unit types. All operations

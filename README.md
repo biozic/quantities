@@ -1,6 +1,6 @@
 ## About `quantities`
 
-The purpose of this D module is to perform automatic compile-time dimensional
+The purpose of this D package is to perform automatic compile-time dimensional
 checking when dealing with quantities and units.
 
 In order to remain simple, there is no actual distinction between units and
