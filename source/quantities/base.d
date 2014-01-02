@@ -10,7 +10,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import std.traits : isFloatingPoint, isNumeric, Unqual;
-import core.time : Duration, dur;
 
 version (unittest)
 {

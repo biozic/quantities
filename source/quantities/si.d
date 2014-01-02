@@ -12,6 +12,7 @@ module quantities.si;
 
 import quantities.base;
 import std.math : PI;
+import core.time : Duration, dur;
 
 version (unittest)
 {
