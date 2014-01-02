@@ -1,0 +1,25 @@
+{
+    "name": "quantities",
+    "description": "Checking the dimensions of units and quantities at compile time.",
+    "copyright": "Copyright © 2013, Nicolas Sicard",
+    "authors": ["Nicolas Sicard"],
+    "homepage": "https://github.com/biozic/quantities",
+    "license": "BSL-1.0",
+    "configurations": [
+        {
+            "name": "library",
+            "targetType": "sourceLibrary",
+            "excludedSourceFiles": ["tests.d"]
+        },
+        {
+            "name": "tests",
+            "targetType": "library",
+            "sourcePaths": ["source", "tests"],
+            "importPaths": ["tests"],
+            "mainSourceFile": "tests/tests.d",
+            "dependencies" : {
+                "tested": "~master"
+            }
+        }
+    ]
+}
