@@ -246,7 +246,8 @@ struct Quantity(alias dim, N = double)
     }
 }
 
-@name("Example for Quantity")
+version (SynopsisUnittest)
+@name("Synopsis")
 unittest
 {
     import std.stdio;

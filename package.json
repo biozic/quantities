@@ -8,8 +8,7 @@
     "configurations": [
         {
             "name": "library",
-            "targetType": "sourceLibrary",
-            "excludedSourceFiles": ["tests.d"]
+            "targetType": "sourceLibrary"
         },
         {
             "name": "tests",
@@ -17,6 +16,7 @@
             "sourcePaths": ["source", "tests"],
             "importPaths": ["tests"],
             "mainSourceFile": "tests/tests.d",
+            "versions": ["_SynopsisUnittest"],
             "dependencies" : {
                 "tested": "~master"
             }
