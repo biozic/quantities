@@ -329,10 +329,17 @@ unittest
     static assert(isQuantity!(4.18 * joule));
 }
 
+@name("Quantity.__ctor")
+unittest
+{
+    Store!second time;
+    time = Store!second(1 * minute);
+    assert(time.value!second == 60);
+}
+
 @name("Quantity.value")
 unittest
 {
-    import std.math;
     auto speed = 100 * meter / (5 * second);
     assert(speed.value!(meter / second) == 20);
 }
@@ -344,7 +351,7 @@ unittest
     assert(is(length.valueType == real));
 }
 
-@name("Quantity.opAssign")
+@name("Quantity.opAssign Q = Q")
 unittest
 {
     auto length = meter;
@@ -352,7 +359,7 @@ unittest
     assert(approxEqual(length.value!meter, 0.0254));
 }
 
-@name("Quantity.opUnary")
+@name("Quantity.opUnary +Q -Q")
 unittest
 {
     auto length = + meter;
@@ -361,30 +368,57 @@ unittest
     assert(length == -1 * meter);
 }
 
-@name("Quantity.opBinary")
+@name("Quantity.opBinary Q*N Q/N")
 unittest
 {
-    auto length = meter * 101;
-    length = length - 1 * meter;
-    auto time = second * 4;
-    time = time + 1 * second;
-    assert(approxEqual((length / time).value!(meter/second), 20));
-    assert(approxEqual((length * time).value!(meter*second), 500));
-    assert(approxEqual((1 / time).value!hertz, 0.2));
-    assert(approxEqual((time / 2).value!second, 2.5));
-
-    auto n = second * hertz;
-    assert(is(typeof(n) == double));
+    auto time = second * 60;
+    assert(time.value!second == 60);
+    time = second / 2;
+    assert(time.value!second == 1.0/2);
 }
 
-@name("Quantity.opBinaryRight")
+@name("Quantity.opBinary Q+Q Q-Q")
+unittest
+{
+    auto length = meter + meter;
+    assert(length.value!meter == 2);
+    length = length - meter;
+    assert(length.value!meter == 1);
+}
+
+@name("Quantity.opBinary Q*Q Q/Q")
+unittest
+{
+    auto length = meter * 5;
+    auto surface = length * length;
+    assert(surface.value!(square!meter) == 5*5);
+    auto length2 = surface / length;
+    assert(length2.value!meter == 5);
+
+    auto x = minute / second;
+    assert(is(typeof(x) == double));
+    assert(x == 60);
+
+    auto y = minute * hertz;
+    assert(is(typeof(y) == double));
+    assert(y == 60);
+}
+
+@name("Quantity.opBinaryRight N*Q")
 unittest
 {
     auto length = 100 * meter;
     assert(length == meter * 100);
 }
 
-@name("Quantity.opOpAssign")
+@name("Quantity.opBinaryRight N/Q")
+unittest
+{
+    auto x = 1 / (2 * meter);
+    assert(x.value!(1/meter) == 1.0/2);
+}
+
+@name("Quantity.opOpAssign Q+=Q Q-=Q")
 unittest
 {
     auto time = 10 * second;
@@ -392,6 +426,12 @@ unittest
     assert(approxEqual(time.value!second, 60));
     time -= 40 * second;
     assert(approxEqual(time.value!second, 20));
+}
+
+@name("Quantity.opOpAssign Q*=N Q/=N")
+unittest
+{
+    auto time = 20 * second;
     time *= 2;
     assert(approxEqual(time.value!second, 40));
     time /= 4;
@@ -409,6 +449,8 @@ unittest
 {
     assert(second < minute);
     assert(minute <= minute);
+    assert(hour > minute);
+    assert(hour >= hour);
 }
 
 @name("Compilation errors")
