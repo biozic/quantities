@@ -14,9 +14,8 @@ type, e.g. double. If an operation over _quantities that have dimensions creates
 a quantity with no dimensions (e.g. meter / meter), the result is converted to
 the corresponding built-in type.
 
-There is also no automatic generation of symbols, as it would need advanced
-programming in order to do it properly :) Actually, it is not possible to do it
-right automatically because the same quantity can be expressed in many
+There is also no automatic generation of symbols. Actually, it is not possible
+to do it right automatically because the same quantity can be expressed in many
 different units with different symbols: how can the compiler choose the most
 correct one without a hint. So, it is also not really needed, because if the
 compiler must be given a hint to choose the proper unit, it is as simple to
