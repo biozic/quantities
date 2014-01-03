@@ -1,4 +1,4 @@
-import quantities.base, quantities.si;
+import quantities;
 import std.stdio;
 
 auto freq(Inductance, Capacity)(Inductance L, Capacity C)
