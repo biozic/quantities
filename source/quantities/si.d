@@ -19,7 +19,7 @@ version (unittest)
     import std.math : approxEqual;
 }
 version (Have_tested) import tested;
-else struct name { string dummy; }
+else private struct name { string dummy; }
 
 /// Converts a quantity of time to or from a core.time.Duration
 auto fromDuration(Duration d)

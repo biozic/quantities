@@ -17,7 +17,7 @@ version (unittest)
     import quantities.si;
 }
 version (Have_tested) import tested;
-else struct name { string dummy; }
+else private struct name { string dummy; }
 
 /++
 A quantity type, which holds a value and some dimensions.
