@@ -47,10 +47,10 @@ struct Quantity(alias dim, N = double)
     //*** The payload ***//
     private N _value;
 
-    private string dimerror(D)(D d)
+    private static string dimerror(Dimensions d)
     {
         import std.string;
-        return format("Dimension error: %s is not compatible with %s", d, dim);
+        return format("Dimension error: %s is not compatible with %s", d.toString, dim.toString);
     }
 
     /// Creates a new quantiy from another one that is dimensionally consistent.
