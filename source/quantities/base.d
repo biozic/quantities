@@ -53,7 +53,7 @@ struct Quantity(alias dim, N = double)
         return format("Dimension error: %s is not compatible with %s", d, dim);
     }
 
-    ///
+    /// Creates a new quantiy from another one that is dimensionally consistent.
     this(T)(T other)
         if (isQuantityType!T)
     {
@@ -61,8 +61,7 @@ struct Quantity(alias dim, N = double)
         _value = other._value;
     }
 
-    /// ditto
-    this(T)(T value)
+    private this(T)(T value)
         if (isNumeric!T)
     {
         _value = value;
@@ -615,7 +614,9 @@ unittest
     assert(abs(deltaT) == 10 * second);
 }
 
-/++
+private: // Implementation details
+
+/+
 This struct represents the dimensions of a quantity/unit. Instances of this
 type are only created and used at compile-time to check the correctness of
 operation on quantities.
@@ -632,10 +633,10 @@ struct Dimensions
         string symbol;
     }
 
-    private Dim[string] dims;
+    Dim[string] dims;
 
     // Create a new monodimensional Dimensions
-    private this(string name, string symbol = null)
+    this(string name, string symbol = null)
     {
         if (!name.length)
             throw new Exception("The name of a dimension cannot be empty");
@@ -645,7 +646,7 @@ struct Dimensions
         dims[name] = Dim(1, symbol);
     }
 
-    /// Tests if the dimensions are empty.
+    // Tests if the dimensions are empty.
     @property bool empty() const
     {
         return dims.length == 0;
@@ -747,7 +748,7 @@ struct Dimensions
     }
 }
 
-/// Creates a new dimension
+// Creates a new dimension
 template dim(string name, string symbol = name)
 {
     enum dim = Dimensions(name, symbol);
