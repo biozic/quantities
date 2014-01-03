@@ -656,27 +656,22 @@ unittest
     assert(abs(deltaT) == 10 * second);
 }
 
-private: // Implementation details
-
-/+
+/++
 This struct represents the dimensions of a quantity/unit. Instances of this
 type are only created and used at compile-time to check the correctness of
 operation on quantities.
-
-The dimensions are stored in an associative array where keys are strings and
-values are ints (the power of each quantity). Seven key names are reserved as
-they hold the dimensions defined by the SI (length, mass, time, etc.).
 +/
 struct Dimensions
 {
-    static struct Dim
+    private static struct Dim
     {
         int power;
         string symbol;
     }
 
-    Dim[string] dims;
+    private Dim[string] dims;
 
+package:
     // Create a new monodimensional Dimensions
     this(string name, string symbol = null)
     {
@@ -791,7 +786,7 @@ struct Dimensions
 }
 
 // Creates a new dimension
-template dim(string name, string symbol = name)
+private template dim(string name, string symbol = name)
 {
     enum dim = Dimensions(name, symbol);
 }
