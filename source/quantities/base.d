@@ -83,8 +83,7 @@ struct Quantity(alias dim, N = double)
     {
         import std.math;
         auto speed = 100 * meter / (5 * second);
-        assert(approxEqual(speed.value!(meter / second), 20));
-        assert(!__traits(compiles, speed.value!mole));
+        assert(speed.value!(meter/second) == 20);
     }
 
     /++
@@ -336,8 +335,7 @@ unittest
 {
     import std.math;
     auto speed = 100 * meter / (5 * second);
-    assert(approxEqual(speed.value!(meter / second), 20));
-    assert(!__traits(compiles, speed.value!mole));
+    assert(speed.value!(meter / second) == 20);
 }
 
 @name("Quantity.store")
@@ -375,9 +373,6 @@ unittest
     assert(approxEqual((length * time).value!(meter*second), 500));
     assert(approxEqual((1 / time).value!hertz, 0.2));
     assert(approxEqual((time / 2).value!second, 2.5));
-    assert(!__traits(compiles, meter + 1));
-    assert(!__traits(compiles, meter + second));
-    assert(!__traits(compiles, (meter in 1)));
 
     auto n = second * hertz;
     assert(is(typeof(n) == double));
@@ -388,7 +383,6 @@ unittest
 {
     auto length = 100 * meter;
     assert(length == meter * 100);
-    assert(!__traits(compiles, 1 + meter));
 }
 
 @name("Quantity.opOpAssign")
@@ -403,14 +397,12 @@ unittest
     assert(approxEqual(time.value!second, 40));
     time /= 4;
     assert(approxEqual(time.value!second, 10));
-    static assert(!__traits(compiles, time *= second));
 }
 
 @name("Quantity.opEquals")
 unittest
 {
     assert(1 * minute == 60 * second);
-    static assert(!__traits(compiles, meter == second));
 }
 
 @name("Quantity.opCmp")
@@ -418,10 +410,36 @@ unittest
 {
     assert(second < minute);
     assert(minute <= minute);
-    static assert(!__traits(compiles, meter < second));
 }
 
-@name("Const correctness")
+@name("Compilation errors")
+unittest
+{
+    Store!meter m;
+    static assert(!__traits(compiles, Store!meter(1 * second)));
+    static assert(!__traits(compiles, m.value!second));
+    static assert(!__traits(compiles, m = second));
+    static assert(!__traits(compiles, meter + second));
+    static assert(!__traits(compiles, meter - second));
+    static assert(!__traits(compiles, meter + 1));
+    static assert(!__traits(compiles, meter - 1));
+    static assert(!__traits(compiles, 1 + meter));
+    static assert(!__traits(compiles, 1 - meter));
+    static assert(!__traits(compiles, meter += second));
+    static assert(!__traits(compiles, meter -= second));
+    static assert(!__traits(compiles, meter *= second));
+    static assert(!__traits(compiles, meter /= second));
+    static assert(!__traits(compiles, meter *= meter));
+    static assert(!__traits(compiles, meter /= meter));
+    static assert(!__traits(compiles, meter += 1));
+    static assert(!__traits(compiles, meter -= 1));
+    static assert(!__traits(compiles, meter == 1));
+    static assert(!__traits(compiles, meter == second));
+    static assert(!__traits(compiles, meter < second));
+    static assert(!__traits(compiles, meter < 1));
+}
+
+@name("Immutable quantities")
 unittest
 {
     immutable length = 3e5 * kilo!meter;
