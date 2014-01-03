@@ -47,17 +47,17 @@ struct Quantity(alias dim, N = double)
     //*** The payload ***//
     private N _value;
 
-    mixin template checkDim(alias d)
+    private string dimerror(D)(D d)
     {
         import std.string;
-        static assert(d == dim, format("Dimension error: %s is not compatible with %s", d, dim));
+        return format("Dimension error: %s is not compatible with %s", d, dim);
     }
 
     ///
     this(T)(T other)
         if (isQuantityType!T)
     {
-        mixin checkDim!(T.dimensions);
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         _value = other._value;
     }
 
@@ -74,7 +74,8 @@ struct Quantity(alias dim, N = double)
     N value(alias target)()
         if(isQuantity!target)
     {
-        mixin checkDim!(typeof(target).dimensions);
+        enum d = typeof(target).dimensions;
+        static assert(d == dim, dimerror(d));
         return _value / target._value;
     }
     ///
@@ -103,7 +104,7 @@ struct Quantity(alias dim, N = double)
     void opAssign(T)(T other)
         if (isQuantityType!T)
     {
-        mixin checkDim!(T.dimensions);
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         _value = other._value;
     }
 
@@ -116,7 +117,7 @@ struct Quantity(alias dim, N = double)
     auto opBinary(string op, T)(T other) const
         if (isQuantityType!T && (op == "+" || op == "-"))
     {
-        mixin checkDim!(T.dimensions);
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         return Quantity!(dim, N)(mixin("_value" ~ op ~ "other._value"));
     }
 
@@ -149,7 +150,7 @@ struct Quantity(alias dim, N = double)
     auto opBinary(string op, T)(T other) const
         if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin checkDim!(Dimensions.init); // Always dimensionally wrong.
+        static assert(false, dimerror(Dimensions.init));
     }
 
     auto opBinaryRight(string op, T)(T other) const
@@ -173,14 +174,14 @@ struct Quantity(alias dim, N = double)
     auto opOpAssign(string op, T)(T other)
         if (isQuantityType!T && (op == "+" || op == "-"))
     {
-        mixin checkDim!(T.dimensions);
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         mixin("_value " ~ op ~ "= other._value;");
     }
 
     auto opOpAssign(string op, T)(T other)
         if (isQuantityType!T && (op == "*" || op == "/"))
     {
-        mixin checkDim!(dim + T.dim); // will always fail
+        static assert(false, dimerror(op == "*" ? dim + T.dimensions : dim - T.dimensions));
     }
 
     auto opOpAssign(string op, T)(T other)
@@ -192,26 +193,27 @@ struct Quantity(alias dim, N = double)
     auto opOpAssign(string op, T)(T other)
         if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin checkDim!(Dimensions.init); // Always dimensionally wrong.
+        static assert(false, dimerror(Dimensions.init));
     }
 
     bool opEquals(T)(T other) const
         if (isQuantityType!T)
     {
-        mixin checkDim!(T.dimensions);
+        import std.string;
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         return _value == other._value;
     }
 
     bool opEquals(T)(T other) const
         if (isNumeric!T)
     {
-        mixin checkDim!(Dimensions.init); // Always dimensionally wrong.
+        static assert(false, dimerror(Dimensions.init));
     }
     
     int opCmp(T)(T other) const
         if (isQuantityType!T)
     {
-        mixin checkDim!(T.dimensions);
+        static assert(T.dimensions == dim, dimerror(T.dimensions));
         if (_value == other._value)
             return 0;
         if (_value < other._value)
@@ -222,7 +224,7 @@ struct Quantity(alias dim, N = double)
     bool opCmp(T)(T other) const
         if (isNumeric!T)
     {
-        mixin checkDim!(Dimensions.init); // Always dimensionally wrong.
+        static assert(false, dimerror(Dimensions.init));
     }
 
     void toString(scope void delegate(const(char)[]) sink) const
