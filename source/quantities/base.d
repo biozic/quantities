@@ -44,7 +44,7 @@ struct Quantity(alias dim, N = double)
     alias valueType = N;
     static assert(isFloatingPoint!N);
 
-    //*** The payload ***//
+    /// The payload
     private N _value;
 
     private static string dimerror(Dimensions d)
@@ -70,7 +70,7 @@ struct Quantity(alias dim, N = double)
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
-    N value(alias target)()
+    N value(alias target)() const
         if(isQuantity!target)
     {
         enum d = typeof(target).dimensions;
@@ -87,7 +87,7 @@ struct Quantity(alias dim, N = double)
     /++
     Returns a new quantity where the value is stored in a field of type T.
     +/
-    auto store(T)()
+    auto store(T)() const
     {
         return Quantity!(dimensions, T)(_value);
     }
@@ -655,9 +655,7 @@ unittest
 }
 
 /++
-This struct represents the dimensions of a quantity/unit. Instances of this
-type are only created and used at compile-time to check the correctness of
-operation on quantities.
+This struct represents the dimensions of a quantity/unit.
 +/
 struct Dimensions
 {
@@ -670,7 +668,6 @@ struct Dimensions
     private Dim[string] dims;
 
 package:
-    // Create a new monodimensional Dimensions
     this(string name, string symbol = null)
     {
         if (!name.length)
@@ -681,7 +678,14 @@ package:
         dims[name] = Dim(1, symbol);
     }
 
-    // Tests if the dimensions are empty.
+    immutable(Dimensions) idup() const
+    {
+        Dimensions result;
+        foreach (k, v; dims)
+            result.dims[k] = v;
+        return cast(immutable) result;
+    }
+
     @property bool empty() const
     {
         return dims.length == 0;
@@ -696,7 +700,7 @@ package:
         return result;
     }
     
-    Dimensions opBinary(string op)(Dimensions other) const
+    Dimensions opBinary(string op)(const(Dimensions) other) const
         if (op == "+" || op == "-")
     {
         Dimensions result;
@@ -734,7 +738,7 @@ package:
         return result;
     }
     
-    bool opEquals(Dimensions other)
+    bool opEquals(const(Dimensions) other) const
     {
         import std.algorithm : sort, equal;
         
@@ -756,7 +760,7 @@ package:
         return same;
     }
     
-    string toString()
+    string toString() const
     {
         import std.algorithm : filter;
         import std.array : join;

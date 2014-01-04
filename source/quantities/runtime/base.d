@@ -34,20 +34,8 @@ class DimensionException : Exception
     }
 }
 
-
 /++
 A quantity type, which holds a value and some dimensions.
-
-The value is stored internally as a field of type N, which defaults to double.
-
-A dimensionless quantity must be expressed with a built-in numeric type, e.g.
-double. If an operation over quantities that have dimensions creates a quantity
-with no dimensions (e.g. meter / meter), the result is converted to the
-corresponding built-in type.
-
-Arithmetic operators (+ - * /), as well as assignment and comparison operators,
-are defined when the operations are dimensionally correct, otherwise an error
-occurs at compile-time.
 +/
 struct RTQuantity(N = double)
 {
@@ -59,36 +47,31 @@ struct RTQuantity(N = double)
     private N _value;
 
     // The dimensions of the quantity.
-    private Dimensions _dimensions;
+    private immutable(Dimensions) _dimensions;
 
-    private void checkDim(Dimensions d)
+    private void checkDim(const(Dimensions) d) const
     {
         import std.string;
         enforceEx!DimensionException(d == _dimensions,
             format("Dimension error: %s is not compatible with %s", d.toString, _dimensions.toString));
     }
 
-    private this(T)(Dimensions dims, T value)
+    private this(T)(const(Dimensions) dims, T value)
         if (isNumeric!T)
     {
-        _dimensions = dims;
+        _dimensions = dims.idup;
         _value = value;
     }
 
-    @property N rawValue()
+    @property N rawValue() const
     {
         return _value;
-    }
-
-    @property Dimensions dimensions()
-    {
-        return _dimensions;
     }
 
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
-    N value(T)(T target)
+    N value(T)(T target) const
         if(isRTQuantity!T)
     {
         checkDim(target._dimensions);
@@ -104,7 +87,7 @@ struct RTQuantity(N = double)
     /++
     Returns a new quantity where the value is stored in a field of type T.
     +/
-    auto store(T)()
+    auto store(T)() const
     {
         return RTQuantity!T(_dimensions, _value);
     }
@@ -122,59 +105,59 @@ struct RTQuantity(N = double)
         _value = other._value;
     }
 
-    auto opUnary(string op)()
+    auto opUnary(string op)() const
         if (op == "+" || op == "-")
     {
         return RTQuantity!N(_dimensions, mixin(op ~ "_value"));
     }
 
-    auto opBinary(string op, T)(T other)
+    auto opBinary(string op, T)(T other) const
         if (isRTQuantity!T && (op == "+" || op == "-"))
     {
         checkDim(other._dimensions);
         return RTQuantity!N(_dimensions, mixin("_value" ~ op ~ "other._value"));
     }
 
-    auto opBinary(string op, T)(T other)
+    auto opBinary(string op, T)(T other) const
         if (isRTQuantity!T && op == "*")
     {
         auto newdim = _dimensions + other._dimensions;
         return RTQuantity!N(newdim, _value * other._value);
     }
 
-    auto opBinary(string op, T)(T other)
+    auto opBinary(string op, T)(T other) const
         if (isRTQuantity!T && op == "/")
     {
         auto newdim = _dimensions - other._dimensions;
         return RTQuantity!N(newdim, _value / other._value);
     }
 
-    auto opBinary(string op, T)(T other)
+    auto opBinary(string op, T)(T other) const
         if (isNumeric!T && (op == "*" || op == "/"))
     {
         return RTQuantity!N(_dimensions, mixin("_value" ~ op ~ "other"));
     }
 
-    auto opBinary(string op, T)(T other)
+    auto opBinary(string op, T)(T other) const
         if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim(Dimensions.init);
         return RTQuantity!N(_dimensions, mixin("_value" ~ op ~ "other"));
     }
 
-    auto opBinaryRight(string op, T)(T other)
+    auto opBinaryRight(string op, T)(T other) const
         if (isNumeric!T && op == "*")
     {
         return this * other;
     }
 
-    auto opBinaryRight(string op, T)(T other)
+    auto opBinaryRight(string op, T)(T other) const
         if (isNumeric!T && op == "/")
     {
         return RTQuantity!N(-_dimensions, other / _value);
     }
 
-    auto opBinaryRight(string op, T)(T other)
+    auto opBinaryRight(string op, T)(T other) const
         if (isNumeric!T && op != "*" && op != "/")
     {
         return mixin("this " ~ op ~ " other");
@@ -209,21 +192,21 @@ struct RTQuantity(N = double)
         mixin("_value " ~ op ~ "= other;");
     }
 
-    bool opEquals(T)(T other)
+    bool opEquals(T)(T other) const
         if (isRTQuantity!T)
     {
         checkDim(other._dimensions);
         return _value == other._value;
     }
 
-    bool opEquals(T)(T other)
+    bool opEquals(T)(T other) const
         if (isNumeric!T)
     {
         checkDim(Dimensions.init);
         return _value == other;
     }
     
-    int opCmp(T)(T other)
+    int opCmp(T)(T other) const
         if (isRTQuantity!T)
     {
         checkDim(other._dimensions);
@@ -234,7 +217,7 @@ struct RTQuantity(N = double)
         return 1;
     }
 
-    bool opCmp(T)(T other)
+    bool opCmp(T)(T other) const
         if (isNumeric!T)
     {
         checkDim(Dimensions.init);
@@ -245,7 +228,7 @@ struct RTQuantity(N = double)
         return 1;
     }
 
-    void toString(scope void delegate(const(char)[]) sink)
+    void toString(scope void delegate(const(char)[]) sink) const
     {
         import std.format;
         formattedWrite(sink, "%s", _value);
@@ -436,8 +419,7 @@ unittest
     assert(hour >= hour);
 }
 
-/+
-@name("Immutable quantities")
+@name("RT immutable quantities")
 unittest
 {
     immutable length = 3e5 * kilo(meter);
@@ -446,7 +428,6 @@ unittest
     assert(speedOfLight == 3e5 * kilo(meter) / second);
     assert(speedOfLight > 1 * meter / minute);
 }
-+/
 
 /// Creates a new monodimensional unit.
 RTQuantity!N unit(N = double)(string name, string symbol = null)
