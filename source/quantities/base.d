@@ -80,7 +80,6 @@ struct Quantity(alias dim, N = double)
     ///
     unittest
     {
-        import std.math;
         auto speed = 100 * meter / (5 * second);
         assert(speed.value!(meter/second) == 20);
     }
@@ -197,7 +196,6 @@ struct Quantity(alias dim, N = double)
     bool opEquals(T)(T other) const
         if (isQuantityType!T)
     {
-        import std.string;
         static assert(T.dimensions == dim, dimerror(T.dimensions));
         return _value == other._value;
     }

@@ -30,8 +30,9 @@ auto fromDuration(Duration d)
 /// ditto
 Duration toDuration(Q)(Q quantity)
 {
+    import std.conv;
     auto hns = quantity.value!(hecto!(nano!second));
-    return dur!"hnsecs"(cast(long) hns);
+    return dur!"hnsecs"(roundTo!long(hns));
 }
 
 ///
