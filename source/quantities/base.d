@@ -61,7 +61,7 @@ struct Quantity(alias dim, N = double)
         _value = other._value;
     }
 
-    private this(T)(T value)
+    package this(T)(T value)
         if (isNumeric!T)
     {
         _value = value;
@@ -783,12 +783,6 @@ package:
     }
 }
 
-// Creates a new dimension
-private template dim(string name, string symbol = name)
-{
-    enum dim = Dimensions(name, symbol);
-}
-
 @name("Dimension")
 unittest
 {
@@ -797,9 +791,9 @@ unittest
     enum test = Dimensions(SI.length) + Dimensions(SI.mass);
     assert(collectException(test / 2));
 
-    enum d = dim!"foo";
-    enum e = dim!"bar";
-    enum f = dim!"bar";
+    enum d = Dimensions("foo");
+    enum e = Dimensions("bar");
+    enum f = Dimensions("bar");
     static assert(e == f);
     enum g = -test;
     static assert(-g == test);
@@ -814,8 +808,8 @@ unittest
     static assert(k == test);
     static assert(d + e == e + d);
 
-    enum m = dim!("mdim", "m");
-    enum n = dim!("ndim", "n");
+    enum m = Dimensions("mdim", "m");
+    enum n = Dimensions("ndim", "n");
     static assert(m.toString == "[m]");
     static assert((m*2).toString == "[m^2]");
     static assert((-m).toString == "[m^-1]");

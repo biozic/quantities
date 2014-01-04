@@ -36,7 +36,7 @@ Duration toDuration(Q)(Q quantity)
 }
 
 ///
-@name("Durations")
+@name("RT Durations")
 unittest
 {
     auto d = 4.dur!"msecs";

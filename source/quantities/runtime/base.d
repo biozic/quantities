@@ -9,6 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.runtime.base;
 
+import quantities.base : Dimensions;
 import std.exception;
 import std.traits : isFloatingPoint, isNumeric, Unqual;
 
@@ -72,7 +73,17 @@ struct RTQuantity(N = double)
     {
         _dimensions = dims;
         _value = value;
-    }    
+    }
+
+    @property N rawValue()
+    {
+        return _value;
+    }
+
+    @property Dimensions dimensions()
+    {
+        return _dimensions;
+    }
 
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
@@ -243,7 +254,7 @@ struct RTQuantity(N = double)
 }
 
 version (SynopsisUnittest)
-@name("Synopsis")
+@name("RT Synopsis")
 unittest
 {
     import std.stdio;
@@ -317,21 +328,21 @@ unittest
     static assert(isRTQuantity!(typeof(4.18 * joule)));
 }
 
-@name("Quantity.value")
+@name("RTQuantity.value")
 unittest
 {
     auto speed = 100 * meter / (5 * second);
     assert(speed.value(meter / second) == 20);
 }
 
-@name("Quantity.store")
+@name("RTQuantity.store")
 unittest
 {
     auto length = meter.store!real;
     assert(is(length.valueType == real));
 }
 
-@name("Quantity.opAssign Q = Q")
+@name("RTQuantity.opAssign Q = Q")
 unittest
 {
     auto length = meter;
@@ -339,7 +350,7 @@ unittest
     assert(approxEqual(length.value(meter), 0.0254));
 }
 
-@name("Quantity.opUnary +Q -Q")
+@name("RTQuantity.opUnary +Q -Q")
 unittest
 {
     auto length = + meter;
@@ -348,7 +359,7 @@ unittest
     assert(length == -1 * meter);
 }
 
-@name("Quantity.opBinary Q*N Q/N")
+@name("RTQuantity.opBinary Q*N Q/N")
 unittest
 {
     auto time = second * 60;
@@ -357,7 +368,7 @@ unittest
     assert(time.value(second) == 1.0/2);
 }
 
-@name("Quantity.opBinary Q+Q Q-Q")
+@name("RTQuantity.opBinary Q+Q Q-Q")
 unittest
 {
     auto length = meter + meter;
@@ -366,7 +377,7 @@ unittest
     assert(length.value(meter) == 1);
 }
 
-@name("Quantity.opBinary Q*Q Q/Q")
+@name("RTQuantity.opBinary Q*Q Q/Q")
 unittest
 {
     auto length = meter * 5;
@@ -376,21 +387,21 @@ unittest
     assert(length2.value(meter) == 5);
 }
 
-@name("Quantity.opBinaryRight N*Q")
+@name("RTQuantity.opBinaryRight N*Q")
 unittest
 {
     auto length = 100 * meter;
     assert(length == meter * 100);
 }
 
-@name("Quantity.opBinaryRight N/Q")
+@name("RTQuantity.opBinaryRight N/Q")
 unittest
 {
     auto x = 1 / (2 * meter);
     assert(x.value(1/meter) == 1.0/2);
 }
 
-@name("Quantity.opOpAssign Q+=Q Q-=Q")
+@name("RTQuantity.opOpAssign Q+=Q Q-=Q")
 unittest
 {
     auto time = 10 * second;
@@ -400,7 +411,7 @@ unittest
     assert(approxEqual(time.value(second), 20));
 }
 
-@name("Quantity.opOpAssign Q*=N Q/=N")
+@name("RTQuantity.opOpAssign Q*=N Q/=N")
 unittest
 {
     auto time = 20 * second;
@@ -410,13 +421,13 @@ unittest
     assert(approxEqual(time.value(second), 10));
 }
 
-@name("Quantity.opEquals")
+@name("RTQuantity.opEquals")
 unittest
 {
     assert(1 * minute == 60 * second);
 }
 
-@name("Quantity.opCmp")
+@name("RTQuantity.opCmp")
 unittest
 {
     assert(second < minute);
@@ -473,7 +484,7 @@ auto pow(int n, T)(T unit)
 }
 
 ///
-@name("square, cubic, pow")
+@name("RT square, cubic, pow")
 unittest
 {
     auto surface = 1 * square(meter);
@@ -503,7 +514,7 @@ auto nthRoot(int n, Q)(Q quantity)
 }
 
 ///
-@name("Powers of a quantity")
+@name("RT Powers of a quantity")
 unittest
 {
     auto surface = 25 * square(meter);
@@ -523,179 +534,9 @@ Q abs(Q)(Q quantity)
     return Q(quantity._dimensions, std.math.fabs(quantity._value));
 }
 ///
-@name("abs")
+@name("RT abs")
 unittest
 {
     auto deltaT = -10 * second;
     assert(abs(deltaT) == 10 * second);
-}
-
-/++
-This struct represents the dimensions of a quantity/unit. Instances of this
-type are only created and used at compile-time to check the correctness of
-operation on quantities.
-+/
-struct Dimensions
-{
-    private static struct Dim
-    {
-        int power;
-        string symbol;
-    }
-
-    private Dim[string] dims;
-
-package:
-    // Create a new monodimensional Dimensions
-    this(string name, string symbol = null)
-    {
-        if (!name.length)
-            throw new Exception("The name of a dimension cannot be empty");
-        if (!symbol.length)
-            symbol = name;
-
-        dims[name] = Dim(1, symbol);
-    }
-
-    // Tests if the dimensions are empty.
-    @property bool empty() const
-    {
-        return dims.length == 0;
-    }
-
-    Dimensions opUnary(string op)() const
-        if (op == "+" || op == "-")
-    {
-        Dimensions result;
-        foreach (k; dims.keys)
-            result.dims[k] = Dim(mixin(op ~ "dims[k].power"), dims[k].symbol);
-        return result;
-    }
-    
-    Dimensions opBinary(string op)(Dimensions other) const
-        if (op == "+" || op == "-")
-    {
-        Dimensions result;
-        foreach (k, v; dims)
-            result.dims[k] = Dim(v.power, v.symbol);
-        foreach (k; other.dims.keys)
-        {
-            if (k in dims)
-            {
-                auto p = mixin("dims[k].power" ~ op ~ "other.dims[k].power");
-                if (p == 0)
-                    result.dims.remove(k);
-                else
-                    result.dims[k] = Dim(p, other.dims[k].symbol);
-            }
-            else
-                result.dims[k] = Dim(mixin(op ~ "other.dims[k].power"), other.dims[k].symbol);
-        }
-        return result;
-    }
-    
-    Dimensions opBinary(string op)(int value) const
-        if (op == "*" || op == "/")
-    {
-        Dimensions result;
-        foreach (k; dims.keys)
-        {
-            static if (op == "/")
-            {
-                if (dims[k].power % value != 0)
-                    throw new Exception("Operation results in a non-integral dimension");
-            }
-            result.dims[k] = Dim(mixin("dims[k].power" ~ op ~ "value"), dims[k].symbol);
-        }
-        return result;
-    }
-    
-    bool opEquals(Dimensions other)
-    {
-        import std.algorithm : sort, equal;
-        
-        bool same = (dims.keys.length == other.dims.keys.length)
-            && (sort(dims.keys).equal(sort(other.dims.keys)));
-        if (!same)
-            return false;
-        
-        foreach (k, v; dims)
-        {
-            auto ov = k in other.dims;
-            assert(ov);
-            if (v.power != ov.power)
-            {
-                same = false;
-                break;
-            }
-        }
-        return same;
-    }
-    
-    string toString()
-    {
-        import std.algorithm : filter;
-        import std.array : join;
-        import std.conv : to;
-        
-        static string stringize(string base, int power)
-        {
-            if (power == 0)
-                return null;
-            if (power == 1)
-                return base;
-            return base ~ "^" ~ to!string(power);
-        }
-        
-        string[] dimstrs;
-        foreach (k, v; dims)
-            dimstrs ~= stringize(v.symbol, v.power);
-        
-        string result = dimstrs.filter!"a !is null".join(" ");
-        if (!result.length)
-            return "scalar";
-        
-        return "[" ~ result ~ "]";
-    }
-}
-
-// Creates a new dimension
-Dimensions rtDim(string name, string symbol = null)
-{
-    if (!symbol.length)
-        symbol = name;
-    return Dimensions(name, symbol);
-}
-
-@name("Dimension")
-unittest
-{
-    import std.exception;
-
-    auto test = Dimensions(SI.length) + Dimensions(SI.mass);
-    assert(collectException(test / 2));
-
-    auto d = rtDim("foo");
-    auto e = rtDim("bar");
-    auto f = rtDim("bar");
-    assert(e == f);
-    auto g = -test;
-    assert(-g == test);
-    auto h = +test;
-    assert(h == test);
-    auto i = test + test;
-    assert(i == test * 2);
-    auto j = test - test;
-    assert(j.empty);
-    assert(j.toString == "scalar");
-    auto k = i / 2;
-    assert(k == test);
-    assert(d + e == e + d);
-
-    auto m = rtDim("mdim", "m");
-    auto n = rtDim("ndim", "n");
-    assert(m.toString == "[m]");
-    assert((m*2).toString == "[m^2]");
-    assert((-m).toString == "[m^-1]");
-    assert((m+n).toString == "[m n]" || (m+n).toString == "[n m]");
 }
