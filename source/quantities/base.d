@@ -168,26 +168,26 @@ struct Quantity(alias dim, N = double)
         return mixin("this " ~ op ~ " other");
     }
 
-    auto opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other)
         if (isQuantityType!T && (op == "+" || op == "-"))
     {
         static assert(T.dimensions == dim, dimerror(T.dimensions));
         mixin("_value " ~ op ~ "= other._value;");
     }
 
-    auto opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other)
         if (isQuantityType!T && (op == "*" || op == "/"))
     {
         static assert(false, dimerror(op == "*" ? dim + T.dimensions : dim - T.dimensions));
     }
 
-    auto opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other)
         if (isNumeric!T && (op == "*" || op == "/"))
     {
         mixin("_value" ~ op ~ "= other;");
     }
 
-    auto opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other)
         if (isNumeric!T && (op == "+" || op == "-"))
     {
         static assert(false, dimerror(Dimensions.init));
@@ -217,7 +217,7 @@ struct Quantity(alias dim, N = double)
         return 1;
     }
 
-    bool opCmp(T)(T other) const
+    int opCmp(T)(T other) const
         if (isNumeric!T)
     {
         static assert(false, dimerror(Dimensions.init));

@@ -41,4 +41,3 @@ module quantities;
 
 public import quantities.base;
 public import quantities.si;
-public import quantities.parsing;
