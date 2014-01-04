@@ -667,7 +667,6 @@ struct Dimensions
 
     private Dim[string] dims;
 
-package:
     this(string name, string symbol = null)
     {
         if (!name.length)
