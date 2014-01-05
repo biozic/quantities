@@ -31,7 +31,7 @@ auto fromDuration(Duration d)
 Duration toDuration(Q)(Q quantity)
 {
     import std.conv;
-    auto hns = quantity.value!(hecto!(nano!second));
+    auto hns = quantity.value(hecto!(nano!second));
     return dur!"hnsecs"(roundTo!long(hns));
 }
 
@@ -41,7 +41,7 @@ unittest
 {
     auto d = 4.dur!"msecs";
     auto t = fromDuration(d);
-    assert(t.value!(milli!second) == 4);
+    assert(t.value(milli!second) == 4);
     
     auto t2 = 3.5 * minute;
     auto d2 = t2.toDuration;

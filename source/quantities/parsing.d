@@ -2,13 +2,12 @@
 /++
 This module defines functions to parse units and quantities.
 
-Cannot be used at compile-time because of a limitation in VariantN.
-
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
+// TODO: Show 'grammar'
 module quantities.parsing;
 
 import quantities.base;
@@ -19,32 +18,62 @@ import std.conv;
 import std.exception;
 import std.range;
 import std.string;
+import std.traits;
 import std.utf;
+
+// TODO: Parse an InputRange of Char
+// TODO: Parse exponents like m² or s⁻¹
+// TODO: Parse space between two units as a multiplication mark
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
 
 version (unittest)
-    import ctsi = quantities.si;
+    import std.math : approxEqual;
 
-/// Parses a quantity at runtime from the given text.
-auto parse(alias Q, N = double, S)(S text)
-    if (is(typeof({ Q.dimensions == Dimensions.init; })) && is(S : string))
+/// Parses the text for a quantity (with a numerical value) at runtime.
+auto parseQuantity(alias Q, N = double, S)(S text)
+    if (isSomeString!S)
 {
     RTQuantity quant = parseRTQuantity(text);
     quant.checkDim(Q.dimensions);
     return Quantity!(Q.dimensions, N)(quant.rawValue);
 }
-
-@name("Parsing quantities into Quantity")
+///
+@name("Parsing quantities or units into Quantity")
 unittest
 {
-    import std.math: approxEqual;
-    alias Concentration = Store!(mole / cubic!meter);
-    auto c = parse!Concentration("11.2 µmol/L");
-    assert(c.value!(mole/liter) == 0.000_011_2);
-    auto t = parse!(second)("1 min");
-    assert(t.value!(second) == 60);
+    alias Concentration = Store!(mole/cubic!meter);
+    
+    // Parse a concentration value
+    auto c = parseQuantity!Concentration("11.2 µmol/L");
+    assert(approxEqual(c.value(nano!mole/liter), 11200));
+    
+    // Below, 'second' is only a hint for dimensional analysis
+    auto t = parseQuantity!second("1 min");
+    assert(t == 1 * minute);
+}
+
+/// Parses the text for a quantity (with a numerical value) at runtime.
+auto parseUnit(alias Q, N = double, S)(S text)
+    if (isSomeString!S)
+{
+    return parseQuantity!(Q, N)("1" ~ text);
+}
+///
+@name("Parsing quantities or units into Quantity")
+unittest
+{
+    alias Concentration = Store!(mole/cubic!meter);
+
+    // Parse a concentration value
+    auto c = parseQuantity!Concentration("11.2 µmol/L");
+
+    // Parse a unit
+    auto u = parseUnit!Concentration("mol/cm^3");
+
+    // Convert
+    assert(approxEqual(c.value(u), 1.12e-8));
 }
 
 class ParseException : Exception
@@ -65,7 +94,7 @@ package:
 //debug import std.stdio;
 
 RTQuantity parseRTQuantity(S)(S text)
-    if (is(S : string))
+    if (isSomeString!S)
 {
     auto value = std.conv.parse!real(text);
     if (!text.length)
@@ -73,8 +102,6 @@ RTQuantity parseRTQuantity(S)(S text)
     auto tokens = lex(text.stripLeft);
     return value * parseCompoundUnit(tokens);
 }
-
-// TODO: Handle space as a multiplication marker between two ExponentUnits
 
 @name("Parsing a quantity into RTQuantity")
 unittest
@@ -288,7 +315,7 @@ struct Token
 }
 
 Token[] lex(S)(S input)
-    if (is(S : string))
+    if (isSomeString!S)
 {
     enum State
     {

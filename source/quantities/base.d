@@ -14,7 +14,7 @@ import std.traits : isFloatingPoint, isNumeric, Unqual;
 version (unittest)
 {
     import std.math : approxEqual;
-    import quantities.si;
+    import quantities.si, quantities.parsing;
 }
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -53,14 +53,15 @@ struct Quantity(alias dim, N = double)
         return format("Dimension error: %s is not compatible with %s", d.toString, dim.toString);
     }
 
-    /// Creates a new quantiy from another one that is dimensionally consistent.
-    this(T)(T other)
+    // Creates a new quantiy from another one that is dimensionally consistent.
+    package this(T)(T other)
         if (isQuantityType!T)
     {
         static assert(T.dimensions == dim, dimerror(T.dimensions));
         _value = other._value;
     }
 
+    // Creates a unit from a raw numeric value
     package this(T)(T value)
         if (isNumeric!T)
     {
@@ -70,10 +71,10 @@ struct Quantity(alias dim, N = double)
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
-    N value(alias target)() const
-        if(isQuantity!target)
+    N value(Q)(Q target) const
+        if(isQuantityType!Q)
     {
-        enum d = typeof(target).dimensions;
+        enum d = Q.dimensions;
         static assert(d == dim, dimerror(d));
         return _value / target._value;
     }
@@ -81,7 +82,7 @@ struct Quantity(alias dim, N = double)
     unittest
     {
         auto speed = 100 * meter / (5 * second);
-        assert(speed.value!(meter/second) == 20);
+        assert(speed.value(meter/second) == 20);
     }
 
     /++
@@ -269,13 +270,13 @@ unittest
     auto volume = 10 * milli!liter;
     // What mass should I weigh?
     auto mass = conc * volume;
-    writefln("Weigh %f kg of substance", mass.value!kilogram); 
+    writefln("Weigh %f kg of substance", mass.value(kilogram)); 
     // prints: Weigh 0.000025 kg of substance
     // Wait! My scales graduations are 0.1 milligrams!
-    writefln("Weigh %.1f mg of substance", mass.value!(milli!gram));
+    writefln("Weigh %.1f mg of substance", mass.value(milli!gram));
     // prints: Weigh 25.0 mg of substance
     // I knew the result would be 25 mg.
-    assert(approxEqual(mass.value!(milli!gram), 25));
+    assert(approxEqual(mass.value(milli!gram), 25));
 
     // Optional: we could have defined new types to hold our quantities
     alias Mass = Store!kilogram; // Using a SI base unit.
@@ -285,16 +286,16 @@ unittest
     auto speedMPH = 30 * mile/hour;
     writefln("The speed limit is %s", speedMPH);
     // prints: The speed limit is 13.4083[s^-1 m]
-    writefln("The speed limit is %.0f km/h", speedMPH.value!(kilo!meter/hour));
+    writefln("The speed limit is %.0f km/h", speedMPH.value(kilo!meter/hour));
     // prints: The speed limit is 48 km/h
-    writefln("The speed limit is %.0f in/s", speedMPH.value!(inch/second));
+    writefln("The speed limit is %.0f in/s", speedMPH.value(inch/second));
     // prints: The speed limit is 528 in/s
 
     auto wage = 65 * euro / hour;
     auto workTime = 1.6 * day;
     writefln("I've just earned %s!", wage * workTime);
     // prints: I've just earned 2496[€]!
-    writefln("I've just earned $ %.2f!", (wage * workTime).value!dollar);
+    writefln("I've just earned $ %.2f!", (wage * workTime).value(dollar));
     // prints: I've just earned $ 3369.60!
 
     // Type checking prevents incorrect assignments and operations
@@ -305,16 +306,14 @@ unittest
     // Parsing quantities at runtime
     // -----------------------------
 
-    import quantities.parsing;
-
-    auto m = parse!Mass("25 mg");
-    auto V = parse!Volume("10 ml");
-    auto c = parse!Concentration("2.5 g.L^-1");
+    auto m = parseQuantity!Mass("25 mg");
+    auto V = parseQuantity!Volume("10 ml");
+    auto c = parseQuantity!Concentration("2.5 g/L");
     assert(c == m / V);
 
     import std.exception;
-    assertThrown!DimensionException(m = parse!Mass("10 ml"));
-    assertThrown!ParseException(m = parse!Mass("10 qGz"));
+    assertThrown!DimensionException(m = parseQuantity!Mass("10 ml"));
+    assertThrown!ParseException(m = parseQuantity!Mass("10 qGz"));
 }
 
 /// Checks that type T is an instance of the template Quantity
@@ -345,14 +344,14 @@ unittest
 {
     Store!second time;
     time = Store!second(1 * minute);
-    assert(time.value!second == 60);
+    assert(time.value(second) == 60);
 }
 
 @name("Quantity.value")
 unittest
 {
     auto speed = 100 * meter / (5 * second);
-    assert(speed.value!(meter / second) == 20);
+    assert(speed.value(meter / second) == 20);
 }
 
 @name("Quantity.store")
@@ -367,7 +366,7 @@ unittest
 {
     auto length = meter;
     length = 2.54 * centi!meter;
-    assert(approxEqual(length.value!meter, 0.0254));
+    assert(approxEqual(length.value(meter), 0.0254));
 }
 
 @name("Quantity.opUnary +Q -Q")
@@ -383,18 +382,18 @@ unittest
 unittest
 {
     auto time = second * 60;
-    assert(time.value!second == 60);
+    assert(time.value(second) == 60);
     time = second / 2;
-    assert(time.value!second == 1.0/2);
+    assert(time.value(second) == 1.0/2);
 }
 
 @name("Quantity.opBinary Q+Q Q-Q")
 unittest
 {
     auto length = meter + meter;
-    assert(length.value!meter == 2);
+    assert(length.value(meter) == 2);
     length = length - meter;
-    assert(length.value!meter == 1);
+    assert(length.value(meter) == 1);
 }
 
 @name("Quantity.opBinary Q*Q Q/Q")
@@ -402,9 +401,9 @@ unittest
 {
     auto length = meter * 5;
     auto surface = length * length;
-    assert(surface.value!(square!meter) == 5*5);
+    assert(surface.value(square!meter) == 5*5);
     auto length2 = surface / length;
-    assert(length2.value!meter == 5);
+    assert(length2.value(meter) == 5);
 
     auto x = minute / second;
     assert(is(typeof(x) == double));
@@ -426,7 +425,7 @@ unittest
 unittest
 {
     auto x = 1 / (2 * meter);
-    assert(x.value!(1/meter) == 1.0/2);
+    assert(x.value(1/meter) == 1.0/2);
 }
 
 @name("Quantity.opOpAssign Q+=Q Q-=Q")
@@ -434,9 +433,9 @@ unittest
 {
     auto time = 10 * second;
     time += 50 * second;
-    assert(approxEqual(time.value!second, 60));
+    assert(approxEqual(time.value(second), 60));
     time -= 40 * second;
-    assert(approxEqual(time.value!second, 20));
+    assert(approxEqual(time.value(second), 20));
 }
 
 @name("Quantity.opOpAssign Q*=N Q/=N")
@@ -444,9 +443,9 @@ unittest
 {
     auto time = 20 * second;
     time *= 2;
-    assert(approxEqual(time.value!second, 40));
+    assert(approxEqual(time.value(second), 40));
     time /= 4;
-    assert(approxEqual(time.value!second, 10));
+    assert(approxEqual(time.value(second), 10));
 }
 
 @name("Quantity.opEquals")
@@ -469,7 +468,7 @@ unittest
 {
     Store!meter m;
     static assert(!__traits(compiles, Store!meter(1 * second)));
-    static assert(!__traits(compiles, m.value!second));
+    static assert(!__traits(compiles, m.value(second)));
     static assert(!__traits(compiles, m = second));
     static assert(!__traits(compiles, meter + second));
     static assert(!__traits(compiles, meter - second));
@@ -513,7 +512,7 @@ unittest
     enum euro = unit!"currency";
     static assert(isQuantity!euro);
     enum dollar = euro / 1.35;
-    assert(approxEqual((1.35 * dollar).value!euro, 1));
+    assert(approxEqual((1.35 * dollar).value(euro), 1));
 }
 
 /// Transforms a unit at compile-time.
@@ -544,8 +543,8 @@ unittest
 }
 
 /// Equivalent of the method Quantity.value for dimensionless quantities.
-auto value(alias target, T)(T quantity)
-    if (isFloatingPoint!(typeof(target)) && isNumeric!T)
+auto value(T, U)(T quantity, U target)
+    if (isFloatingPoint!U && isNumeric!T)
 {
     return quantity / target;
 }
@@ -555,7 +554,7 @@ unittest
 {
     import std.math : PI, approxEqual;
     auto angle = 2 * PI * radian;
-    assert(approxEqual(angle.value!degreeOfAngle, 360));
+    assert(approxEqual(angle.value(degreeOfAngle), 360));
 }
 
 /++
@@ -650,12 +649,12 @@ unittest
 {
     auto surface = 25 * square!meter;
     auto side = sqrt(surface);
-    assert(approxEqual(side.value!meter, 5));
+    assert(approxEqual(side.value(meter), 5));
     
     auto volume = 1 * liter;
     side = cbrt(volume);
-    assert(approxEqual(nthRoot!3(volume).value!(deci!meter), 1));
-    assert(approxEqual(side.value!(deci!meter), 1));
+    assert(approxEqual(nthRoot!3(volume).value(deci!meter), 1));
+    assert(approxEqual(side.value(deci!meter), 1));
 }
 
 /// Returns the absolute value of a quantity

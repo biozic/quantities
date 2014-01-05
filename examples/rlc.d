@@ -18,16 +18,16 @@ void main()
     alias Capacity = Store!farad;
     alias Resistance = Store!ohm;
     
-    auto L = parse!Inductance("10 mH");
-    auto C = parse!Capacity("62.5 nF");
-    auto R = parse!Resistance("100 kΩ");
+    auto L = parseQuantity!Inductance("10 mH");
+    auto C = parseQuantity!Capacity("62.5 nF");
+    auto R = parseQuantity!Resistance("100 kΩ");
     auto w0 = freq(L, C);
     auto q = quality(L, R, w0);
     
     import std.math : approxEqual;
-    assert(approxEqual(w0.value!hertz, 6366.2));
+    assert(approxEqual(w0.value(hertz), 6366.2));
     assert(approxEqual(q, 250));
     
-    writefln("Frequency: %s Hz", w0.value!hertz);
+    writefln("Frequency: %s Hz", w0.value(hertz));
     writefln("Quality: %s", q);
 }
