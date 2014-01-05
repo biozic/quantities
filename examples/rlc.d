@@ -18,9 +18,9 @@ void main()
     alias Capacity = Store!farad;
     alias Resistance = Store!ohm;
     
-    auto L = 10 * milli!henry;
-    auto C = 62.5 * nano!farad;
-    auto R = 100 * kilo!ohm;
+    auto L = parse!Inductance("10 mH");
+    auto C = parse!Capacity("62.5 nF");
+    auto R = parse!Resistance("100 kΩ");
     auto w0 = freq(L, C);
     auto q = quality(L, R, w0);
     

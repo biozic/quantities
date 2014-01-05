@@ -1,7 +1,7 @@
 ## About `quantities`
 
-The purpose of this small D package is to perform automatic compile-time
-dimensional checking when dealing with quantities and units.
+The purpose of this small D package is to perform automatic compile-time or
+runtime dimensional checking when dealing with quantities and units.
 
 In order to remain simple, there is no actual distinction between units and
 quantities, so there are no distinct quantity and unit types. All operations
@@ -13,6 +13,8 @@ By design, a dimensionless quantity must be expressed with a builtin numeric
 type, e.g. double. If an operation over quantities that have dimensions creates
 a quantity with no dimensions (e.g. meter / meter), the result is converted to
 the corresponding built-in type.
+
+Quantities can be parsed from strings at runtime.
 
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.
@@ -36,10 +38,7 @@ import std.stdio;
 // Working with units
 // ------------------
 
-// Caveat: work with units at compile-time
-
-alias m = meter;        // meter is a predefined SI unit
-alias cm = centi!meter; // centi is a predefined SI prefix
+// Hint: work with units at compile-time
 
 // Define new units
 enum inch = 2.54 * centi!meter;
@@ -97,4 +96,19 @@ writefln("I've just earned $ %.2f!", (wage * workTime).value!dollar);
 // Type checking prevents incorrect assignments and operations
 static assert(!__traits(compiles, mass = 10 * milli!liter));
 static assert(!__traits(compiles, conc = 1 * euro/volume));
+
+// -----------------------------
+// Parsing quantities at runtime
+// -----------------------------
+
+import quantities.parsing;
+
+auto m = parse!Mass("25 mg");
+auto V = parse!Volume("10 ml");
+auto c = parse!Concentration("2.5 g.L^-1");
+assert(c == m / V);
+
+import std.exception;
+assertThrown!DimensionException(m = parse!Mass("10 ml"));
+assertThrown!ParseException(m = parse!Mass("10 qGz"));
 ```

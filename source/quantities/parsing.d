@@ -12,18 +12,40 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.parsing;
 
 import quantities.base;
-import quantities.si : SI;
-import quantities.runtime;
-import std.algorithm : any;
-import std.array;
+import quantities.si;
+import quantities._impl;
+public import quantities._impl : DimensionException;
 import std.conv;
 import std.exception;
 import std.range;
 import std.string;
-import std.traits;
+import std.utf;
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
+
+version (unittest)
+    import ctsi = quantities.si;
+
+/// Parses a quantity at runtime from the given text.
+auto parse(alias Q, N = double, S)(S text)
+    if (is(typeof({ Q.dimensions == Dimensions.init; })) && is(S : string))
+{
+    RTQuantity quant = parseRTQuantity(text);
+    quant.checkDim(Q.dimensions);
+    return Quantity!(Q.dimensions, N)(quant.rawValue);
+}
+
+@name("Parsing quantities into Quantity")
+unittest
+{
+    import std.math: approxEqual;
+    alias Concentration = Store!(mole / cubic!meter);
+    auto c = parse!Concentration("11.2 µmol/L");
+    assert(c.value!(mole/liter) == 0.000_011_2);
+    auto t = parse!(second)("1 min");
+    assert(t.value!(second) == 60);
+}
 
 class ParseException : Exception
 {
@@ -38,206 +60,324 @@ class ParseException : Exception
     }
 }
 
-static immutable
+package:
+
+//debug import std.stdio;
+
+RTQuantity parseRTQuantity(S)(S text)
+    if (is(S : string))
 {
-    RTQuantity meter;
-    alias metre = meter;
-    RTQuantity kilogram;
-    RTQuantity second;
-    RTQuantity ampere;
-    RTQuantity kelvin;
-    RTQuantity mole;
-    RTQuantity candela;
-    RTQuantity radian;
-    RTQuantity steradian;
-    RTQuantity hertz;
-    RTQuantity newton;
-    RTQuantity pascal;
-    RTQuantity joule;
-    RTQuantity watt;
-    RTQuantity coulomb;
-    RTQuantity volt;
-    RTQuantity farad;
-    RTQuantity ohm;
-    RTQuantity siemens;
-    RTQuantity weber;
-    RTQuantity tesla;
-    RTQuantity henry;
-    RTQuantity lumen;
-    RTQuantity lux;
-    RTQuantity becquerel;
-    RTQuantity gray;
-    RTQuantity sievert;
-    RTQuantity katal;
-    RTQuantity gram;
-    RTQuantity minute;
-    RTQuantity hour;
-    RTQuantity day;
-    RTQuantity liter;
-    alias litre = liter;
-    RTQuantity ton;
-    RTQuantity electronVolt;
-    RTQuantity dalton;
+    auto value = std.conv.parse!real(text);
+    if (!text.length)
+        return RTQuantity(Dimensions.init, value);
+    auto tokens = lex(text.stripLeft);
+    return value * parseCompoundUnit(tokens);
 }
 
-static immutable(RTQuantity)[string] SIUnitSymbols;
-static real[string] SIPrefixSymbols;
+// TODO: Handle space as a multiplication marker between two ExponentUnits
 
-shared static this()
-{
-    meter = unit(SI.length, "m");
-    kilogram = unit(SI.mass, "kg");
-    second = unit(SI.time, "s");
-    ampere = unit(SI.electricCurrent, "A");
-    kelvin = unit(SI.temperature, "K");
-    mole = unit(SI.amountOfSubstance, "mol");
-    candela = unit(SI.luminousIntensity, "cd");
-    radian = meter / meter;
-    steradian = square(meter) / square(meter);
-    hertz = 1 / second;
-    newton = meter / kilogram / square(second);
-    pascal = newton / square(meter);
-    joule = newton * meter;
-    watt = joule / second;
-    coulomb = second * ampere;
-    volt = watt / ampere;
-    farad = coulomb / volt;
-    ohm = volt / ampere;
-    siemens = ampere / volt;
-    weber = volt * second;
-    tesla = weber / square(meter);
-    henry = weber / ampere;
-    lumen = candela / steradian;
-    lux = lumen / square(meter);
-    becquerel = 1 / second;
-    gray = joule / kilogram;
-    sievert = joule / kilogram;
-    katal = mole / second;
-    gram = 1e-3 * kilogram;
-    minute = 60 * second;
-    hour = 60 * minute;
-    day = 24 * hour;
-    liter = 1e-3 * cubic(meter);
-    ton = 1e3 * kilogram;
-    electronVolt = 1.60217653e-19 * joule;
-    dalton = 1.66053886e-27 * kilogram;
-
-    SIUnitSymbols = [
-        "m" : meter,
-        "g" : gram,
-        "s" : second,
-        "A" : ampere,
-        "K" : kelvin,
-        "mol" : mole,
-        "cd" : candela,
-        "rad" : meter / meter,
-        "sr" : square(meter) / square(meter),
-        "Hz" : 1 / second,
-        "N" : meter / kilogram / square(second),
-        "Pa" : pascal,
-        "J" : joule,
-        "W" : watt,
-        "C" : coulomb,
-        "V" : volt,
-        "F" : farad,
-        "Ω" : ohm,
-        "S" : siemens,
-        "Wb" : weber,
-        "T" : tesla,
-        "H" : henry,
-        "lm" : lumen,
-        "lx" : lux,
-        "Bq" : becquerel,
-        "Gy" : gray,
-        "Sv" : sievert,
-        "kat" : katal,
-        "min" : minute,
-        "h" : hour,
-        "d" : day,
-        "l" : liter,
-        "L" : liter,
-        "t" : ton,
-        "eV" : electronVolt,
-        "Da" : dalton,
-    ];
-
-    SIPrefixSymbols = [
-        "Y" : 1e24,
-        "Z" : 1e21,
-        "E" : 1e18,
-        "P" : 1e15,
-        "T" : 1e12,
-        "G" : 1e9,
-        "M" : 1e6,
-        "k" : 1e3,
-        "h" : 1e2,
-        "da": 1e1,
-        "d" : 1e-1,
-        "c" : 1e-2,
-        "m" : 1e-3,
-        "µ" : 1e-6,
-        "n" : 1e-9,
-        "p" : 1e-12,
-        "f" : 1e-15,
-        "a" : 1e-18,
-        "z" : 1e-21,
-        "y" : 1e-24
-    ];
-}
-
-// Parses a string for a single unit (without prefix nor exponent).
-RTQuantity rtParseUnit(string str, immutable(RTQuantity)[string] possibleUnits = SIUnitSymbols)
-{
-    assert(str.length);
-    return *enforceEx!ParseException(str in possibleUnits, "Unknown unit symbol: " ~ str);
-}
-
-@name("RT Parse SI base units")
+@name("Parsing a quantity into RTQuantity")
 unittest
 {
-    assert(rtParseUnit("m") == meter);
-    assert(rtParseUnit("s") == second);
+    import std.math : approxEqual;
+
+    assertThrown!ParseException(parseRTQuantity("1 µ m"));
+    assertThrown!ParseException(parseRTQuantity("1 µ"));
+
+    string test = "1    m    ";
+    assert(parseRTQuantity(test) == RT.meter);
+    assert(parseRTQuantity("1 µm") == 1e-6 * RT.meter);
+
+    assert(parseRTQuantity("1 m^-1") == 1 / RT.meter);
+    assert(parseRTQuantity("1 (m)") == RT.meter);
+    assert(parseRTQuantity("1 (m^-1)") == 1 / RT.meter);
+    assert(parseRTQuantity("1 ((m)^-1)^-1") == RT.meter);
+
+    assert(parseRTQuantity("1 m * m") == square(RT.meter));
+    assert(parseRTQuantity("1 m . m") == square(RT.meter));
+    assert(parseRTQuantity("1 m / m") == RT.meter / RT.meter);
+
+    assert(parseRTQuantity("1 N.m") == RT.newton * RT.meter);
+    // assert(parseRTQuantity("1 N m") == RT.newton * RT.meter);
+    
+    assert(approxEqual(parseRTQuantity("6.3 L.mmol^-1.cm^-1").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseRTQuantity("6.3 L/(mmol*cm)").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseRTQuantity("6.3 L*(mmol*cm)^-1").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseRTQuantity("6.3 L/mmol/cm").value(square(RT.meter)/RT.mole), 630));
 }
 
-RTQuantity rtParsePrefixedUnit(string str, real[string] possiblePrefixes = SIPrefixSymbols)
-{
-    assert(str.length);
+package:
 
+void advance(ref Token[] tokens)
+{
+    enforceEx!ParseException(tokens.length, "Unexpected end of input");
+    tokens.popFront();
+}
+
+bool check(Types...)(Token token, Types types)
+{
+    bool ok = false;
+    Tok[] valid = [types];
+    foreach (type; types)
+    {
+        if (token.type == type)
+        {
+            ok = true;
+            break;
+        }
+    }
+    import std.string : format;
+    enforceEx!ParseException(ok, valid.length > 1 
+        ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
+        : format("Found '%s' while expecting %s", token.slice, valid.front)
+    );
+    return ok;
+}
+
+RTQuantity parseCompoundUnit(ref Token[] tokens)
+{
+    //debug writeln(__FUNCTION__);
+
+    RTQuantity ret = parseExponentUnit(tokens);
+    while (tokens.length)
+    {
+        auto op = tokens.front;
+        if (op.type != Tok.mul && op.type != Tok.div)
+            break;
+
+        tokens.advance();
+        RTQuantity rhs = parseExponentUnit(tokens);
+        if (op.type == Tok.mul)
+            ret.resetTo(ret * rhs);
+        else if (op.type == Tok.div)
+            ret.resetTo(ret / rhs);
+    }
+    return ret;
+}
+
+RTQuantity parseExponentUnit(ref Token[] tokens)
+{
+    //debug writeln(__FUNCTION__);
+
+    RTQuantity ret = parseUnit(tokens);
+    if (tokens.length && tokens.front.type == Tok.exp)
+    {
+        tokens.advance();
+        int n = parseInteger(tokens);
+        ret.resetTo(pow(ret, n));
+    }
+    return ret;
+}
+
+int parseInteger(ref Token[] tokens)
+{
+    //debug writeln(__FUNCTION__);
+
+    /+
+    bool withParens = tokens.front.type == Tok.lparen;
+    if (withParens)
+    {
+        tokens.advance();
+    }
++/
+    
+    tokens.front.check(Tok.integer);
+    auto n = std.conv.parse!int(tokens.front.slice);
+
+    /+
+    if (withParens)
+    {
+        tokens.advance();
+        tokens.front.check(Tok.rparen);
+    }
+    +/
+    
+    if (tokens.length)
+        tokens.advance();
+    
+    return n;
+}
+
+RTQuantity parseUnit(ref Token[] tokens)
+{
+    //debug writeln(__FUNCTION__);
+
+    RTQuantity ret;
+    
+    if (tokens.front.type == Tok.lparen)
+    {
+        tokens.advance();
+        ret = parseCompoundUnit(tokens);
+        tokens.front.check(Tok.rparen);
+        tokens.advance();
+    }
+    else
+        ret = parsePrefixUnit(tokens);
+
+    return ret;
+}
+
+RTQuantity parsePrefixUnit(ref Token[] tokens)
+{
+    // debug writeln(__FUNCTION__);
+
+    RTQuantity ret;
+
+    tokens.front.check(Tok.symbol);
+    auto str = tokens.front.slice;
+    if (tokens.length)
+        tokens.advance();
+    
     // Special cases where a prefix starts like a unit
     if (str == "m")
-        return meter;
+        return RT.meter;
     if (str == "cd")
-        return candela;
+        return RT.candela;
     if (str == "mol")
-        return mole;
+        return RT.mole;
     if (str == "Pa")
-        return pascal;
+        return RT.pascal;
     if (str == "T")
-        return tesla;
+        return RT.tesla;
     if (str == "Gy")
-        return gray;
+        return RT.gray;
     if (str == "kat")
-        return katal;
+        return RT.katal;
     if (str == "h")
-        return hour;
+        return RT.hour;
     if (str == "d")
-        return day;
+        return RT.day;
     if (str == "min")
-        return minute;
-
+        return RT.minute;
+    
     string prefix = str.takeExactly(1).to!string;
-    string unit = str.dropOne.to!string;
-
-    auto factor = *enforceEx!ParseException(prefix in possiblePrefixes, "Unknown unit prefix: " ~ prefix);
-    auto quantity = rtParseUnit(unit);
-    return quantity * factor;
+    assert(prefix.length, "Prefix with no length");
+    auto factor = prefix in RT.SIPrefixSymbols;
+    if (factor)
+    {
+        string unit = str.dropOne.to!string;
+        enforceEx!ParseException(unit.length, "Expecting a unit after the prefix " ~ prefix);
+        return *factor * parseSymbol(unit);
+    }
+    else
+        return parseSymbol(str);
 }
 
-@name("RT Parse prefixed SI base units")
-unittest
+RTQuantity parseSymbol(string str)
 {
-    assert(rtParsePrefixedUnit("cm") == 0.01 * meter);
-    assert(rtParsePrefixedUnit("µs") == 1e-6 * second);
-    assert(rtParsePrefixedUnit("mm") == 1e-3 * meter);
+    assert(str.length, "Symbol with no length");
+    return *enforceEx!ParseException(str in RT.SIUnitSymbols, "Unknown unit symbol: " ~ str);
 }
 
+enum Tok
+{
+    none,
+    symbol,
+    mul,
+    div,
+    exp,
+    integer,
+    rparen,
+    lparen
+}
+
+struct Token
+{
+    Tok type;
+    string slice;
+}
+
+Token[] lex(S)(S input)
+    if (is(S : string))
+{
+    enum State
+    {
+        none,
+        symbol,
+        integer
+    }
+    
+    auto original = input;
+    Token[] tokapp;
+    size_t i, j;
+    State state = State.none;
+    
+    void pushToken(Tok type)
+    {
+        tokapp ~= Token(type, original[i .. j]);
+        i = j;
+        state = State.none;
+    }
+    
+    void push()
+    {
+        if (state == State.symbol)
+            pushToken(Tok.symbol);
+        else if (state == State.integer)
+            pushToken(Tok.integer);
+    }
+    
+    while (!input.empty)
+    {
+        auto cur = input.front;
+        auto len = cur.codeLength!char;
+        switch (cur)
+        {
+            case ' ':
+            case '\t':
+                push();
+                j += len;
+                i = j;
+                break;
+                
+            case '(':
+                push();
+                j += len;
+                pushToken(Tok.lparen);
+                break;
+                
+            case ')':
+                push();
+                j += len;
+                pushToken(Tok.rparen);
+                break;
+                
+            case '*':
+            case '.':
+                push();
+                j += len;
+                pushToken(Tok.mul);
+                break;
+                
+            case '/':
+                push();
+                j += len;
+                pushToken(Tok.div);
+                break;
+                
+            case '^':
+                push();
+                j += len;
+                pushToken(Tok.exp);
+                break;
+                
+            case '0': .. case '9':
+            case '-':
+                if (state == State.symbol)
+                    push();
+                state = State.integer;
+                j += len;
+                break;
+                
+            default:
+                if (state == State.integer)
+                    push();
+                state = State.symbol;
+                j += len;
+                break;
+        }
+        input.popFront();
+    }
+    push();
+    return tokapp;
+}
