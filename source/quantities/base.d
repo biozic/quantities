@@ -231,6 +231,7 @@ struct Quantity(alias dim, N = double)
     }
 }
 
+//version = SynopsisUnittest;
 version (SynopsisUnittest)
 @name("Synopsis")
 unittest
@@ -241,10 +242,7 @@ unittest
     // Working with units
     // ------------------
 
-    // Caveat: work with units at compile-time
-
-    alias m = meter;        // meter is a predefined SI unit
-    alias cm = centi!meter; // centi is a predefined SI prefix
+    // Hint: work with units at compile-time
 
     // Define new units
     enum inch = 2.54 * centi!meter;
@@ -302,6 +300,21 @@ unittest
     // Type checking prevents incorrect assignments and operations
     static assert(!__traits(compiles, mass = 10 * milli!liter));
     static assert(!__traits(compiles, conc = 1 * euro/volume));
+
+    // -----------------------------
+    // Parsing quantities at runtime
+    // -----------------------------
+
+    import quantities.parsing;
+
+    auto m = parse!Mass("25 mg");
+    auto V = parse!Volume("10 ml");
+    auto c = parse!Concentration("2.5 g.L^-1");
+    assert(c == m / V);
+
+    import std.exception;
+    assertThrown!DimensionException(m = parse!Mass("10 ml"));
+    assertThrown!ParseException(m = parse!Mass("10 qGz"));
 }
 
 /// Checks that type T is an instance of the template Quantity
@@ -546,15 +559,23 @@ unittest
 }
 
 /++
-Utility template to create quantity types. The unit is only used to set the
+Utility templates to create quantity types. The unit is only used to set the
 dimensions, it doesn't bind the stored value to a particular unit. Use in 
 conjunction with the store method of quantities.
 +/
+template Store(Q, N = double)
+    if (isQuantityType!Q)
+{
+    alias Store = Quantity!(Q.dimensions, N);
+}
+
+/// ditto
 template Store(alias unit, N = double)
     if (isQuantity!unit)
 {
     alias Store = Quantity!(unit.dimensions, N);
 }
+
 ///
 @name("Store example")
 unittest
@@ -780,7 +801,7 @@ struct Dimensions
         
         string result = dimstrs.filter!"a !is null".join(" ");
         if (!result.length)
-            return "scalar";
+            result = "scalar";
         
         return "[" ~ result ~ "]";
     }
@@ -806,7 +827,7 @@ unittest
     static assert(i == test * 2);
     enum j = test - test;
     static assert(j.empty);
-    static assert(j.toString == "scalar");
+    static assert(j.toString == "[scalar]");
     enum k = i / 2;
     static assert(k == test);
     static assert(d + e == e + d);
