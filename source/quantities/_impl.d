@@ -460,7 +460,7 @@ struct RT
         radian = meter / meter;
         steradian = square(meter) / square(meter);
         hertz = 1 / second;
-        newton = meter / kilogram / square(second);
+        newton = kilogram * meter / square(second);
         pascal = newton / square(meter);
         joule = newton * meter;
         watt = joule / second;
@@ -489,16 +489,16 @@ struct RT
         
         SIUnitSymbols = [
             "m" : meter,
-            "g" : gram,
+            "kg" : kilogram,
             "s" : second,
             "A" : ampere,
             "K" : kelvin,
             "mol" : mole,
             "cd" : candela,
-            "rad" : meter / meter,
-            "sr" : square(meter) / square(meter),
-            "Hz" : 1 / second,
-            "N" : meter / kilogram / square(second),
+            "rad" : radian,
+            "sr" : steradian,
+            "Hz" : hertz,
+            "N" : newton,
             "Pa" : pascal,
             "J" : joule,
             "W" : watt,
@@ -516,6 +516,7 @@ struct RT
             "Gy" : gray,
             "Sv" : sievert,
             "kat" : katal,
+            "g" : gram,
             "min" : minute,
             "h" : hour,
             "d" : day,

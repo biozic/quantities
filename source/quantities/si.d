@@ -80,7 +80,7 @@ quantities is a built-in numeric type when they have no dimensions.
 enum radian = meter / meter;
 enum steradian = square!meter / square!meter; /// ditto
 enum hertz = 1 / second; /// ditto
-enum newton = meter / kilogram / square!second; /// ditto
+enum newton = kilogram * meter / square!second; /// ditto
 enum pascal = newton / square!meter; /// ditto
 enum joule = newton * meter; /// ditto
 enum watt = joule / second; /// ditto
