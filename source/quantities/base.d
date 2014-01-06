@@ -232,7 +232,6 @@ struct Quantity(alias dim, N = double)
     }
 }
 
-//version = SynopsisUnittest;
 version (SynopsisUnittest)
 @name("Synopsis")
 unittest
@@ -308,7 +307,7 @@ unittest
 
     auto m = parseQuantity!Mass("25 mg");
     auto V = parseQuantity!Volume("10 ml");
-    auto c = parseQuantity!Concentration("2.5 g/L");
+    auto c = parseQuantity!Concentration("2.5 g⋅L⁻¹");
     assert(c == m / V);
 
     import std.exception;

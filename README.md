@@ -103,7 +103,7 @@ static assert(!__traits(compiles, conc = 1 * euro/volume));
 
 auto m = parseQuantity!Mass("25 mg");
 auto V = parseQuantity!Volume("10 ml");
-auto c = parseQuantity!Concentration("2.5 g/L");
+auto c = parseQuantity!Concentration("2.5 g⋅L⁻¹");
 assert(c == m / V);
 
 import std.exception;

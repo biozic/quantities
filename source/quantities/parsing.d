@@ -21,9 +21,10 @@ import std.string;
 import std.traits;
 import std.utf;
 
-// TODO: Parse an InputRange of Char
-// TODO: Parse exponents like m² or s⁻¹
+// TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
 // TODO: Parse space between two units as a multiplication mark
+// TODO: Add possibility to add user-defined units in the parser
+// TODO: Add conversion functions from parsed quantities and units.
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -40,7 +41,7 @@ auto parseQuantity(alias Q, N = double, S)(S text)
     return Quantity!(Q.dimensions, N)(quant.rawValue);
 }
 ///
-@name("Parsing quantities or units into Quantity")
+@name("Parsing quantities")
 unittest
 {
     alias Concentration = Store!(mole/cubic!meter);
@@ -61,21 +62,46 @@ auto parseUnit(alias Q, N = double, S)(S text)
     return parseQuantity!(Q, N)("1" ~ text);
 }
 ///
-@name("Parsing quantities or units into Quantity")
+@name("Parsing units")
 unittest
 {
     alias Concentration = Store!(mole/cubic!meter);
 
     // Parse a concentration value
-    auto c = parseQuantity!Concentration("11.2 µmol/L");
+    auto c = parseQuantity!Concentration("11.2 µmol/L"d);
 
     // Parse a unit
-    auto u = parseUnit!Concentration("mol/cm^3");
+    auto u = parseUnit!Concentration("mol/cm³");
 
     // Convert
     assert(approxEqual(c.value(u), 1.12e-8));
 }
 
+/++
+Convert a quantity parsed from a string into target unit, also parsed from
+a string.
+Parameters:
+  from = A string representing the quantity to convert
+  target = A string representing the target unit
+Returns:
+    The conversion factor (a scalar value)
++/
+real convert(S, U)(S from, U target)
+    if (isSomeString!S && isSomeString!U)
+{
+    RTQuantity base = parseRTQuantity(from);
+    RTQuantity unit = parseRTQuantity("1" ~ target);
+    return base.value(unit);
+}
+///
+@name("Convert")
+unittest
+{
+    auto k = convert("3 min", "s");
+    assert(k == 180);
+}
+
+/// Exception thrown when parsing encounters an unexpected token.
 class ParseException : Exception
 {
     @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
@@ -99,7 +125,8 @@ RTQuantity parseRTQuantity(S)(S text)
     auto value = std.conv.parse!real(text);
     if (!text.length)
         return RTQuantity(Dimensions.init, value);
-    auto tokens = lex(text.stripLeft);
+    auto tokens = lex(text);
+    //debug writeln(tokens);
     return value * parseCompoundUnit(tokens);
 }
 
@@ -116,13 +143,18 @@ unittest
     assert(parseRTQuantity("1 µm") == 1e-6 * RT.meter);
 
     assert(parseRTQuantity("1 m^-1") == 1 / RT.meter);
+    assert(parseRTQuantity("1 m²") == square(RT.meter));
+    assert(parseRTQuantity("1 m⁻¹") == 1 / RT.meter);
     assert(parseRTQuantity("1 (m)") == RT.meter);
     assert(parseRTQuantity("1 (m^-1)") == 1 / RT.meter);
     assert(parseRTQuantity("1 ((m)^-1)^-1") == RT.meter);
 
     assert(parseRTQuantity("1 m * m") == square(RT.meter));
     assert(parseRTQuantity("1 m . m") == square(RT.meter));
+    assert(parseRTQuantity("1 m ⋅ m") == square(RT.meter));
+    assert(parseRTQuantity("1 m × m") == square(RT.meter));
     assert(parseRTQuantity("1 m / m") == RT.meter / RT.meter);
+    assert(parseRTQuantity("1 m ÷ m") == RT.meter / RT.meter);
 
     assert(parseRTQuantity("1 N.m") == RT.newton * RT.meter);
     // assert(parseRTQuantity("1 N m") == RT.newton * RT.meter);
@@ -187,9 +219,11 @@ RTQuantity parseExponentUnit(ref Token[] tokens)
     //debug writeln(__FUNCTION__);
 
     RTQuantity ret = parseUnit(tokens);
-    if (tokens.length && tokens.front.type == Tok.exp)
+    if (tokens.length && (tokens.front.type == Tok.exp
+                          || tokens.front.type == Tok.supinteger))
     {
-        tokens.advance();
+        if (tokens.front.type == Tok.exp)
+            tokens.advance();
         int n = parseInteger(tokens);
         ret.resetTo(pow(ret, n));
     }
@@ -200,28 +234,29 @@ int parseInteger(ref Token[] tokens)
 {
     //debug writeln(__FUNCTION__);
 
-    /+
-    bool withParens = tokens.front.type == Tok.lparen;
-    if (withParens)
+    auto i = tokens.front;
+    i.check(Tok.integer, Tok.supinteger);
+    auto slice = i.slice;
+    if (i.type == Tok.supinteger)
     {
-        tokens.advance();
+        slice = translate(slice, [
+            '⁰':'0',
+            '¹':'1',
+            '²':'2',
+            '³':'3',
+            '⁴':'4',
+            '⁵':'5',
+            '⁶':'6',
+            '⁷':'7',
+            '⁸':'8',
+            '⁹':'9',
+            '⁺':'+',
+            '⁻':'-'
+        ]);
     }
-+/
-    
-    tokens.front.check(Tok.integer);
-    auto n = std.conv.parse!int(tokens.front.slice);
-
-    /+
-    if (withParens)
-    {
-        tokens.advance();
-        tokens.front.check(Tok.rparen);
-    }
-    +/
-    
+    auto n = std.conv.parse!int(slice);
     if (tokens.length)
         tokens.advance();
-    
     return n;
 }
 
@@ -304,6 +339,7 @@ enum Tok
     div,
     exp,
     integer,
+    supinteger,
     rparen,
     lparen
 }
@@ -317,11 +353,14 @@ struct Token
 Token[] lex(S)(S input)
     if (isSomeString!S)
 {
+    alias C = Unqual!(ElementEncodingType!S);
+
     enum State
     {
         none,
         symbol,
-        integer
+        integer,
+        supinteger
     }
     
     auto original = input;
@@ -331,7 +370,7 @@ Token[] lex(S)(S input)
     
     void pushToken(Tok type)
     {
-        tokapp ~= Token(type, original[i .. j]);
+        tokapp ~= Token(type, original[i .. j].to!string);
         i = j;
         state = State.none;
     }
@@ -342,12 +381,14 @@ Token[] lex(S)(S input)
             pushToken(Tok.symbol);
         else if (state == State.integer)
             pushToken(Tok.integer);
+        else if (state == State.supinteger)
+            pushToken(Tok.supinteger);
     }
     
     while (!input.empty)
     {
         auto cur = input.front;
-        auto len = cur.codeLength!char;
+        auto len = cur.codeLength!C;
         switch (cur)
         {
             case ' ':
@@ -371,12 +412,15 @@ Token[] lex(S)(S input)
                 
             case '*':
             case '.':
+            case '⋅':
+            case '×':
                 push();
                 j += len;
                 pushToken(Tok.mul);
                 break;
                 
             case '/':
+            case '÷':
                 push();
                 j += len;
                 pushToken(Tok.div);
@@ -390,14 +434,33 @@ Token[] lex(S)(S input)
                 
             case '0': .. case '9':
             case '-':
-                if (state == State.symbol)
+            case '+':
+                if (state != State.integer)
                     push();
                 state = State.integer;
                 j += len;
                 break;
                 
+            case '⁰':
+            case '¹':
+            case '²':
+            case '³':
+            case '⁴':
+            case '⁵':
+            case '⁶':
+            case '⁷':
+            case '⁸':
+            case '⁹':
+            case '⁻':
+            case '⁺':
+                if (state != State.supinteger)
+                    push();
+                state = State.supinteger;
+                j += len;
+                break;
+
             default:
-                if (state == State.integer)
+                if (state == State.integer || state == State.supinteger)
                     push();
                 state = State.symbol;
                 j += len;

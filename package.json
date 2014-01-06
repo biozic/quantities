@@ -14,7 +14,7 @@
             "name": "tests",
             "targetType": "library",
             "mainSourceFile": "tests/tests.d",
-            "versions": ["_SynopsisUnittest"],
+            "versions": ["SynopsisUnittest"],
             "dependencies" : {
                 "tested": "~master"
             }
