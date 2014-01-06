@@ -312,7 +312,7 @@ unittest
 
     import std.exception;
     assertThrown!DimensionException(m = parseQuantity!Mass("10 ml"));
-    assertThrown!ParseException(m = parseQuantity!Mass("10 qGz"));
+    assertThrown!ParsingException(m = parseQuantity!Mass("10 qGz"));
 }
 
 /// Checks that type T is an instance of the template Quantity
@@ -676,6 +676,7 @@ unittest
 /++
 This struct represents the dimensions of a quantity/unit.
 +/
+// TODO: purify, nothrowify and @safify where possible/necessary
 struct Dimensions
 {
     private static struct Dim

@@ -1,13 +1,84 @@
 // Written in the D programming language
 /++
-This module defines functions to parse units and quantities.
+This module defines functions to parse units and quantities. The text
+input is parsed according to the following grammar. For example:
+$(DL
+$(DT Prefixes and unit symbols must be joined:)
+    $(DD "1 mm" = 1 millimeter)
+    $(DD "1 m m" = 1 square meter)
+$(BR)
+$(DT Standalone units are preferred over prefixed ones:)
+    $(DD "1 cd" = 1 candela, not 1 centiday)
+$(BR)
+$(DT Powers of units:)
+    $(DD "1 m^2")
+    $(DD "1 m²" $(I (superscript integer)))
+$(BR)
+$(DT Multiplication of to units:)
+    $(DD "1 N m" $(I (whitespace)))
+    $(DD "1 N . m")
+    $(DD "1 N ⋅ m" $(I (centered dot)))
+    $(DD "1 N * m")
+    $(DD "1 N × m" $(I (times sign)))
+$(BR)
+$(DT Division of to units:)
+    $(DD "1 mol / s")
+    $(DD "1 mol ÷ s")
+$(BR)
+$(DT Grouping of units with parentheses:)
+    $(DD "1 kg/(m.s^2)" = 1 kg m⁻¹ s⁻²)
+)
+
+Grammar: (whitespace not significant)
+$(DL
+$(DT Quantity:)
+    $(DD Units)
+    $(DD Number Units)
+$(BR)
+$(DT Number:)
+    $(DD $(I Numeric value parsed by std.conv.parse!real))
+$(BR)
+$(DT Units:)
+    $(DD Unit)
+    $(DD Unit Units)
+    $(DD Unit Operator Units)
+$(BR)
+$(DT Operator:)
+    $(DD $(B *))
+    $(DD $(B .))
+    $(DD $(B ⋅))
+    $(DD $(B ×))
+    $(DD $(B /))
+    $(DD $(B ÷))
+$(BR)
+$(DT Unit:)
+    $(DD Base)
+    $(DD Base $(B ^) Integer)
+    $(DD Base SupInteger)
+$(BR)
+$(DT Base:)
+    $(DD Symbol)
+    $(DD Prefix Symbol)
+    $(DD $(B $(LPAREN)) Units $(B $(RPAREN)))
+$(BR)
+$(DT Symbol:)
+    $(DD $(I The symbol of a valid unit))
+$(BR)
+$(DT Prefix:)
+    $(DD $(I The symbol of a valid prefix))
+$(BR)
+$(DT Integer:)
+    $(DD $(I Integer value parsed by std.conv.parse!int))
+$(BR)
+$(DT SupInteger:)
+    $(DD $(I Superscript version of Integer))
+)
 
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-// TODO: Show 'grammar'
 module quantities.parsing;
 
 import quantities.base;
@@ -21,16 +92,33 @@ import std.string;
 import std.traits;
 import std.utf;
 
+// TODO: Merge parseUnit and parseQuantiy: make the scalar value optional (defaults to 1)
 // TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
-// TODO: Parse space between two units as a multiplication mark
-// TODO: Add possibility to add user-defined units in the parser
-// TODO: Add conversion functions from parsed quantities and units.
+// TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available
+// TODO: Make the runtime quantities available to the user
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
 
 version (unittest)
     import std.math : approxEqual;
+
+@name(moduleName!parseRTQuantity ~ " header examples")
+unittest
+{
+    assert(parseRTQuantity("1 N m") == RT.joule);
+    assert(parseRTQuantity("1 N.m") == RT.joule);
+    assert(parseRTQuantity("1 N⋅m") == RT.joule);
+    assert(parseRTQuantity("1 N * m") == RT.joule);
+    assert(parseRTQuantity("1 N × m") == RT.joule);
+
+    assert(parseRTQuantity("1 mol s^-1") == RT.katal);
+    assert(parseRTQuantity("1 mol s⁻¹") == RT.katal);
+    assert(parseRTQuantity("1 mol/s") == RT.katal);
+
+    assert(parseRTQuantity("1 kg m^-1 s^-2") == RT.pascal);
+    assert(parseRTQuantity("1 kg/(m s^2)") == RT.pascal);
+}
 
 /// Parses the text for a quantity (with a numerical value) at runtime.
 auto parseQuantity(alias Q, N = double, S)(S text)
@@ -41,7 +129,7 @@ auto parseQuantity(alias Q, N = double, S)(S text)
     return Quantity!(Q.dimensions, N)(quant.rawValue);
 }
 ///
-@name("Parsing quantities")
+@name(fullyQualifiedName!parseQuantity)
 unittest
 {
     alias Concentration = Store!(mole/cubic!meter);
@@ -62,7 +150,7 @@ auto parseUnit(alias Q, N = double, S)(S text)
     return parseQuantity!(Q, N)("1" ~ text);
 }
 ///
-@name("Parsing units")
+@name(fullyQualifiedName!parseUnit)
 unittest
 {
     alias Concentration = Store!(mole/cubic!meter);
@@ -94,7 +182,7 @@ real convert(S, U)(S from, U target)
     return base.value(unit);
 }
 ///
-@name("Convert")
+@name(fullyQualifiedName!convert)
 unittest
 {
     auto k = convert("3 min", "s");
@@ -102,7 +190,7 @@ unittest
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
-class ParseException : Exception
+class ParsingException : Exception
 {
     @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
@@ -117,7 +205,7 @@ class ParseException : Exception
 
 package:
 
-//debug import std.stdio;
+debug import std.stdio;
 
 RTQuantity parseRTQuantity(S)(S text)
     if (isSomeString!S)
@@ -130,13 +218,13 @@ RTQuantity parseRTQuantity(S)(S text)
     return value * parseCompoundUnit(tokens);
 }
 
-@name("Parsing a quantity into RTQuantity")
+@name(fullyQualifiedName!parseRTQuantity)
 unittest
 {
     import std.math : approxEqual;
 
-    assertThrown!ParseException(parseRTQuantity("1 µ m"));
-    assertThrown!ParseException(parseRTQuantity("1 µ"));
+    assertThrown!ParsingException(parseRTQuantity("1 µ m"));
+    assertThrown!ParsingException(parseRTQuantity("1 µ"));
 
     string test = "1    m    ";
     assert(parseRTQuantity(test) == RT.meter);
@@ -150,14 +238,15 @@ unittest
     assert(parseRTQuantity("1 ((m)^-1)^-1") == RT.meter);
 
     assert(parseRTQuantity("1 m * m") == square(RT.meter));
+    assert(parseRTQuantity("1 m m") == square(RT.meter));
     assert(parseRTQuantity("1 m . m") == square(RT.meter));
     assert(parseRTQuantity("1 m ⋅ m") == square(RT.meter));
     assert(parseRTQuantity("1 m × m") == square(RT.meter));
     assert(parseRTQuantity("1 m / m") == RT.meter / RT.meter);
     assert(parseRTQuantity("1 m ÷ m") == RT.meter / RT.meter);
 
-    assert(parseRTQuantity("1 N.m") == RT.newton * RT.meter);
-    // assert(parseRTQuantity("1 N m") == RT.newton * RT.meter);
+    assert(parseRTQuantity("1 N.m") == (RT.newton * RT.meter));
+    assert(parseRTQuantity("1 N m") == (RT.newton * RT.meter));
     
     assert(approxEqual(parseRTQuantity("6.3 L.mmol^-1.cm^-1").value(square(RT.meter)/RT.mole), 630));
     assert(approxEqual(parseRTQuantity("6.3 L/(mmol*cm)").value(square(RT.meter)/RT.mole), 630));
@@ -167,14 +256,19 @@ unittest
 
 package:
 
-void advance(ref Token[] tokens)
+void advance(Types...)(ref Token[] tokens, Types types)
 {
-    enforceEx!ParseException(tokens.length, "Unexpected end of input");
+    enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
     tokens.popFront();
+    if (Types.length)
+        check(tokens, types);
 }
 
-bool check(Types...)(Token token, Types types)
+void check(Types...)(Token[] tokens, Types types)
 {
+    enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
+    auto token = tokens.front;
+
     bool ok = false;
     Tok[] valid = [types];
     foreach (type; types)
@@ -186,56 +280,92 @@ bool check(Types...)(Token token, Types types)
         }
     }
     import std.string : format;
-    enforceEx!ParseException(ok, valid.length > 1 
+    enforceEx!ParsingException(ok, valid.length > 1 
         ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
         : format("Found '%s' while expecting %s", token.slice, valid.front)
     );
-    return ok;
 }
 
-RTQuantity parseCompoundUnit(ref Token[] tokens)
+RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
+    if (is(T == Token))
 {
     //debug writeln(__FUNCTION__);
 
     RTQuantity ret = parseExponentUnit(tokens);
-    while (tokens.length)
-    {
-        auto op = tokens.front;
-        if (op.type != Tok.mul && op.type != Tok.div)
+    if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
+        return ret;
+
+    do {
+        auto cur = tokens.front;
+
+        bool multiply = true;
+        if (cur.type == Tok.div)
+            multiply = false;
+
+        if (cur.type == Tok.mul || cur.type == Tok.div)
+        {
+            tokens.advance();
+            cur = tokens.front;
+        }
+
+        RTQuantity rhs = parseExponentUnit(tokens);
+        ret.resetTo(multiply ? (ret * rhs) : (ret / rhs));
+
+        if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             break;
 
-        tokens.advance();
-        RTQuantity rhs = parseExponentUnit(tokens);
-        if (op.type == Tok.mul)
-            ret.resetTo(ret * rhs);
-        else if (op.type == Tok.div)
-            ret.resetTo(ret / rhs);
-    }
+        cur = tokens.front;
+    } 
+    while (!tokens.empty);
+
     return ret;
 }
+@name(fullyQualifiedName!parseCompoundUnit)
+unittest
+{
+    assert(parseCompoundUnit(lex("m * m")) == square(RT.meter));
+    assert(parseCompoundUnit(lex("m m")) == square(RT.meter));
+    assert(parseCompoundUnit(lex("m * m / m")) == RT.meter);
+    assertThrown!ParsingException(parseCompoundUnit(lex("m ) m")));
+    assertThrown!ParsingException(parseCompoundUnit(lex("m * m) m")));
+}
 
-RTQuantity parseExponentUnit(ref Token[] tokens)
+RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
+    if (is(T == Token))
 {
     //debug writeln(__FUNCTION__);
 
     RTQuantity ret = parseUnit(tokens);
-    if (tokens.length && (tokens.front.type == Tok.exp
-                          || tokens.front.type == Tok.supinteger))
-    {
-        if (tokens.front.type == Tok.exp)
-            tokens.advance();
-        int n = parseInteger(tokens);
-        ret.resetTo(pow(ret, n));
-    }
+
+    if (tokens.empty)
+        return ret;
+
+    auto next = tokens.front;
+    if (next.type != Tok.exp && next.type != Tok.supinteger)
+        return ret;
+
+    if (next.type == Tok.exp)
+        tokens.advance(Tok.integer);
+
+    int n = parseInteger(tokens);
+    ret.resetTo(pow(ret, n));
     return ret;
 }
+@name(fullyQualifiedName!parseExponentUnit)
+unittest
+{
+    assert(parseExponentUnit(lex("m²")) == square(RT.meter));
+    assert(parseExponentUnit(lex("m^2")) == square(RT.meter));
+    assertThrown!ParsingException(parseExponentUnit(lex("m^²")));
+}
 
-int parseInteger(ref Token[] tokens)
+int parseInteger(T)(auto ref T[] tokens)
+    if (is(T == Token))
 {
     //debug writeln(__FUNCTION__);
 
+    tokens.check(Tok.integer, Tok.supinteger);
     auto i = tokens.front;
-    i.check(Tok.integer, Tok.supinteger);
     auto slice = i.slice;
     if (i.type == Tok.supinteger)
     {
@@ -255,12 +385,22 @@ int parseInteger(ref Token[] tokens)
         ]);
     }
     auto n = std.conv.parse!int(slice);
+    enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
+
     if (tokens.length)
         tokens.advance();
     return n;
 }
+@name(fullyQualifiedName!parseInteger)
+unittest
+{
+    assert(parseInteger(lex("-123")) == -123);
+    assert(parseInteger(lex("⁻¹²³")) == -123);
+    assertThrown!ParsingException(parseInteger(lex("1-⁺⁵")));
+}
 
-RTQuantity parseUnit(ref Token[] tokens)
+RTQuantity parseUnit(T)(auto ref T[] tokens)
+    if (is(T == Token))
 {
     //debug writeln(__FUNCTION__);
 
@@ -269,8 +409,8 @@ RTQuantity parseUnit(ref Token[] tokens)
     if (tokens.front.type == Tok.lparen)
     {
         tokens.advance();
-        ret = parseCompoundUnit(tokens);
-        tokens.front.check(Tok.rparen);
+        ret = parseCompoundUnit(tokens, true);
+        tokens.check(Tok.rparen);
         tokens.advance();
     }
     else
@@ -278,57 +418,63 @@ RTQuantity parseUnit(ref Token[] tokens)
 
     return ret;
 }
+@name(fullyQualifiedName!parseUnit)
+unittest
+{
+    assert(parseUnit(lex("(m)")) == RT.meter);
+    assertThrown!ParsingException(parseUnit(lex("(m")));
+}
 
-RTQuantity parsePrefixUnit(ref Token[] tokens)
+RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
+    if (is(T == Token))
 {
     // debug writeln(__FUNCTION__);
 
-    RTQuantity ret;
-
-    tokens.front.check(Tok.symbol);
+    tokens.check(Tok.symbol);
     auto str = tokens.front.slice;
     if (tokens.length)
         tokens.advance();
-    
-    // Special cases where a prefix starts like a unit
-    if (str == "m")
-        return RT.meter;
-    if (str == "cd")
-        return RT.candela;
-    if (str == "mol")
-        return RT.mole;
-    if (str == "Pa")
-        return RT.pascal;
-    if (str == "T")
-        return RT.tesla;
-    if (str == "Gy")
-        return RT.gray;
-    if (str == "kat")
-        return RT.katal;
-    if (str == "h")
-        return RT.hour;
-    if (str == "d")
-        return RT.day;
-    if (str == "min")
-        return RT.minute;
-    
-    string prefix = str.takeExactly(1).to!string;
-    assert(prefix.length, "Prefix with no length");
-    auto factor = prefix in RT.SIPrefixSymbols;
-    if (factor)
-    {
-        string unit = str.dropOne.to!string;
-        enforceEx!ParseException(unit.length, "Expecting a unit after the prefix " ~ prefix);
-        return *factor * parseSymbol(unit);
+
+    try
+    {   
+        // Try a standalone unit symbol (no prefix)
+        return parseUnitSymbol(str);
     }
-    else
-        return parseSymbol(str);
+    catch (ParsingException e)
+    {
+        // Try with a prefix
+        string prefix = str.takeExactly(1).to!string;
+        assert(prefix.length, "Prefix with no length");
+        auto factor = prefix in RT.SIPrefixSymbols;
+        if (factor)
+        {
+            string unit = str.dropOne.to!string;
+            enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
+            return *factor * parseUnitSymbol(unit);
+        }
+        else
+            return parseUnitSymbol(str);
+    }
+}
+@name(fullyQualifiedName!parsePrefixUnit)
+unittest
+{
+    assert(parsePrefixUnit(lex("mm")) == 1e-3 * RT.meter);
+    assert(parsePrefixUnit(lex("cd")) == RT.candela);
+    assertThrown!ParsingException(parsePrefixUnit(lex("Lm")));
 }
 
-RTQuantity parseSymbol(string str)
+RTQuantity parseUnitSymbol(string str)
 {
     assert(str.length, "Symbol with no length");
-    return *enforceEx!ParseException(str in RT.SIUnitSymbols, "Unknown unit symbol: " ~ str);
+    return *enforceEx!ParsingException(str in RT.SIUnitSymbols, "Unknown unit symbol: " ~ str);
+}
+@name(fullyQualifiedName!parseUnitSymbol)
+unittest
+{
+    assert(parseUnitSymbol("m") == RT.meter);
+    assert(parseUnitSymbol("K") == RT.kelvin);
+    assertThrown!ParsingException(parseUnitSymbol("jZ"));
 }
 
 enum Tok
