@@ -11,6 +11,7 @@ module quantities._impl;
 
 import quantities.base : Dimensions;
 import quantities.si : SI;
+import quantities.parsing : DimensionException;
 import std.exception;
 
 version (unittest)
@@ -18,19 +19,6 @@ version (unittest)
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
-
-class DimensionException : Exception
-{
-    @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-    {
-        super(msg, file, line, next);
-    }
-    
-    @safe pure nothrow this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line, next);
-    }
-}
 
 package:
 

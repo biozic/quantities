@@ -84,7 +84,6 @@ module quantities.parsing;
 import quantities.base;
 import quantities.si;
 import quantities._impl;
-public import quantities._impl : DimensionException;
 import std.conv;
 import std.exception;
 import std.range;
@@ -191,6 +190,20 @@ unittest
 
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
+{
+    @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
+    {
+        super(msg, file, line, next);
+    }
+    
+    @safe pure nothrow this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line, next);
+    }
+}
+
+/// Exception thrown when operating on two units that are not interconvertible.
+class DimensionException : Exception
 {
     @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {

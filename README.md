@@ -65,13 +65,13 @@ auto conc = 2.5 * gram/liter;
 auto volume = 10 * milli!liter;
 // What mass should I weigh?
 auto mass = conc * volume;
-writefln("Weigh %f kg of substance", mass.value!kilogram); 
+writefln("Weigh %f kg of substance", mass.value(kilogram)); 
 // prints: Weigh 0.000025 kg of substance
 // Wait! My scales graduations are 0.1 milligrams!
-writefln("Weigh %.1f mg of substance", mass.value!(milli!gram));
+writefln("Weigh %.1f mg of substance", mass.value(milli!gram));
 // prints: Weigh 25.0 mg of substance
 // I knew the result would be 25 mg.
-assert(approxEqual(mass.value!(milli!gram), 25));
+assert(approxEqual(mass.value(milli!gram), 25));
 
 // Optional: we could have defined new types to hold our quantities
 alias Mass = Store!kilogram; // Using a SI base unit.
@@ -81,16 +81,16 @@ alias Concentration = Store!(kilogram/liter); // Using a derived unit.
 auto speedMPH = 30 * mile/hour;
 writefln("The speed limit is %s", speedMPH);
 // prints: The speed limit is 13.4083[s^-1 m]
-writefln("The speed limit is %.0f km/h", speedMPH.value!(kilo!meter/hour));
+writefln("The speed limit is %.0f km/h", speedMPH.value(kilo!meter/hour));
 // prints: The speed limit is 48 km/h
-writefln("The speed limit is %.0f in/s", speedMPH.value!(inch/second));
+writefln("The speed limit is %.0f in/s", speedMPH.value(inch/second));
 // prints: The speed limit is 528 in/s
 
 auto wage = 65 * euro / hour;
 auto workTime = 1.6 * day;
 writefln("I've just earned %s!", wage * workTime);
 // prints: I've just earned 2496[€]!
-writefln("I've just earned $ %.2f!", (wage * workTime).value!dollar);
+writefln("I've just earned $ %.2f!", (wage * workTime).value(dollar));
 // prints: I've just earned $ 3369.60!
 
 // Type checking prevents incorrect assignments and operations
@@ -108,5 +108,5 @@ assert(c == m / V);
 
 import std.exception;
 assertThrown!DimensionException(m = parseQuantity!Mass("10 ml"));
-assertThrown!ParseException(m = parseQuantity!Mass("10 qGz"));
+assertThrown!ParsingException(m = parseQuantity!Mass("10 qGz"));
 ```
