@@ -101,10 +101,12 @@ static assert(!__traits(compiles, conc = 1 * euro/volume));
 // Parsing quantities at runtime
 // -----------------------------
 
-auto m = parseQuantity!Mass("25 mg");
-auto V = parseQuantity!Volume("10 ml");
-auto c = parseQuantity!Concentration("2.5 g⋅L⁻¹");
+Mass m = parseQuantity("25 mg");
+Volume V = parseQuantity("10 ml");
+Concentration c = parseQuantity("2.5 g⋅L⁻¹");
 assert(c == m / V);
+Concentration target = parseQuantity("kg/l");
+assert(c.value(target) == 0.0025);
 
 import std.exception;
 assertThrown!DimensionException(m = parseQuantity!Mass("10 ml"));

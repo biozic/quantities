@@ -9,12 +9,16 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
-import std.traits : isFloatingPoint, isNumeric, Unqual;
+import std.exception;
+import std.traits;
+import quantities._impl;
+import quantities.parsing : DimensionException;
 
 version (unittest)
 {
     import std.math : approxEqual;
-    import quantities.si, quantities.parsing;
+    import quantities.si;
+    import quantities.parsing;
 }
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -37,7 +41,7 @@ struct Quantity(alias dim, N = double)
 {
     /// The dimensions of the quantity.
     alias dimensions = dim;
-    static assert(is(typeof(dim) == Dimensions));
+    static assert(is(typeof(dim) : Dimensions));
     static assert(dim != Dimensions.init, "Use a built-in numeric type for dimensionless quantities.");
 
     /// The type of the underlying scalar value.
@@ -47,7 +51,7 @@ struct Quantity(alias dim, N = double)
     /// The payload
     private N _value;
 
-    private static string dimerror(Dimensions d)
+    private static string dimerror(const(Dimensions) d)
     {
         import std.string;
         return format("Dimension error: %s is not compatible with %s", d.toString, dim.toString);
@@ -60,13 +64,21 @@ struct Quantity(alias dim, N = double)
         static assert(T.dimensions == dim, dimerror(T.dimensions));
         _value = other._value;
     }
-
-    // Creates a unit from a raw numeric value
+    
+    // Creates a new quantity from a raw numeric value
     package this(T)(T value)
         if (isNumeric!T)
     {
         _value = value;
     }    
+
+    // Creates a new quantity from a RTQuantity
+    this(T)(T other)
+        if (is(T : RTQuantity))
+    {
+        enforceEx!DimensionException(other.dimensions == dimensions, dimerror(other.dimensions));
+        _value = other.rawValue;
+    }
 
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
@@ -104,6 +116,13 @@ struct Quantity(alias dim, N = double)
     {
         static assert(T.dimensions == dim, dimerror(T.dimensions));
         _value = other._value;
+    }
+    
+    void opAssign(T)(T other)
+        if (is(T : RTQuantity))
+    {
+        enforceEx!DimensionException(other.dimensions == dimensions, dimerror(other.dimensions));
+        _value = other.rawValue;
     }
 
     auto opUnary(string op)() const
@@ -305,14 +324,16 @@ unittest
     // Parsing quantities at runtime
     // -----------------------------
 
-    auto m = parseQuantity!Mass("25 mg");
-    auto V = parseQuantity!Volume("10 ml");
-    auto c = parseQuantity!Concentration("2.5 g⋅L⁻¹");
+    Mass m = parseQuantity("25 mg");
+    Volume V = parseQuantity("10 ml");
+    Concentration c = parseQuantity("2.5 g⋅L⁻¹");
     assert(c == m / V);
+    Concentration target = parseQuantity("kg/l");
+    assert(c.value(target) == 0.0025);
 
     import std.exception;
-    assertThrown!DimensionException(m = parseQuantity!Mass("10 ml"));
-    assertThrown!ParsingException(m = parseQuantity!Mass("10 qGz"));
+    assertThrown!DimensionException(m = parseQuantity("10 ml"));
+    assertThrown!ParsingException(m = parseQuantity("10 qGz"));
 }
 
 /// Checks that type T is an instance of the template Quantity

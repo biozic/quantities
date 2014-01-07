@@ -42,6 +42,11 @@ struct RTQuantity
         _initialized = true;
     }
 
+    @property immutable(Dimensions) dimensions() const
+    {
+        return _dimensions;
+    }
+
     @property real rawValue() const
     {
         return _value;

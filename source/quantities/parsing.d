@@ -91,7 +91,6 @@ import std.string;
 import std.traits;
 import std.utf;
 
-// TODO: Merge parseUnit and parseQuantiy: make the scalar value optional (defaults to 1)
 // TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
 // TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available
 // TODO: Make the runtime quantities available to the user
@@ -102,30 +101,22 @@ else private struct name { string dummy; }
 version (unittest)
     import std.math : approxEqual;
 
-@name(moduleName!parseRTQuantity ~ " header examples")
-unittest
-{
-    assert(parseRTQuantity("1 N m") == RT.joule);
-    assert(parseRTQuantity("1 N.m") == RT.joule);
-    assert(parseRTQuantity("1 N⋅m") == RT.joule);
-    assert(parseRTQuantity("1 N * m") == RT.joule);
-    assert(parseRTQuantity("1 N × m") == RT.joule);
+debug import std.stdio;
 
-    assert(parseRTQuantity("1 mol s^-1") == RT.katal);
-    assert(parseRTQuantity("1 mol s⁻¹") == RT.katal);
-    assert(parseRTQuantity("1 mol/s") == RT.katal);
-
-    assert(parseRTQuantity("1 kg m^-1 s^-2") == RT.pascal);
-    assert(parseRTQuantity("1 kg/(m s^2)") == RT.pascal);
-}
-
-/// Parses the text for a quantity (with a numerical value) at runtime.
-auto parseQuantity(alias Q, N = double, S)(S text)
+/// Parses text for a unit or a quantity (with a numerical value) at runtime.
+RTQuantity parseQuantity(S)(S text)
     if (isSomeString!S)
 {
-    RTQuantity quant = parseRTQuantity(text);
-    quant.checkDim(Q.dimensions);
-    return Quantity!(Q.dimensions, N)(quant.rawValue);
+    real value = 1;
+    try
+        value = std.conv.parse!real(text);
+    catch {}
+ 
+    if (text.empty)
+        return RTQuantity(Dimensions.init, value);
+
+    auto tokens = lex(text);
+    return value * parseCompoundUnit(tokens);
 }
 ///
 @name(fullyQualifiedName!parseQuantity)
@@ -134,34 +125,69 @@ unittest
     alias Concentration = Store!(mole/cubic!meter);
     
     // Parse a concentration value
-    auto c = parseQuantity!Concentration("11.2 µmol/L");
+    Concentration c = parseQuantity("11.2 µmol/L");
     assert(approxEqual(c.value(nano!mole/liter), 11200));
     
     // Below, 'second' is only a hint for dimensional analysis
-    auto t = parseQuantity!second("1 min");
-    assert(t == 1 * minute);
+    Store!second t = parseQuantity("90 min");
+    assert(t == 90 * minute);
+
+    // Below, 'second' is only a hint for dimensional analysis
+    t = parseQuantity("h");
+    assert(t == 1 * hour);
 }
 
-/// Parses the text for a quantity (with a numerical value) at runtime.
-auto parseUnit(alias Q, N = double, S)(S text)
-    if (isSomeString!S)
-{
-    return parseQuantity!(Q, N)("1" ~ text);
-}
-///
-@name(fullyQualifiedName!parseUnit)
+@name(moduleName!parseQuantity ~ " header examples")
 unittest
 {
-    alias Concentration = Store!(mole/cubic!meter);
+    assert(parseQuantity("1 N m") == RT.joule);
+    assert(parseQuantity("1 N.m") == RT.joule);
+    assert(parseQuantity("1 N⋅m") == RT.joule);
+    assert(parseQuantity("1 N * m") == RT.joule);
+    assert(parseQuantity("1 N × m") == RT.joule);
+    
+    assert(parseQuantity("1 mol s^-1") == RT.katal);
+    assert(parseQuantity("1 mol s⁻¹") == RT.katal);
+    assert(parseQuantity("1 mol/s") == RT.katal);
+    
+    assert(parseQuantity("1 kg m^-1 s^-2") == RT.pascal);
+    assert(parseQuantity("1 kg/(m s^2)") == RT.pascal);
+}
 
-    // Parse a concentration value
-    auto c = parseQuantity!Concentration("11.2 µmol/L"d);
-
-    // Parse a unit
-    auto u = parseUnit!Concentration("mol/cm³");
-
-    // Convert
-    assert(approxEqual(c.value(u), 1.12e-8));
+@name(fullyQualifiedName!parseQuantity)
+unittest
+{
+    import std.math : approxEqual;
+    
+    assertThrown!ParsingException(parseQuantity("1 µ m"));
+    assertThrown!ParsingException(parseQuantity("1 µ"));
+    
+    string test = "1    m    ";
+    assert(parseQuantity(test) == RT.meter);
+    assert(parseQuantity("1 µm") == 1e-6 * RT.meter);
+    
+    assert(parseQuantity("1 m^-1") == 1 / RT.meter);
+    assert(parseQuantity("1 m²") == square(RT.meter));
+    assert(parseQuantity("1 m⁻¹") == 1 / RT.meter);
+    assert(parseQuantity("1 (m)") == RT.meter);
+    assert(parseQuantity("1 (m^-1)") == 1 / RT.meter);
+    assert(parseQuantity("1 ((m)^-1)^-1") == RT.meter);
+    
+    assert(parseQuantity("1 m * m") == square(RT.meter));
+    assert(parseQuantity("1 m m") == square(RT.meter));
+    assert(parseQuantity("1 m . m") == square(RT.meter));
+    assert(parseQuantity("1 m ⋅ m") == square(RT.meter));
+    assert(parseQuantity("1 m × m") == square(RT.meter));
+    assert(parseQuantity("1 m / m") == RT.meter / RT.meter);
+    assert(parseQuantity("1 m ÷ m") == RT.meter / RT.meter);
+    
+    assert(parseQuantity("1 N.m") == (RT.newton * RT.meter));
+    assert(parseQuantity("1 N m") == (RT.newton * RT.meter));
+    
+    assert(approxEqual(parseQuantity("6.3 L.mmol^-1.cm^-1").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L/(mmol*cm)").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L*(mmol*cm)^-1").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L/mmol/cm").value(square(RT.meter)/RT.mole), 630));
 }
 
 /++
@@ -176,8 +202,8 @@ Returns:
 real convert(S, U)(S from, U target)
     if (isSomeString!S && isSomeString!U)
 {
-    RTQuantity base = parseRTQuantity(from);
-    RTQuantity unit = parseRTQuantity("1" ~ target);
+    RTQuantity base = parseQuantity(from);
+    RTQuantity unit = parseQuantity("1" ~ target);
     return base.value(unit);
 }
 ///
@@ -218,57 +244,6 @@ class DimensionException : Exception
 
 package:
 
-debug import std.stdio;
-
-RTQuantity parseRTQuantity(S)(S text)
-    if (isSomeString!S)
-{
-    auto value = std.conv.parse!real(text);
-    if (!text.length)
-        return RTQuantity(Dimensions.init, value);
-    auto tokens = lex(text);
-    //debug writeln(tokens);
-    return value * parseCompoundUnit(tokens);
-}
-
-@name(fullyQualifiedName!parseRTQuantity)
-unittest
-{
-    import std.math : approxEqual;
-
-    assertThrown!ParsingException(parseRTQuantity("1 µ m"));
-    assertThrown!ParsingException(parseRTQuantity("1 µ"));
-
-    string test = "1    m    ";
-    assert(parseRTQuantity(test) == RT.meter);
-    assert(parseRTQuantity("1 µm") == 1e-6 * RT.meter);
-
-    assert(parseRTQuantity("1 m^-1") == 1 / RT.meter);
-    assert(parseRTQuantity("1 m²") == square(RT.meter));
-    assert(parseRTQuantity("1 m⁻¹") == 1 / RT.meter);
-    assert(parseRTQuantity("1 (m)") == RT.meter);
-    assert(parseRTQuantity("1 (m^-1)") == 1 / RT.meter);
-    assert(parseRTQuantity("1 ((m)^-1)^-1") == RT.meter);
-
-    assert(parseRTQuantity("1 m * m") == square(RT.meter));
-    assert(parseRTQuantity("1 m m") == square(RT.meter));
-    assert(parseRTQuantity("1 m . m") == square(RT.meter));
-    assert(parseRTQuantity("1 m ⋅ m") == square(RT.meter));
-    assert(parseRTQuantity("1 m × m") == square(RT.meter));
-    assert(parseRTQuantity("1 m / m") == RT.meter / RT.meter);
-    assert(parseRTQuantity("1 m ÷ m") == RT.meter / RT.meter);
-
-    assert(parseRTQuantity("1 N.m") == (RT.newton * RT.meter));
-    assert(parseRTQuantity("1 N m") == (RT.newton * RT.meter));
-    
-    assert(approxEqual(parseRTQuantity("6.3 L.mmol^-1.cm^-1").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseRTQuantity("6.3 L/(mmol*cm)").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseRTQuantity("6.3 L*(mmol*cm)^-1").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseRTQuantity("6.3 L/mmol/cm").value(square(RT.meter)/RT.mole), 630));
-}
-
-package:
-
 void advance(Types...)(ref Token[] tokens, Types types)
 {
     enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
@@ -300,7 +275,7 @@ void check(Types...)(Token[] tokens, Types types)
 }
 
 RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
-    if (is(T == Token))
+    if (is(T : Token))
 {
     //debug writeln(__FUNCTION__);
 
@@ -344,7 +319,7 @@ unittest
 }
 
 RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
-    if (is(T == Token))
+    if (is(T : Token))
 {
     //debug writeln(__FUNCTION__);
 
@@ -373,7 +348,7 @@ unittest
 }
 
 int parseInteger(T)(auto ref T[] tokens)
-    if (is(T == Token))
+    if (is(T : Token))
 {
     //debug writeln(__FUNCTION__);
 
@@ -413,7 +388,7 @@ unittest
 }
 
 RTQuantity parseUnit(T)(auto ref T[] tokens)
-    if (is(T == Token))
+    if (is(T : Token))
 {
     //debug writeln(__FUNCTION__);
 
@@ -439,7 +414,7 @@ unittest
 }
 
 RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
-    if (is(T == Token))
+    if (is(T : Token))
 {
     // debug writeln(__FUNCTION__);
 

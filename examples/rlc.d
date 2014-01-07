@@ -1,26 +1,26 @@
 import quantities;
 import std.stdio;
 
-auto freq(Inductance, Capacity)(Inductance L, Capacity C)
+alias Frequency = Store!hertz;
+alias Inductance = Store!henry;
+alias Capacity = Store!farad;
+alias Resistance = Store!ohm;
+
+auto freq(Inductance L, Capacity C)
 {
     return sqrt(1 / (L * C)) / (2 * PI * radian);
 }
 
-auto quality(Inductance, Resistance, Frequency)(Inductance L, Resistance R, Frequency F)
+auto quality(Inductance L, Resistance R, Frequency F)
 {
     return R / (L * F * 2 * PI * radian);
 }
 
 void main()
 {
-    alias Frequency = Store!hertz;
-    alias Inductance = Store!henry;
-    alias Capacity = Store!farad;
-    alias Resistance = Store!ohm;
-    
-    auto L = parseQuantity!Inductance("10 mH");
-    auto C = parseQuantity!Capacity("62.5 nF");
-    auto R = parseQuantity!Resistance("100 kΩ");
+    Inductance L = parseQuantity("10 mH");
+    Capacity C = parseQuantity("62.5 nF");
+    Resistance R = parseQuantity("100 kΩ");
     auto w0 = freq(L, C);
     auto q = quality(L, R, w0);
     
