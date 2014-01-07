@@ -48,10 +48,11 @@ enum mile = 1609 * meter;
 enum euro = unit!("currency", "€");
 enum dollar = euro / 1.35;
 
-writeln(meter);  // prints: 1[m]
-writeln(inch);   // prints: 0.0254[m]
-writeln(dollar); // prints: 0.740741[€]
-writeln(volt);   // prints: 1[kg^-1 s^-3 m^2 A^-1]
+// Default string representations
+writeln(meter);  // prints: 1 m
+writeln(inch);   // prints: 0.0254 m
+writeln(dollar); // prints: 0.740741 €
+writeln(volt);   // prints: 1 kg^-1 s^-3 m^2 A^-1 
 
 // -----------------------
 // Working with quantities

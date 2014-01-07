@@ -246,7 +246,7 @@ struct Quantity(alias dim, N = double)
     void toString(scope void delegate(const(char)[]) sink) const
     {
         import std.format;
-        formattedWrite(sink, "%s", _value);
+        formattedWrite(sink, "%s ", _value);
         sink(dimensions.toString);
     }
 }
@@ -271,10 +271,11 @@ unittest
     enum euro = unit!("currency", "€");
     enum dollar = euro / 1.35;
 
-    writeln(meter);  // prints: 1[m]
-    writeln(inch);   // prints: 0.0254[m]
-    writeln(dollar); // prints: 0.740741[€]
-    writeln(volt);   // prints: 1[kg^-1 s^-3 m^2 A^-1]
+    // Default string representations
+    writeln(meter);  // prints: 1 m
+    writeln(inch);   // prints: 0.0254 m
+    writeln(dollar); // prints: 0.740741 €
+    writeln(volt);   // prints: 1 kg^-1 s^-3 m^2 A^-1 
 
     // -----------------------
     // Working with quantities
@@ -821,9 +822,9 @@ struct Dimensions
         
         string result = dimstrs.filter!"a !is null".join(" ");
         if (!result.length)
-            result = "scalar";
+            return "(scalar)";
         
-        return "[" ~ result ~ "]";
+        return result;
     }
 }
 
@@ -847,15 +848,15 @@ unittest
     static assert(i == test * 2);
     enum j = test - test;
     static assert(j.empty);
-    static assert(j.toString == "[scalar]");
+    static assert(j.toString == "(scalar)");
     enum k = i / 2;
     static assert(k == test);
     static assert(d + e == e + d);
 
     enum m = Dimensions("mdim", "m");
     enum n = Dimensions("ndim", "n");
-    static assert(m.toString == "[m]");
-    static assert((m*2).toString == "[m^2]");
-    static assert((-m).toString == "[m^-1]");
-    static assert((m+n).toString == "[m n]" || (m+n).toString == "[n m]");
+    static assert(m.toString == "m");
+    static assert((m*2).toString == "m^2");
+    static assert((-m).toString == "m^-1");
+    static assert((m+n).toString == "m n" || (m+n).toString == "n m");
 }
