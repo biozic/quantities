@@ -101,7 +101,7 @@ else private struct name { string dummy; }
 version (unittest)
     import std.math : approxEqual;
 
-debug import std.stdio;
+// debug import std.stdio;
 
 /// Parses text for a unit or a quantity (with a numerical value) at runtime.
 RTQuantity parseQuantity(S)(S text)
@@ -126,7 +126,7 @@ unittest
     
     // Parse a concentration value
     Concentration c = parseQuantity("11.2 µmol/L");
-    assert(approxEqual(c.value(nano!mole/liter), 11200));
+    assert(approxEqual(c.value(nano(mole)/liter), 11200));
     
     // Below, 'second' is only a hint for dimensional analysis
     Store!second t = parseQuantity("90 min");

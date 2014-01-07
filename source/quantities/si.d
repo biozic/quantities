@@ -24,14 +24,14 @@ else private struct name { string dummy; }
 /// Converts a quantity of time to or from a core.time.Duration
 auto fromDuration(Duration d)
 {
-    return d.total!"hnsecs" * hecto!(nano!second);
+    return d.total!"hnsecs" * hecto(nano(second));
 }
 
 /// ditto
 Duration toDuration(Q)(Q quantity)
 {
     import std.conv;
-    auto hns = quantity.value(hecto!(nano!second));
+    auto hns = quantity.value(hecto(nano(second)));
     return dur!"hnsecs"(roundTo!long(hns));
 }
 
@@ -41,7 +41,7 @@ unittest
 {
     auto d = 4.dur!"msecs";
     auto t = fromDuration(d);
-    assert(t.value(milli!second) == 4);
+    assert(t.value(milli(second)) == 4);
     
     auto t2 = 3.5 * minute;
     auto d2 = t2.toDuration;
@@ -113,43 +113,43 @@ enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-/// Templates that apply a SI prefix to a unit.
-template yotta(alias unit) { enum yotta = 1e24 * unit; } 
+/// Functions that apply a SI prefix to a unit.
+auto yotta(Q)(Q base) { return base * 1e24; } 
 /// ditto
-template zetta(alias unit) { enum zetta = 1e21 * unit; }
+auto zetta(Q)(Q base) { return base * 1e21; }
 /// ditto
-template exa(alias unit) { enum exa = 1e18 * unit; }
+auto exa(Q)(Q base) { return base * 1e18; }
 /// ditto
-template peta(alias unit) { enum peta = 1e15 * unit; }
+auto peta(Q)(Q base) { return base * 1e15; }
 /// ditto
-template tera(alias unit) { enum tera = 1e12 * unit; }
+auto tera(Q)(Q base) { return base * 1e12; }
 /// ditto
-template giga(alias unit) { enum giga = 1e9 * unit; }
+auto giga(Q)(Q base) { return base * 1e9; }
 /// ditto
-template mega(alias unit) { enum mega = 1e6 * unit; }
+auto mega(Q)(Q base) { return base * 1e6; }
 /// ditto
-template kilo(alias unit) { enum kilo = 1e3 * unit; }
+auto kilo(Q)(Q base) { return base * 1e3; }
 /// ditto
-template hecto(alias unit) { enum hecto = 1e2 * unit; }
+auto hecto(Q)(Q base) { return base * 1e2; }
 /// ditto
-template deca(alias unit) { enum deca = 1e1 * unit; }
+auto deca(Q)(Q base) { return base * 1e1; }
 /// ditto
-template deci(alias unit) { enum deci = 1e-1 * unit; }
+auto deci(Q)(Q base) { return base * 1e-1; }
 /// ditto
-template centi(alias unit) { enum centi = 1e-2 * unit; }
+auto centi(Q)(Q base) { return base * 1e-2; }
 /// ditto
-template milli(alias unit) { enum milli = 1e-3 * unit; }
+auto milli(Q)(Q base) { return base * 1e-3; }
 /// ditto
-template micro(alias unit) { enum micro = 1e-6 * unit; }
+auto micro(Q)(Q base) { return base * 1e-6; }
 /// ditto
-template nano(alias unit) { enum nano = 1e-9 * unit; }
+auto nano(Q)(Q base) { return base * 1e-9; }
 /// ditto
-template pico(alias unit) { enum pico = 1e-12 * unit; }
+auto pico(Q)(Q base) { return base * 1e-12; }
 /// ditto
-template femto(alias unit) { enum femto = 1e-15 * unit; }
+auto femto(Q)(Q base) { return base * 1e-15; }
 /// ditto
-template atto(alias unit) { enum atto = 1e-18 * unit; }
+auto atto(Q)(Q base) { return base * 1e-18; }
 /// ditto
-template zepto(alias unit) { enum zepto = 1e-21 * unit; }
+auto zepto(Q)(Q base) { return base * 1e-21; }
 /// ditto
-template yocto(alias unit) { enum yocto = 1e-24 * unit; }
+auto yocto(Q)(Q base) { return base * 1e-24; }
