@@ -80,8 +80,6 @@ alias Volume = Store!liter; // Using a SI compatible unit.
 alias Concentration = Store!(kilogram/liter); // Using a derived unit.
 
 auto speedMPH = 30 * mile/hour;
-writefln("The speed limit is %s", speedMPH);
-// prints: The speed limit is 13.4083[s^-1 m]
 writefln("The speed limit is %.0f km/h", speedMPH.value(kilo!meter/hour));
 // prints: The speed limit is 48 km/h
 writefln("The speed limit is %.0f in/s", speedMPH.value(inch/second));
@@ -89,8 +87,6 @@ writefln("The speed limit is %.0f in/s", speedMPH.value(inch/second));
 
 auto wage = 65 * euro / hour;
 auto workTime = 1.6 * day;
-writefln("I've just earned %s!", wage * workTime);
-// prints: I've just earned 2496[€]!
 writefln("I've just earned $ %.2f!", (wage * workTime).value(dollar));
 // prints: I've just earned $ 3369.60!
 
