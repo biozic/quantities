@@ -82,8 +82,9 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.parsing;
 
 import quantities.base;
+import quantities.math;
 import quantities.si;
-import quantities._impl;
+import quantities.runtime;
 import std.conv;
 import std.exception;
 import std.range;
@@ -92,8 +93,8 @@ import std.traits;
 import std.utf;
 
 // TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
-// TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available
-// TODO: Make the runtime quantities available to the user
+// TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available)
+// TODO: Make the runtime quantities available to the user: document it
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -119,10 +120,10 @@ RTQuantity parseQuantity(S)(S text)
     return value * parseCompoundUnit(tokens);
 }
 ///
-@name(fullyQualifiedName!parseQuantity)
+@name("Example of " ~ fullyQualifiedName!parseQuantity)
 unittest
 {
-    alias Concentration = Store!(mole/cubic!meter);
+    alias Concentration = Store!(mole/cubic(meter));
     
     // Parse a concentration value
     Concentration c = parseQuantity("11.2 µmol/L");
@@ -140,18 +141,21 @@ unittest
 @name(moduleName!parseQuantity ~ " header examples")
 unittest
 {
-    assert(parseQuantity("1 N m") == RT.joule);
-    assert(parseQuantity("1 N.m") == RT.joule);
-    assert(parseQuantity("1 N⋅m") == RT.joule);
-    assert(parseQuantity("1 N * m") == RT.joule);
-    assert(parseQuantity("1 N × m") == RT.joule);
-    
-    assert(parseQuantity("1 mol s^-1") == RT.katal);
-    assert(parseQuantity("1 mol s⁻¹") == RT.katal);
-    assert(parseQuantity("1 mol/s") == RT.katal);
-    
-    assert(parseQuantity("1 kg m^-1 s^-2") == RT.pascal);
-    assert(parseQuantity("1 kg/(m s^2)") == RT.pascal);
+    auto J = RTQuantity(joule);
+    assert(parseQuantity("1 N m") == J);
+    assert(parseQuantity("1 N.m") == J);
+    assert(parseQuantity("1 N⋅m") == J);
+    assert(parseQuantity("1 N * m") == J);
+    assert(parseQuantity("1 N × m") == J);
+
+    auto kat = RTQuantity(katal);
+    assert(parseQuantity("1 mol s^-1") == kat);
+    assert(parseQuantity("1 mol s⁻¹") == kat);
+    assert(parseQuantity("1 mol/s") == kat);
+
+    auto Pa = RTQuantity(pascal);
+    assert(parseQuantity("1 kg m^-1 s^-2") == Pa);
+    assert(parseQuantity("1 kg/(m s^2)") == Pa);
 }
 
 @name(fullyQualifiedName!parseQuantity)
@@ -161,33 +165,33 @@ unittest
     
     assertThrown!ParsingException(parseQuantity("1 µ m"));
     assertThrown!ParsingException(parseQuantity("1 µ"));
-    
+
     string test = "1    m    ";
-    assert(parseQuantity(test) == RT.meter);
-    assert(parseQuantity("1 µm") == 1e-6 * RT.meter);
+    assert(parseQuantity(test) == meter);
+    assert(approxEqual(parseQuantity("1 µm").rawValue, micro(meter).rawValue));
     
-    assert(parseQuantity("1 m^-1") == 1 / RT.meter);
-    assert(parseQuantity("1 m²") == square(RT.meter));
-    assert(parseQuantity("1 m⁻¹") == 1 / RT.meter);
-    assert(parseQuantity("1 (m)") == RT.meter);
-    assert(parseQuantity("1 (m^-1)") == 1 / RT.meter);
-    assert(parseQuantity("1 ((m)^-1)^-1") == RT.meter);
+    assert(parseQuantity("1 m^-1") == 1 / meter);
+    assert(parseQuantity("1 m²") == square(meter));
+    assert(parseQuantity("1 m⁻¹") == 1 / meter);
+    assert(parseQuantity("1 (m)") == meter);
+    assert(parseQuantity("1 (m^-1)") == 1 / meter);
+    assert(parseQuantity("1 ((m)^-1)^-1") == meter);
     
-    assert(parseQuantity("1 m * m") == square(RT.meter));
-    assert(parseQuantity("1 m m") == square(RT.meter));
-    assert(parseQuantity("1 m . m") == square(RT.meter));
-    assert(parseQuantity("1 m ⋅ m") == square(RT.meter));
-    assert(parseQuantity("1 m × m") == square(RT.meter));
-    assert(parseQuantity("1 m / m") == RT.meter / RT.meter);
-    assert(parseQuantity("1 m ÷ m") == RT.meter / RT.meter);
+    assert(parseQuantity("1 m * m") == square(meter));
+    assert(parseQuantity("1 m m") == square(meter));
+    assert(parseQuantity("1 m . m") == square(meter));
+    assert(parseQuantity("1 m ⋅ m") == square(meter));
+    assert(parseQuantity("1 m × m") == square(meter));
+    assert(parseQuantity("1 m / m") == meter / meter);
+    assert(parseQuantity("1 m ÷ m") == meter / meter);
     
-    assert(parseQuantity("1 N.m") == (RT.newton * RT.meter));
-    assert(parseQuantity("1 N m") == (RT.newton * RT.meter));
+    assert(parseQuantity("1 N.m") == (newton * meter));
+    assert(parseQuantity("1 N m") == (newton * meter));
     
-    assert(approxEqual(parseQuantity("6.3 L.mmol^-1.cm^-1").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseQuantity("6.3 L/(mmol*cm)").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseQuantity("6.3 L*(mmol*cm)^-1").value(square(RT.meter)/RT.mole), 630));
-    assert(approxEqual(parseQuantity("6.3 L/mmol/cm").value(square(RT.meter)/RT.mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L.mmol^-1.cm^-1").value(square(meter)/mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L/(mmol*cm)").value(square(meter)/mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L*(mmol*cm)^-1").value(square(meter)/mole), 630));
+    assert(approxEqual(parseQuantity("6.3 L/mmol/cm").value(square(meter)/mole), 630));
 }
 
 /++
@@ -311,9 +315,9 @@ RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
 @name(fullyQualifiedName!parseCompoundUnit)
 unittest
 {
-    assert(parseCompoundUnit(lex("m * m")) == square(RT.meter));
-    assert(parseCompoundUnit(lex("m m")) == square(RT.meter));
-    assert(parseCompoundUnit(lex("m * m / m")) == RT.meter);
+    assert(parseCompoundUnit(lex("m * m")) == square(RTQuantity(meter)));
+    assert(parseCompoundUnit(lex("m m")) == square(RTQuantity(meter)));
+    assert(parseCompoundUnit(lex("m * m / m")) == RTQuantity(meter));
     assertThrown!ParsingException(parseCompoundUnit(lex("m ) m")));
     assertThrown!ParsingException(parseCompoundUnit(lex("m * m) m")));
 }
@@ -342,8 +346,8 @@ RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
 @name(fullyQualifiedName!parseExponentUnit)
 unittest
 {
-    assert(parseExponentUnit(lex("m²")) == square(RT.meter));
-    assert(parseExponentUnit(lex("m^2")) == square(RT.meter));
+    assert(parseExponentUnit(lex("m²")) == square(RTQuantity(meter)));
+    assert(parseExponentUnit(lex("m^2")) == square(RTQuantity(meter)));
     assertThrown!ParsingException(parseExponentUnit(lex("m^²")));
 }
 
@@ -409,7 +413,7 @@ RTQuantity parseUnit(T)(auto ref T[] tokens)
 @name(fullyQualifiedName!parseUnit)
 unittest
 {
-    assert(parseUnit(lex("(m)")) == RT.meter);
+    assert(parseUnit(lex("(m)")) == RTQuantity(meter));
     assertThrown!ParsingException(parseUnit(lex("(m")));
 }
 
@@ -433,7 +437,7 @@ RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
         // Try with a prefix
         string prefix = str.takeExactly(1).to!string;
         assert(prefix.length, "Prefix with no length");
-        auto factor = prefix in RT.SIPrefixSymbols;
+        auto factor = prefix in SIPrefixSymbols;
         if (factor)
         {
             string unit = str.dropOne.to!string;
@@ -447,21 +451,23 @@ RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
 @name(fullyQualifiedName!parsePrefixUnit)
 unittest
 {
-    assert(parsePrefixUnit(lex("mm")) == 1e-3 * RT.meter);
-    assert(parsePrefixUnit(lex("cd")) == RT.candela);
+    assert(approxEqual(parsePrefixUnit(lex("mm")).rawValue, milli(meter).rawValue));
+    assert(approxEqual(parsePrefixUnit(lex("cd")).rawValue, candela.rawValue));
     assertThrown!ParsingException(parsePrefixUnit(lex("Lm")));
 }
 
 RTQuantity parseUnitSymbol(string str)
 {
     assert(str.length, "Symbol with no length");
-    return *enforceEx!ParsingException(str in RT.SIUnitSymbols, "Unknown unit symbol: " ~ str);
+    auto uptr = str in SIUnitSymbols;
+    enforceEx!ParsingException(uptr, "Unknown unit symbol: " ~ str);
+    return *uptr;
 }
 @name(fullyQualifiedName!parseUnitSymbol)
 unittest
 {
-    assert(parseUnitSymbol("m") == RT.meter);
-    assert(parseUnitSymbol("K") == RT.kelvin);
+    assert(parseUnitSymbol("m") == RTQuantity(meter));
+    assert(parseUnitSymbol("K") == RTQuantity(kelvin));
     assertThrown!ParsingException(parseUnitSymbol("jZ"));
 }
 
@@ -605,3 +611,73 @@ Token[] lex(S)(S input)
     push();
     return tokapp;
 }
+
+static immutable(RTQuantity)[string] SIUnitSymbols;
+static real[string] SIPrefixSymbols;
+
+shared static this()
+{   
+    SIUnitSymbols = [
+        "m" : RTQuantity(meter),
+        "kg" : RTQuantity(kilogram),
+        "s" : RTQuantity(second),
+        "A" : RTQuantity(ampere),
+        "K" : RTQuantity(kelvin),
+        "mol" : RTQuantity(mole),
+        "cd" : RTQuantity(candela),
+        "rad" : RTQuantity(Dimensions.init, radian),
+        "sr" : RTQuantity(Dimensions.init, steradian),
+        "Hz" : RTQuantity(hertz),
+        "N" : RTQuantity(newton),
+        "Pa" : RTQuantity(pascal),
+        "J" : RTQuantity(joule),
+        "W" : RTQuantity(watt),
+        "C" : RTQuantity(coulomb),
+        "V" : RTQuantity(volt),
+        "F" : RTQuantity(farad),
+        "Ω" : RTQuantity(ohm),
+        "S" : RTQuantity(siemens),
+        "Wb" : RTQuantity(weber),
+        "T" : RTQuantity(tesla),
+        "H" : RTQuantity(henry),
+        "lm" : RTQuantity(lumen),
+        "lx" : RTQuantity(lux),
+        "Bq" : RTQuantity(becquerel),
+        "Gy" : RTQuantity(gray),
+        "Sv" : RTQuantity(sievert),
+        "kat" : RTQuantity(katal),
+        "g" : RTQuantity(gram),
+        "min" : RTQuantity(minute),
+        "h" : RTQuantity(hour),
+        "d" : RTQuantity(day),
+        "l" : RTQuantity(liter),
+        "L" : RTQuantity(liter),
+        "t" : RTQuantity(ton),
+        "eV" : RTQuantity(electronVolt),
+        "Da" : RTQuantity(dalton),
+    ];
+    
+    SIPrefixSymbols = [
+        "Y" : 1e24,
+        "Z" : 1e21,
+        "E" : 1e18,
+        "P" : 1e15,
+        "T" : 1e12,
+        "G" : 1e9,
+        "M" : 1e6,
+        "k" : 1e3,
+        "h" : 1e2,
+        "da": 1e1,
+        "d" : 1e-1,
+        "c" : 1e-2,
+        "m" : 1e-3,
+        "µ" : 1e-6,
+        "n" : 1e-9,
+        "p" : 1e-12,
+        "f" : 1e-15,
+        "a" : 1e-18,
+        "z" : 1e-21,
+        "y" : 1e-24
+    ];
+}
+

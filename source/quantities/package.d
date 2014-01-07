@@ -37,5 +37,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities;
 
 public import quantities.base;
+public import quantities.math;
 public import quantities.si;
 public import quantities.parsing;

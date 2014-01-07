@@ -8,7 +8,9 @@
     "configurations": [
         {
             "name": "library",
-            "targetType": "sourceLibrary"
+            "targetType": "sourceLibrary",
+            "importPaths": ["source"],
+            "sourcePaths": ["source"]
         },
         {
             "name": "tests",

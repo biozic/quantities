@@ -11,6 +11,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.si;
 
 import quantities.base;
+import quantities.math;
 import std.math : PI;
 import core.time : Duration, dur;
 
@@ -78,10 +79,10 @@ units that are derived from them or compatible with them. The type of these
 quantities is a built-in numeric type when they have no dimensions.
 +/
 enum radian = meter / meter;
-enum steradian = square!meter / square!meter; /// ditto
+enum steradian = square(meter) / square(meter); /// ditto
 enum hertz = 1 / second; /// ditto
-enum newton = kilogram * meter / square!second; /// ditto
-enum pascal = newton / square!meter; /// ditto
+enum newton = kilogram * meter / square(second); /// ditto
+enum pascal = newton / square(meter); /// ditto
 enum joule = newton * meter; /// ditto
 enum watt = joule / second; /// ditto
 enum coulomb = second * ampere; /// ditto
@@ -90,10 +91,10 @@ enum farad = coulomb / volt; /// ditto
 enum ohm = volt / ampere; /// ditto
 enum siemens = ampere / volt; /// ditto
 enum weber = volt * second; /// ditto
-enum tesla = weber / square!meter; /// ditto
+enum tesla = weber / square(meter); /// ditto
 enum henry = weber / ampere; /// ditto
 enum lumen = candela / steradian; /// ditto
-enum lux = lumen / square!meter; /// ditto
+enum lux = lumen / square(meter); /// ditto
 enum becquerel = 1 / second; /// ditto
 enum gray = joule / kilogram; /// ditto
 enum sievert = joule / kilogram; /// ditto
@@ -106,15 +107,15 @@ enum day = 24 * hour; /// ditto
 enum degreeOfAngle = PI / 180 * radian; /// ditto
 enum minuteOfAngle = degreeOfAngle / 60; /// ditto
 enum secondOfAngle = minuteOfAngle / 60; /// ditto
-enum hectare = 1e4 * square!meter; /// ditto
-enum liter = 1e-3 * cubic!meter; /// ditto
+enum hectare = 1e4 * square(meter); /// ditto
+enum liter = 1e-3 * cubic(meter); /// ditto
 alias litre = liter; /// ditto
 enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
 /// Functions that apply a SI prefix to a unit.
-auto yotta(Q)(Q base) { return base * 1e24; } 
+auto yotta(Q)(Q base) { return base * 1e24; }
 /// ditto
 auto zetta(Q)(Q base) { return base * 1e21; }
 /// ditto

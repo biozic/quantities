@@ -9,10 +9,11 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
+import quantities.math;
+import quantities.runtime;
+import quantities.parsing : DimensionException;
 import std.exception;
 import std.traits;
-import quantities._impl;
-import quantities.parsing : DimensionException;
 
 version (unittest)
 {
@@ -74,7 +75,7 @@ struct Quantity(alias dim, N = double)
 
     // Creates a new quantity from a RTQuantity
     this(T)(T other)
-        if (is(T : RTQuantity))
+        if (isRTQuantity!T)
     {
         enforceEx!DimensionException(other.dimensions == dimensions, dimerror(other.dimensions));
         _value = other.rawValue;
@@ -86,8 +87,7 @@ struct Quantity(alias dim, N = double)
     N value(Q)(Q target) const
         if(isQuantityType!Q)
     {
-        enum d = Q.dimensions;
-        static assert(d == dim, dimerror(d));
+        static assert(Q.dimensions == dim, dimerror(Q.dimensions));
         return _value / target._value;
     }
     ///
@@ -95,6 +95,15 @@ struct Quantity(alias dim, N = double)
     {
         auto speed = 100 * meter / (5 * second);
         assert(speed.value(meter/second) == 20);
+    }
+
+    /++
+    Get the scalar value of this quantity expressed in a combination of
+    the base dimensions. This value is actually the payload of the Quantity struct.
+    +/
+    @property N rawValue() const
+    {
+        return _value;
     }
 
     /++
@@ -111,6 +120,12 @@ struct Quantity(alias dim, N = double)
         assert(is(length.valueType == real));
     }
 
+    RTQuantity opCast(T)()
+        if (isRTQuantity!T)
+    {
+        return RTQuantity(dimensions, _value);
+    }
+
     void opAssign(T)(T other)
         if (isQuantityType!T)
     {
@@ -119,7 +134,7 @@ struct Quantity(alias dim, N = double)
     }
     
     void opAssign(T)(T other)
-        if (is(T : RTQuantity))
+        if (isRTQuantity!T)
     {
         enforceEx!DimensionException(other.dimensions == dimensions, dimerror(other.dimensions));
         _value = other.rawValue;
@@ -336,7 +351,7 @@ unittest
 {
     auto length = meter * 5;
     auto surface = length * length;
-    assert(surface.value(square!meter) == 5*5);
+    assert(surface.value(square(meter)) == 5*5);
     auto length2 = surface / length;
     assert(length2.value(meter) == 5);
 
@@ -450,33 +465,6 @@ unittest
     assert(approxEqual((1.35 * dollar).value(euro), 1));
 }
 
-/// Transforms a unit at compile-time.
-template square(alias unit)
-{
-    alias square = pow!(2, unit);
-}
-
-/// ditto
-template cubic(alias unit)
-{
-    alias cubic = pow!(3, unit);
-}
-
-/// ditto
-template pow(int n, alias unit)
-{
-    enum pow = Quantity!(unit.dimensions * n, unit.valueType)(unit._value ^^ n);
-}
-
-///
-@name("square, cubic, pow")
-unittest
-{
-    auto surface = 1 * square!meter;
-    auto volume = 1 * cubic!meter;
-    volume = 1 * pow!(3, meter);
-}
-
 /// Equivalent of the method Quantity.value for dimensionless quantities.
 auto value(T, U)(T quantity, U target)
     if (isFloatingPoint!U && isNumeric!T)
@@ -517,9 +505,9 @@ unittest
     alias Mass = Store!kilogram;
     Mass mass = 15 * ton;
     
-    alias Surface = Store!(square!meter, float);
+    alias Surface = Store!(square(meter), float);
     assert(is(Surface.valueType == float));
-    Surface s = 4 * square!meter;
+    Surface s = 4 * square(meter);
 }
 
 /// Equivalent of the method Quantity.store for dimensionless quantities.
@@ -546,67 +534,6 @@ unittest
     time = 2 * hour;
     speed = length / time;
     assert(is(speed.valueType == real));
-}
-
-/// Returns the square root, the cubic root of the nth root of a quantity.
-auto sqrt(Q)(Q quantity)
-{
-    import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / 2, Q.valueType)(std.math.sqrt(quantity._value));
-    else
-        return std.math.sqrt(quantity);
-}
-
-/// ditto
-auto cbrt(Q)(Q quantity)
-{
-    import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / 3, Q.valueType)(std.math.cbrt(quantity._value));
-    else
-        return std.math.cbrt(quantity);
-}
-
-/// ditto
-auto nthRoot(int n, Q)(Q quantity)
-{
-    import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / n, Q.valueType)(std.math.pow(quantity._value, 1.0 / n));
-    else
-        return std.math.pow(quantity, 1.0 / n);
-}
-
-///
-@name("Powers of a quantity")
-unittest
-{
-    auto surface = 25 * square!meter;
-    auto side = sqrt(surface);
-    assert(approxEqual(side.value(meter), 5));
-    
-    auto volume = 1 * liter;
-    side = cbrt(volume);
-    assert(approxEqual(nthRoot!3(volume).value(deci(meter)), 1));
-    assert(approxEqual(side.value(deci(meter)), 1));
-}
-
-/// Returns the absolute value of a quantity
-Q abs(Q)(Q quantity)
-{
-    import std.math;
-    static if (isQuantity!quantity)
-        return Q(std.math.fabs(quantity._value));
-    else
-        return std.math.abs(quantity);
-}
-///
-@name("abs")
-unittest
-{
-    auto deltaT = -10 * second;
-    assert(abs(deltaT) == 10 * second);
 }
 
 /++
