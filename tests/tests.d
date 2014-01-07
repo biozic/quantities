@@ -2,7 +2,7 @@
 /++
 Enhanded unittests with tested
 +/
-import quantities;
+import synopsis;
 public import tested;
 import std.stdio;
 
@@ -10,6 +10,8 @@ shared static this() {
     version (Have_tested) {
         import core.runtime;
         Runtime.moduleUnitTester = () => true;
-        assert(runUnitTests!quantities(new ConsoleTestResultWriter), "Unit tests failed.");
+        assert(runUnitTests!(synopsis)(
+            new ConsoleTestResultWriter), "Unit tests failed."
+        );
     }
 }

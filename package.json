@@ -13,8 +13,8 @@
         {
             "name": "tests",
             "targetType": "library",
-            "mainSourceFile": "tests/tests.d",
-            "versions": ["SynopsisUnittest"],
+            "importPaths": ["tests"],
+            "sourcePaths": ["tests"],
             "dependencies" : {
                 "tested": "~master"
             }

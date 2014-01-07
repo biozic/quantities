@@ -1,14 +1,12 @@
 // Written in the D programming language
 /++
-This module defines the base types for unit and quantity handling.
+Synospis code for the README.md file.
 
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-module quantities.synopsis;
-
 import std.math : approxEqual;
 import quantities.base;
 import quantities.si;
@@ -17,7 +15,6 @@ import quantities.parsing;
 version (Have_tested) import tested;
 else private struct name { string dummy; }
 
-version (SynopsisUnittest)
 @name("Synopsis")
 unittest
 {
