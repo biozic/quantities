@@ -22,6 +22,7 @@ be defined by the user.
 Contains thress modules:
 <ol>
     <li><a href="/quantities/base.html">quantities.base</a>: general declarations</li>
+    <li><a href="/quantities/math.html">quantities.math</a>: math functions on quantities</li>
     <li><a href="/quantities/si.html">quantities.si</a>: SI specific declarations</li>
     <li><a href="/quantities/parsing.html">quantities.parsing</a>: for parsing
         quantities at runtime</li>
