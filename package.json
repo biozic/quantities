@@ -8,7 +8,7 @@
     "configurations": [
         {
             "name": "library",
-            "targetType": "sourceLibrary",
+            "targetType": "library",
             "importPaths": ["source"],
             "sourcePaths": ["source"]
         },
@@ -16,10 +16,7 @@
             "name": "tests",
             "targetType": "library",
             "importPaths": ["tests"],
-            "sourcePaths": ["tests"],
-            "dependencies" : {
-                "tested": "~master"
-            }
+            "sourcePaths": ["tests"]
         }
     ]
 }
