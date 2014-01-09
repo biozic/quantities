@@ -22,7 +22,7 @@ void main()
     Capacity C = parseQuantity("62.5 nF");
     Resistance R = parseQuantity("100 kΩ");
     auto w0 = freq(L, C);
-    auto q = quality(L, R, w0);
+    auto q = cast(double) quality(L, R, w0);
     
     import std.math : approxEqual;
     assert(approxEqual(w0.value(hertz), 6366.2));

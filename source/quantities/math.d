@@ -10,7 +10,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.math;
 
 import quantities.base;
-import quantities.runtime;
 
 version (unittest)
 {
@@ -22,38 +21,34 @@ else private struct name { string dummy; }
 
 
 /// Transforms a quantity/unit.
-auto square(T)(T unit)
-    if (isQuantityType!T || isRTQuantity!T)
+auto square(U)(U unit)
+    if (isQuantity!U)
 {
     return pow!2(unit);
 }
 
 /// ditto
-auto cubic(T)(T unit)
-    if (isQuantityType!T || isRTQuantity!T)
+auto cubic(U)(U unit)
+    if (isQuantity!U)
 {
     return pow!3(unit);
 }
 
 /// ditto
-auto pow(int n, T)(T unit)
-    if (isQuantityType!T)
+auto pow(int n, U)(U unit)
+    if (isQuantity!U)
 {
-    return Quantity!(T.dimensions * n, T.valueType)(unit.rawValue ^^ n);
-}
-
-/// ditto
-auto pow(int n, T)(T unit)
-    if (isRTQuantity!T)
-{
-    return RTQuantity(unit.dimensions * n, unit.rawValue ^^ n); 
+    static if (U.isRuntime)
+        return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
+    else
+        return Quantity!(U.dimensions * n, U.valueType)(unit.rawValue ^^ n);
 }
 
 // Power function when n is not known at compile time.
-auto pow(T)(T unit, int n)
-    if (isRTQuantity!T)
+auto pow(U)(U unit, int n)
+    if (isQuantity!U && U.isRuntime)
 {
-    return RTQuantity(unit.dimensions * n, unit.rawValue ^^ n); 
+    return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
 }
 
 @name("CT square, cubic, pow")
@@ -74,38 +69,35 @@ unittest
 
 /// Returns the square root, the cubic root of the nth root of a quantity.
 auto sqrt(Q)(Q quantity)
+    if (isQuantity!Q)
 {
     import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / 2, Q.valueType)(std.math.sqrt(quantity.rawValue));
-    else static if (isRTQuantity!Q)
-        return RTQuantity(quantity.dimensions / 2, std.math.sqrt(quantity.rawValue));
+    static if (Q.isRuntime)
+        return RTQuantity(std.math.sqrt(quantity.rawValue), quantity.dimensions / 2);
     else
-        return std.math.sqrt(quantity);
+        return Quantity!(Q.dimensions / 2, Q.valueType)(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
+    if (isQuantity!Q)
 {
     import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / 3, Q.valueType)(std.math.cbrt(quantity.rawValue));
-    else static if (isRTQuantity!Q)
-        return RTQuantity(quantity.dimensions / 3, std.math.cbrt(quantity.rawValue));
+    static if (Q.isRuntime)
+        return RTQuantity(std.math.cbrt(quantity.rawValue), quantity.dimensions / 3);
     else
-        return std.math.cbrt(quantity);
+        return Quantity!(Q.dimensions / 3, Q.valueType)(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
+    if (isQuantity!Q)
 {
     import std.math;
-    static if (isQuantity!quantity)
-        return Quantity!(Q.dimensions / n, Q.valueType)(std.math.pow(quantity.rawValue, 1.0 / n));
-    else static if (isRTQuantity!Q)
-        return RTQuantity(quantity.dimensions / n, std.math.pow(quantity.rawValue, 1.0 / n));
+    static if (Q.isRuntime)
+        return RTQuantity(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions / n);
     else
-        return std.math.pow(quantity, 1.0 / n);
+        return Quantity!(Q.dimensions / n, Q.valueType)(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 ///
@@ -138,14 +130,13 @@ unittest
 
 /// Returns the absolute value of a quantity
 Q abs(Q)(Q quantity)
+    if (isQuantity!Q)
 {
     import std.math;
-    static if (isQuantity!quantity)
-        return Q(std.math.fabs(quantity.rawValue));
-    else static if (isRTQuantity!Q)
-        return RTQuantity(quantity.dimensions, std.math.fabs(quantity.rawValue));
+    static if (Q.isRuntime)
+        return RTQuantity(std.math.fabs(quantity.rawValue), quantity.dimensions);
     else
-        return std.math.abs(quantity);
+        return Q(std.math.fabs(quantity.rawValue));
 }
 ///
 @name("abs")

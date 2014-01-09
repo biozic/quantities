@@ -9,11 +9,6 @@ are actually done on quantities. For example, `meter` is both the unit _meter_
 and the quantity _1 m_. New quantities can be derived from other ones using
 operators or dedicated functions.
 
-By design, a dimensionless quantity must be expressed with a builtin numeric
-type, e.g. double. If an operation over quantities that have dimensions creates
-a quantity with no dimensions (e.g. meter / meter), the result is converted to
-the corresponding built-in type.
-
 Quantities can be parsed from strings at runtime.
 
 The main SI units and prefixes are predefined. Units with other dimensions can

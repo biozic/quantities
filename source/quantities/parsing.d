@@ -84,7 +84,6 @@ module quantities.parsing;
 import quantities.base;
 import quantities.math;
 import quantities.si;
-import quantities.runtime;
 import std.conv;
 import std.exception;
 import std.range;
@@ -94,7 +93,6 @@ import std.utf;
 
 // TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
 // TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available)
-// TODO: Make the runtime quantities available to the user: document it
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -114,7 +112,7 @@ RTQuantity parseQuantity(S)(S text)
     catch {}
  
     if (text.empty)
-        return RTQuantity(Dimensions.init, value);
+        return RTQuantity(value, Dimensions.init);
 
     auto tokens = lex(text);
     return value * parseCompoundUnit(tokens);
@@ -132,8 +130,6 @@ unittest
     // Below, 'second' is only a hint for dimensional analysis
     Store!second t = parseQuantity("90 min");
     assert(t == 90 * minute);
-
-    // Below, 'second' is only a hint for dimensional analysis
     t = parseQuantity("h");
     assert(t == 1 * hour);
 }
@@ -232,20 +228,6 @@ class ParsingException : Exception
     }
 }
 
-/// Exception thrown when operating on two units that are not interconvertible.
-class DimensionException : Exception
-{
-    @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-    {
-        super(msg, file, line, next);
-    }
-    
-    @safe pure nothrow this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line, next);
-    }
-}
-
 package:
 
 void advance(Types...)(ref Token[] tokens, Types types)
@@ -281,8 +263,6 @@ void check(Types...)(Token[] tokens, Types types)
 RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
     if (is(T : Token))
 {
-    //debug writeln(__FUNCTION__);
-
     RTQuantity ret = parseExponentUnit(tokens);
     if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
         return ret;
@@ -325,8 +305,6 @@ unittest
 RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
     if (is(T : Token))
 {
-    //debug writeln(__FUNCTION__);
-
     RTQuantity ret = parseUnit(tokens);
 
     if (tokens.empty)
@@ -354,8 +332,6 @@ unittest
 int parseInteger(T)(auto ref T[] tokens)
     if (is(T : Token))
 {
-    //debug writeln(__FUNCTION__);
-
     tokens.check(Tok.integer, Tok.supinteger);
     auto i = tokens.front;
     auto slice = i.slice;
@@ -394,8 +370,6 @@ unittest
 RTQuantity parseUnit(T)(auto ref T[] tokens)
     if (is(T : Token))
 {
-    //debug writeln(__FUNCTION__);
-
     RTQuantity ret;
     
     if (tokens.front.type == Tok.lparen)
@@ -420,8 +394,6 @@ unittest
 RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
     if (is(T : Token))
 {
-    // debug writeln(__FUNCTION__);
-
     tokens.check(Tok.symbol);
     auto str = tokens.front.slice;
     if (tokens.length)
@@ -625,8 +597,8 @@ shared static this()
         "K" : RTQuantity(kelvin),
         "mol" : RTQuantity(mole),
         "cd" : RTQuantity(candela),
-        "rad" : RTQuantity(Dimensions.init, radian),
-        "sr" : RTQuantity(Dimensions.init, steradian),
+        "rad" : RTQuantity(radian),
+        "sr" : RTQuantity(steradian),
         "Hz" : RTQuantity(hertz),
         "N" : RTQuantity(newton),
         "Pa" : RTQuantity(pascal),
