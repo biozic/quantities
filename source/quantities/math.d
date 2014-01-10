@@ -38,7 +38,7 @@ auto cubic(U)(U unit)
 auto pow(int n, U)(U unit)
     if (isQuantity!U)
 {
-    static if (U.isRuntime)
+    static if (U.runtime)
         return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
     else
         return Quantity!(U.dimensions * n, U.valueType)(unit.rawValue ^^ n);
@@ -46,7 +46,7 @@ auto pow(int n, U)(U unit)
 
 // Power function when n is not known at compile time.
 auto pow(U)(U unit, int n)
-    if (isQuantity!U && U.isRuntime)
+    if (isQuantity!U && U.runtime)
 {
     return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
 }
@@ -72,7 +72,7 @@ auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    static if (Q.isRuntime)
+    static if (Q.runtime)
         return RTQuantity(std.math.sqrt(quantity.rawValue), quantity.dimensions / 2);
     else
         return Quantity!(Q.dimensions / 2, Q.valueType)(std.math.sqrt(quantity.rawValue));
@@ -83,7 +83,7 @@ auto cbrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    static if (Q.isRuntime)
+    static if (Q.runtime)
         return RTQuantity(std.math.cbrt(quantity.rawValue), quantity.dimensions / 3);
     else
         return Quantity!(Q.dimensions / 3, Q.valueType)(std.math.cbrt(quantity.rawValue));
@@ -94,7 +94,7 @@ auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    static if (Q.isRuntime)
+    static if (Q.runtime)
         return RTQuantity(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions / n);
     else
         return Quantity!(Q.dimensions / n, Q.valueType)(std.math.pow(quantity.rawValue, 1.0 / n));
@@ -133,7 +133,7 @@ Q abs(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    static if (Q.isRuntime)
+    static if (Q.runtime)
         return RTQuantity(std.math.fabs(quantity.rawValue), quantity.dimensions);
     else
         return Q(std.math.fabs(quantity.rawValue));

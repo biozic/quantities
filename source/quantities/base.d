@@ -37,7 +37,7 @@ class DimensionException : Exception
     }
 }
 
-enum CheckAtRuntime
+enum RTCheck
 {
     no = false,
     yes = true
@@ -53,10 +53,10 @@ Arithmetic operators (+ - * /), as well as assignment and comparison operators,
 are defined when the operations are dimensionally correct, otherwise an error
 occurs at compile-time.
 +/
-struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.no)
+struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
 {
     static assert(isFloatingPoint!N);
-    alias isRuntime = runtime;
+    alias runtime = rt;
 
     /// The dimensions of the quantity.
     static if (runtime)
@@ -66,7 +66,6 @@ struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.n
     }
     else
     {
-        //static assert(is(typeof(_dim) == Dimensions));
         alias dimensions = dim;
     }
 
@@ -76,7 +75,7 @@ struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.n
                 format("Dimension error: %%s is not compatible with %%s",
                 ` ~ dim ~ `.toString(true), dimensions.toString(true))
             );`;
-        static if (isRuntime || forceRuntime)
+        static if (runtime || forceRuntime)
             return format(code, "enforceEx!DimensionException");
         else
             return format(code, "static assert");
@@ -99,7 +98,7 @@ struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.n
         }
         else
         {
-            static if (T.isRuntime)
+            static if (T.runtime)
                 mixin(checkDim!("other.dimensions", true));
             else
                 mixin(checkDim!("other.dimensions"));
@@ -193,7 +192,7 @@ struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.n
         }
         else
         {
-            static if (T.isRuntime)
+            static if (T.runtime)
                 mixin(checkDim!("other.dimensions", true));
             else
                 mixin(checkDim!"other.dimensions");
@@ -367,7 +366,7 @@ struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.n
 }
 
 /// A quantity type for runtime calculations.
-alias RTQuantity = Quantity!(null, real, CheckAtRuntime.yes);
+alias RTQuantity = Quantity!(null, real, RTCheck.yes);
 
 template isQuantity(T)
 {
@@ -764,7 +763,6 @@ unittest
 /++
 This struct represents the dimensions of a quantity/unit.
 +/
-// TODO: purify, nothrowify and @safify where possible/necessary
 struct Dimensions
 {
     private static struct Dim
@@ -775,7 +773,7 @@ struct Dimensions
 
     private Dim[string] dims;
 
-    this(string name, string symbol = null)
+    this(string name, string symbol = null) pure
     {
         if (!name.length)
             throw new Exception("The name of a dimension cannot be empty");
@@ -785,7 +783,7 @@ struct Dimensions
         dims[name] = Dim(1, symbol);
     }
 
-    immutable(Dimensions) idup() const
+    immutable(Dimensions) idup() const pure
     {
         Dimensions result;
         foreach (k, v; dims)
@@ -793,12 +791,12 @@ struct Dimensions
         return cast(immutable) result;
     }
 
-    @property bool empty() const
+    @property bool empty() const pure nothrow
     {
         return dims.length == 0;
     }
 
-    Dimensions opUnary(string op)() const
+    Dimensions opUnary(string op)() const pure nothrow
         if (op == "+" || op == "-")
     {
         Dimensions result;
@@ -807,7 +805,7 @@ struct Dimensions
         return result;
     }
     
-    Dimensions opBinary(string op)(const(Dimensions) other) const
+    Dimensions opBinary(string op)(const(Dimensions) other) const pure
         if (op == "+" || op == "-")
     {
         Dimensions result;
@@ -829,7 +827,7 @@ struct Dimensions
         return result;
     }
     
-    Dimensions opBinary(string op)(int value) const
+    Dimensions opBinary(string op)(int value) const pure
         if (op == "*" || op == "/")
     {
         Dimensions result;
@@ -867,7 +865,7 @@ struct Dimensions
         return same;
     }
     
-    string toString(bool complete = false) const
+    string toString(bool complete = false) const pure
     {
         import std.algorithm : filter;
         import std.array : join;
