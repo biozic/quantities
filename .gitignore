@@ -1,3 +1,4 @@
 .dub
 doc
 __test__tests__
+__test__library__

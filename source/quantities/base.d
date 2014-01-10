@@ -23,12 +23,6 @@ version (unittest)
 version (Have_tested) import tested;
 else private struct name { string dummy; }
 
-enum Runtime
-{
-    no = false,
-    yes = true
-}
-
 /// Exception thrown when operating on two units that are not interconvertible.
 class DimensionException : Exception
 {
@@ -43,6 +37,12 @@ class DimensionException : Exception
     }
 }
 
+enum CheckAtRuntime
+{
+    no = false,
+    yes = true
+}
+
 /+
 A quantity type, which holds a value and some dimensions.
 
@@ -53,7 +53,7 @@ Arithmetic operators (+ - * /), as well as assignment and comparison operators,
 are defined when the operations are dimensionally correct, otherwise an error
 occurs at compile-time.
 +/
-struct Quantity(alias dim, N = double, Runtime runtime = Runtime.no)
+struct Quantity(alias dim, N = double, CheckAtRuntime runtime = CheckAtRuntime.no)
 {
     static assert(isFloatingPoint!N);
     alias isRuntime = runtime;
@@ -367,7 +367,7 @@ struct Quantity(alias dim, N = double, Runtime runtime = Runtime.no)
 }
 
 /// A quantity type for runtime calculations.
-alias RTQuantity = Quantity!(null, real, Runtime.yes);
+alias RTQuantity = Quantity!(null, real, CheckAtRuntime.yes);
 
 template isQuantity(T)
 {

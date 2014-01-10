@@ -16,10 +16,7 @@
             "name": "tests",
             "targetType": "library",
             "importPaths": ["tests"],
-            "sourcePaths": ["tests"],
-            "dependencies": {
-                "tested" : "~master"
-            }
+            "sourcePaths": ["tests"]
         }
     ]
 }
