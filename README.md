@@ -24,6 +24,7 @@ License: Boost License 1.0.
 ### Synopsis
 
 ```d
+import quantities;
 import std.stdio;
 
 // ------------------
