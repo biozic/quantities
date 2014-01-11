@@ -1,6 +1,6 @@
 // Written in the D programming language
 /++
-Synospis code for the README.md file.
+Test code and synospis code for the README.md file.
 
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
@@ -12,10 +12,6 @@ import quantities.base;
 import quantities.si;
 import quantities.parsing;
 
-version (Have_tested) import tested;
-else private struct name { string dummy; }
-
-@name("Synopsis")
 unittest
 {
     import std.stdio;

@@ -21,20 +21,6 @@ version (unittest)
     import quantities.parsing;
 }
 
-/// Exception thrown when operating on two units that are not interconvertible.
-class DimensionException : Exception
-{
-    @safe pure nothrow this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-    {
-        super(msg, file, line, next);
-    }
-    
-    @safe pure nothrow this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line, next);
-    }
-}
-
 enum RTCheck
 {
     no = false,
@@ -420,16 +406,16 @@ unittest // Quantity.opAssign Q = Q
 {
     auto length = meter;
     length = 2.54 * centi(meter);
-    assert(approxEqual(length.value(meter), 0.0254));
+    assert(length.value(meter).approxEqual(0.0254));
 }
 
 unittest // RTQuantity.opAssign Q = Q
 {
     RTQuantity length;
     length = 2.54 * centi(meter);
-    assert(approxEqual(length.value(meter), 0.0254));
+    assert(length.value(meter).approxEqual(0.0254));
     length = RTQuantity(2.54 * centi(meter));
-    assert(approxEqual(length.value(meter), 0.0254));
+    assert(length.value(meter).approxEqual(0.0254));
 }
 
 unittest // Quantity.opUnary +Q -Q
@@ -538,36 +524,36 @@ unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
     auto time = 10 * second;
     time += 50 * second;
-    assert(approxEqual(time.value(second), 60));
+    assert(time.value(second).approxEqual(60));
     time -= 40 * second;
-    assert(approxEqual(time.value(second), 20));
+    assert(time.value(second).approxEqual(20));
 }
 
 unittest // RTQuantity.opOpAssign Q+=Q Q-=Q
 {
     RTQuantity time = 10 * second;
     time += 50 * second;
-    assert(approxEqual(time.value(second), 60));
+    assert(time.value(second).approxEqual(60));
     time -= 40 * second;
-    assert(approxEqual(time.value(second), 20));
+    assert(time.value(second).approxEqual(20));
 }
 
 unittest // Quantity.opOpAssign Q*=N Q/=N
 {
     auto time = 20 * second;
     time *= 2;
-    assert(approxEqual(time.value(second), 40));
+    assert(time.value(second).approxEqual(40));
     time /= 4;
-    assert(approxEqual(time.value(second), 10));
+    assert(time.value(second).approxEqual(10));
 }
 
 unittest // RTQuantity.opOpAssign Q*=N Q/=N
 {
     RTQuantity time = 20 * second;
     time *= 2;
-    assert(approxEqual(time.value(second), 40));
+    assert(time.value(second).approxEqual(40));
     time /= 4;
-    assert(approxEqual(time.value(second), 10));
+    assert(time.value(second).approxEqual(10));
 }
 
 unittest // Quantity.opEquals
@@ -678,7 +664,7 @@ unittest
     enum euro = unit!"currency";
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
-    assert(approxEqual((1.35 * dollar).value(euro), 1));
+    assert((1.35 * dollar).value(euro).approxEqual(1));
 }
 
 /++
@@ -884,3 +870,22 @@ unittest // Dimension
     static assert((m*m).expInv(2).toString == "m");
     static assert((m*n).toString == "m n" || (m*n).toString == "n m");
 }
+
+/// Exception thrown when operating on two units that are not interconvertible.
+class DimensionException : Exception
+{
+    @safe pure nothrow
+    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
+    {
+        super(msg, file, line, next);
+    }
+    
+    @safe pure nothrow
+    this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line, next);
+    }
+}
+
+
+

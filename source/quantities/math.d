@@ -100,24 +100,24 @@ unittest // CT Powers of a quantity
 {
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);
-    assert(approxEqual(side.value(meter), 5));
+    assert(side.value(meter).approxEqual(5));
     
     auto volume = 1 * liter;
     side = cbrt(volume);
-    assert(approxEqual(nthRoot!3(volume).value(deci(meter)), 1));
-    assert(approxEqual(side.value(deci(meter)), 1));
+    assert(nthRoot!3(volume).value(deci(meter)).approxEqual(1));
+    assert(side.value(deci(meter)).approxEqual(1));
 }
 
 unittest // RT Powers of a quantity
 {
     RTQuantity surface = 25 * square(meter);
     RTQuantity side = sqrt(surface);
-    assert(approxEqual(side.value(RTQuantity(meter)), 5));
+    assert(side.value(RTQuantity(meter)).approxEqual(5));
     
     RTQuantity volume = 1 * liter;
     side = cbrt(volume);
-    assert(approxEqual(nthRoot!3(volume).value(RTQuantity(meter)), 0.1));
-    assert(approxEqual(side.value(RTQuantity(meter)), 0.1));
+    assert(nthRoot!3(volume).value(RTQuantity(meter)).approxEqual(0.1));
+    assert(side.value(RTQuantity(meter)).approxEqual(0.1));
 }
 
 
