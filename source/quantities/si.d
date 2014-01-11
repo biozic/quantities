@@ -49,26 +49,26 @@ unittest // Durations
 /// Reserved names for SI dimensions
 enum SI : string
 {
-    length = "length", ///
-    mass = "mass", ///
-    time = "time", ///
-    electricCurrent = "electricCurrent", ///
-    temperature = "temperature", ///
-    amountOfSubstance = "amountOfSubstance", ///
-    luminousIntensity = "luminousIntensity" ///
+    length = "m", ///
+    mass = "kg", ///
+    time = "s", ///
+    electricCurrent = "A", ///
+    temperature = "K", ///
+    amountOfSubstance = "mol", ///
+    luminousIntensity = "cd" ///
 }
 
 /++
 Predefined units corresponding to the seven SI base units
 +/
-enum meter = unit!(SI.length, "m");
+enum meter = unit!(SI.length);
 alias metre = meter; /// ditto
-enum kilogram = unit!(SI.mass, "kg"); /// ditto
-enum second = unit!(SI.time, "s"); /// ditto
-enum ampere = unit!(SI.electricCurrent, "A"); /// ditto
-enum kelvin = unit!(SI.temperature, "K"); /// ditto
-enum mole = unit!(SI.amountOfSubstance, "mol"); /// ditto
-enum candela = unit!(SI.luminousIntensity, "cd"); /// ditto
+enum kilogram = unit!(SI.mass); /// ditto
+enum second = unit!(SI.time); /// ditto
+enum ampere = unit!(SI.electricCurrent); /// ditto
+enum kelvin = unit!(SI.temperature); /// ditto
+enum mole = unit!(SI.amountOfSubstance); /// ditto
+enum candela = unit!(SI.luminousIntensity); /// ditto
 
 /++
 Predefined unit corresponding to other common

@@ -37,7 +37,7 @@ enum inch = 2.54 * centi(meter);
 enum mile = 1609 * meter;
 
 // Define new units with non-SI dimensions
-enum euro = unit!("currency", "€");
+enum euro = unit!("€");
 enum dollar = euro / 1.35;
 
 // Default string representations
@@ -106,7 +106,7 @@ assertThrown!DimensionException(m = parseQuantity("10 ml"));
 assertThrown!ParsingException(m = parseQuantity("10 qGz"));
 
 // User-defined symbols
-auto byte_ = unit!("byte", "B");
+auto byte_ = unit!("B");
 SymbolList binSymbols;
 binSymbols.unitSymbols["B"] = byte_;
 binSymbols.prefixSymbols["Ki"] = 2^^10;

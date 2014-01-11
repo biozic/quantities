@@ -656,15 +656,15 @@ unittest // immutable RTQuantity
 }
 
 /// Creates a new monodimensional unit.
-template unit(string name, string symbol = name, N = double)
+template unit(string symbol, N = double)
 {
-    enum unit = Quantity!(Dimensions(name, symbol), N)(1.0);
+    enum unit = Quantity!(Dimensions(symbol), N)(1.0);
 }
 ///
 @name(`unit!"dim"`)
 unittest
 {
-    enum euro = unit!"currency";
+    enum euro = unit!"€";
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
     assert((1.35 * dollar).value(euro).approxEqual(1));
@@ -715,29 +715,21 @@ This struct holds a representation the dimensions of a quantity/unit.
 +/
 struct Dimensions
 {
-    private static struct Dim
+    private int[string] dims;
+
+    // Constructor used to create monodimensional base units
+    package this(string symbol) pure
     {
-        int power;
-        string symbol;
+        enforce(symbol, "The name of a dimension cannot be empty");
+        dims[symbol] = 1;
     }
 
-    private Dim[string] dims;
-
-    package this(string name, string symbol = null) pure
-    {
-        if (!name.length)
-            throw new Exception("The name of a dimension cannot be empty");
-        if (!symbol.length)
-            symbol = name;
-
-        dims[name] = Dim(1, symbol);
-    }
-
+    // Duplicates this object. Compile-time friendly.
     package immutable(Dimensions) idup() const pure
     {
         Dimensions result;
-        foreach (k, v; dims)
-            result.dims[k] = v;
+        foreach (sym, pow; dims)
+            result.dims[sym] = pow;
         return cast(immutable) result;
     }
 
@@ -746,51 +738,69 @@ struct Dimensions
     {
         return dims.length == 0;
     }
-    
+
+    // Mul or div two dimensions object
     package Dimensions opBinary(string op)(const(Dimensions) other) const pure
     {
         static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
 
         Dimensions result;
-        foreach (k, v; dims)
-            result.dims[k] = Dim(v.power, v.symbol);
-        foreach (k; other.dims.keys)
+
+        // Clone these dimensions in the result
+        foreach (sym, pow; dims)
+            result.dims[sym] = pow;
+
+        // Merge the other dimensions
+        foreach (sym, pow; other.dims)
         {
             enum powop = op == "*" ? "+" : "-";
-            if (k in dims)
+
+            if (sym in dims)
             {
-                auto p = mixin("dims[k].power" ~ powop ~ "other.dims[k].power");
+                // A dimension is common between this one and the other:
+                // add or sub them
+                auto p = mixin("dims[sym]" ~ powop ~ "pow");
+
+                // If the power becomes 0, remove the dimension from the list
+                // otherwise, set the new power
                 if (p == 0)
-                    result.dims.remove(k);
+                    result.dims.remove(sym);
                 else
-                    result.dims[k] = Dim(p, other.dims[k].symbol);
+                    result.dims[sym] = p;
             }
             else
-                result.dims[k] = Dim(mixin(powop ~ "other.dims[k].power"), other.dims[k].symbol);
+            {
+                // Add this new dimensions to the result
+                // (with a negative power if op == "/")
+                result.dims[sym] = mixin(powop ~ "pow");
+            }
         }
+
         return result;
     }
-    
+
+    // Raise a dimension to a integer power (value)
     package Dimensions exp(int value) const pure
     {
         if (value == 0)
             return Dimensions.init;
 
         Dimensions result;
-        foreach (k; dims.keys)
-            result.dims[k] = Dim(dims[k].power * value, dims[k].symbol);
+        foreach (sym, pow; dims)
+            result.dims[sym] = pow * value;
         return result;
     }
 
+    // Raise a dimensions to a rational power (1/value)
     package Dimensions expInv(int value) const pure
     {
         assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
         
         Dimensions result;
-        foreach (k; dims.keys)
+        foreach (sym, pow; dims)
         {
-            enforce(dims[k].power % value == 0, "Operation results in a non-integral dimension");
-            result.dims[k] = Dim(dims[k].power / value, dims[k].symbol);
+            enforce(pow % value == 0, "Operation results in a non-integral dimension");
+            result.dims[sym] = pow / value;
         }
         return result;
     }
@@ -799,17 +809,22 @@ struct Dimensions
     bool opEquals(const(Dimensions) other) const
     {
         import std.algorithm : sort, equal;
-        
-        bool same = (dims.keys.length == other.dims.keys.length)
-            && (sort(dims.keys).equal(sort(other.dims.keys)));
-        if (!same)
+
+        // Check the lengths
+        if (dims.length != other.dims.length)
             return false;
-        
-        foreach (k, v; dims)
+
+        // Check that the symbols are the same
+        if (!sort(dims.keys).equal(sort(other.dims.keys)))
+            return false;
+
+        // Compare the powers one by one
+        bool same = true;
+        foreach (sym, pow; dims)
         {
-            auto ov = k in other.dims;
-            assert(ov);
-            if (v.power != ov.power)
+            auto otherPow = sym in other.dims;
+            assert(otherPow);
+            if (pow != *otherPow)
             {
                 same = false;
                 break;
@@ -834,8 +849,8 @@ struct Dimensions
         }
         
         string[] dimstrs;
-        foreach (k, v; dims)
-            dimstrs ~= stringize(v.symbol, v.power);
+        foreach (sym, pow; dims)
+            dimstrs ~= stringize(sym, pow);
         
         string result = dimstrs.filter!"a !is null".join(" ");
         if (!result.length)
@@ -849,13 +864,14 @@ unittest // Dimension
 {
     import std.exception;
 
-    enum test = Dimensions(SI.length) * Dimensions(SI.mass);
-    assert(collectException(test.expInv(2)));
-
     enum d = Dimensions("foo");
     enum e = Dimensions("bar");
     enum f = Dimensions("bar");
     static assert(e == f);
+    static assert(d * e == e * d);
+
+    enum test = Dimensions(SI.length) * Dimensions(SI.mass);
+    assert(collectException(test.expInv(2)));
     enum g = test.exp(-1);
     static assert(g.exp(-1) == test);
     enum i = test * test;
@@ -865,10 +881,9 @@ unittest // Dimension
     static assert(j.toString == "");
     enum k = i.expInv(2);
     static assert(k == test);
-    static assert(d * e == e * d);
 
-    enum m = Dimensions("mdim", "m");
-    enum n = Dimensions("ndim", "n");
+    enum m = Dimensions("m");
+    enum n = Dimensions("n");
     static assert(m.toString == "m");
     static assert(m.exp(2).toString == "m^2");
     static assert(m.exp(-1).toString == "m^-1");

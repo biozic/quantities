@@ -146,7 +146,7 @@ unittest
     assert(parseQuantity("17 in", symbols).value(centi(meter)).approxEqual(17 * 2.54));
 
     // User-defined symbols
-    auto byte_ = unit!("byte", "B");
+    auto byte_ = unit!("B");
     SymbolList binSymbols;
     binSymbols.unitSymbols["B"] = byte_;
     binSymbols.prefixSymbols["Ki"] = 2^^10;

@@ -1,8 +1,8 @@
 import std.stdio;
 import quantities;
 
-enum celsius = unit!("celsius", "°C");
-enum fahrenheit = unit!("fahrenheit", "°F");
+enum celsius = unit!("°C");
+enum fahrenheit = unit!("°F");
 
 auto toSI(T)(T degC)
     if (T.dimensions == celsius.dimensions)
