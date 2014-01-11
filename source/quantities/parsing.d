@@ -84,6 +84,7 @@ module quantities.parsing;
 import quantities.base;
 import quantities.math;
 import quantities.si;
+import std.algorithm;
 import std.conv;
 import std.exception;
 import std.range;
@@ -91,7 +92,6 @@ import std.string;
 import std.traits;
 import std.utf;
 
-// TODO: Parse an ForwardRange of Char
 // TODO: Stop parsing at the position where there is a parsing error and go back to last known good position
 // TODO: Add possibility to add user-defined units and prefix (make the SI ones appendable)
 
@@ -105,12 +105,17 @@ version (unittest)
 
 /// Parses text for a unit or a quantity (with a numerical value) at runtime.
 RTQuantity parseQuantity(S)(S text)
-    if (isSomeString!S)
 {
+    static assert(isForwardRange!S && isSomeChar!(ElementType!S),
+                  "text must be a forward range of a character type");
+
     real value = 1;
     try
+    {
+        // This throws if there is no value ("no digits seen")
         value = std.conv.parse!real(text);
-    catch {}
+    }
+    catch {} // Explore the rest...
  
     if (text.empty)
         return RTQuantity(value, Dimensions.init);
@@ -136,6 +141,16 @@ unittest
 }
 
 @name(moduleName!parseQuantity ~ " header examples")
+unittest
+{
+    auto c = parseQuantity(
+        ["11.2", "<- value", "µmol/L", "<-unit"]
+        .filter!(x => !x.startsWith("<"))
+        .joiner(" ")
+    );
+    assert(approxEqual(c.value(nano(mole)/liter), 11200));
+}
+
 unittest
 {
     auto J = RTQuantity(joule);
@@ -474,10 +489,7 @@ struct Token
 }
 
 Token[] lex(S)(S input)
-    if (isSomeString!S)
 {
-    alias C = Unqual!(ElementEncodingType!S);
-
     enum State
     {
         none,
@@ -485,16 +497,15 @@ Token[] lex(S)(S input)
         integer,
         supinteger
     }
-    
-    auto original = input;
+
     Token[] tokapp;
-    size_t i, j;
+    auto buf = appender!string;
     State state = State.none;
     
     void pushToken(Tok type)
     {
-        tokapp ~= Token(type, original[i .. j].to!string);
-        i = j;
+        tokapp ~= Token(type, buf.data);
+        buf.clear();
         state = State.none;
     }
     
@@ -511,25 +522,22 @@ Token[] lex(S)(S input)
     while (!input.empty)
     {
         auto cur = input.front;
-        auto len = cur.codeLength!C;
         switch (cur)
         {
             case ' ':
             case '\t':
                 push();
-                j += len;
-                i = j;
                 break;
                 
             case '(':
                 push();
-                j += len;
+                buf.put(cur);
                 pushToken(Tok.lparen);
                 break;
                 
             case ')':
                 push();
-                j += len;
+                buf.put(cur);
                 pushToken(Tok.rparen);
                 break;
                 
@@ -538,20 +546,20 @@ Token[] lex(S)(S input)
             case '⋅':
             case '×':
                 push();
-                j += len;
+                buf.put(cur);
                 pushToken(Tok.mul);
                 break;
                 
             case '/':
             case '÷':
                 push();
-                j += len;
+                buf.put(cur);
                 pushToken(Tok.div);
                 break;
                 
             case '^':
                 push();
-                j += len;
+                buf.put(cur);
                 pushToken(Tok.exp);
                 break;
                 
@@ -561,7 +569,7 @@ Token[] lex(S)(S input)
                 if (state != State.integer)
                     push();
                 state = State.integer;
-                j += len;
+                buf.put(cur);
                 break;
                 
             case '⁰':
@@ -579,14 +587,14 @@ Token[] lex(S)(S input)
                 if (state != State.supinteger)
                     push();
                 state = State.supinteger;
-                j += len;
+                buf.put(cur);
                 break;
 
             default:
                 if (state == State.integer || state == State.supinteger)
                     push();
                 state = State.symbol;
-                j += len;
+                buf.put(cur);
                 break;
         }
         input.popFront();
