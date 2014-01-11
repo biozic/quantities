@@ -14,15 +14,17 @@ import quantities.parsing;
 
 unittest
 {
-    import std.stdio;
+    import quantities;
+
+    import std.math : approxEqual;
+    import std.stdio : writeln, writefln;
 
     // ------------------
     // Working with units
     // ------------------
-
     // Hint: work with units at compile-time
 
-    // Define new units
+    // Define new units from the predefined ones (in module quantity.si)
     enum inch = 2.54 * centi(meter);
     enum mile = 1609 * meter;
 
@@ -39,15 +41,19 @@ unittest
     // -----------------------
     // Working with quantities
     // -----------------------
-
     // Hint: work with quantities at runtime
 
+    // Use the predefined quantity types (in module quantity.si)
+    MassicConcentration!double conc;
+    Volume!double volume;
+    Mass!double mass;
+
     // I have to make a new solution at the concentration of 2.5 g/l.
-    auto conc = 2.5 * gram/liter;
+    conc = 2.5 * gram/liter;
     // The final volume is 10 ml.
-    auto volume = 10 * milli(liter);
+    volume = 10 * milli(liter);
     // What mass should I weigh?
-    auto mass = conc * volume;
+    mass = conc * volume;
     writefln("Weigh %f kg of substance", mass.value(kilogram)); 
     // prints: Weigh 0.000025 kg of substance
     // Wait! My scales graduations are 0.1 milligrams!
@@ -56,25 +62,12 @@ unittest
     // I knew the result would be 25 mg.
     assert(approxEqual(mass.value(milli(gram)), 25));
 
-    // Optional: we could have defined new types to hold our quantities
-    alias Mass = Store!kilogram; // Using a SI base unit.
-    alias Volume = Store!liter; // Using a SI compatible unit.
-    alias Concentration = Store!(kilogram/liter); // Using a derived unit.
-
-    auto speedMPH = 30 * mile/hour;
-    writefln("The speed limit is %s", speedMPH);
-    // prints: The speed limit is 13.4083[s^-1 m]
-    writefln("The speed limit is %.0f km/h", speedMPH.value(kilo(meter)/hour));
-    // prints: The speed limit is 48 km/h
-    writefln("The speed limit is %.0f in/s", speedMPH.value(inch/second));
-    // prints: The speed limit is 528 in/s
-
     auto wage = 65 * euro / hour;
     auto workTime = 1.6 * day;
     writefln("I've just earned %s!", wage * workTime);
     // prints: I've just earned 2496[€]!
-    writefln("I've just earned $ %.2f!", (wage * workTime).value(dollar));
-    // prints: I've just earned $ 3369.60!
+    writefln("I've just earned $%.2f!", (wage * workTime).value(dollar));
+    // prints: I've just earned $3369.60!
 
     // Type checking prevents incorrect assignments and operations
     static assert(!__traits(compiles, mass = 10 * milli(liter)));
@@ -84,16 +77,20 @@ unittest
     // Parsing quantities at runtime
     // -----------------------------
 
-    Mass m = parseQuantity("25 mg");
-    Volume V = parseQuantity("10 ml");
-    Concentration c = parseQuantity("2.5 g⋅L⁻¹");
-    assert(c == m / V);
-    Concentration target = parseQuantity("kg/l");
-    assert(c.value(target) == 0.0025);
+    Mass!double m;
+    Volume!double V;
+    MassicConcentration!double c;
+
+    m = parseQuantity("25 mg");
+    V = parseQuantity("10 ml");
+    c = parseQuantity("2.5 g⋅L⁻¹");
+    assert(c.rawValue.approxEqual((m / V).rawValue));
+    auto targetUnit = parseQuantity("kg/l");
+    assert(c.value(targetUnit).approxEqual(0.0025));
 
     import std.exception;
-    assertThrown!DimensionException(m = parseQuantity("10 ml"));
-    assertThrown!ParsingException(m = parseQuantity("10 qGz"));
+    assertThrown!ParsingException(c = parseQuantity("10 qGz"));
+    assertThrown!DimensionException(c = parseQuantity("2.5 mol⋅L⁻¹"));
 
     // User-defined symbols
     auto byte_ = unit!("B");

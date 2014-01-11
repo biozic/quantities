@@ -46,36 +46,19 @@ unittest // Durations
     assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
 }
 
-/// Reserved names for SI dimensions
-enum SI : string
-{
-    length = "m", ///
-    mass = "kg", ///
-    time = "s", ///
-    electricCurrent = "A", ///
-    temperature = "K", ///
-    amountOfSubstance = "mol", ///
-    luminousIntensity = "cd" ///
-}
-
 /++
-Predefined units corresponding to the seven SI base units
+Predefined SI units
 +/
-enum meter = unit!(SI.length);
+enum meter = unit!("m");
 alias metre = meter; /// ditto
-enum kilogram = unit!(SI.mass); /// ditto
-enum second = unit!(SI.time); /// ditto
-enum ampere = unit!(SI.electricCurrent); /// ditto
-enum kelvin = unit!(SI.temperature); /// ditto
-enum mole = unit!(SI.amountOfSubstance); /// ditto
-enum candela = unit!(SI.luminousIntensity); /// ditto
+enum kilogram = unit!("kg"); /// ditto
+enum second = unit!("s"); /// ditto
+enum ampere = unit!("A"); /// ditto
+enum kelvin = unit!("K"); /// ditto
+enum mole = unit!("mol"); /// ditto
+enum candela = unit!("cd"); /// ditto
 
-/++
-Predefined unit corresponding to other common
-units that are derived from them or compatible with them. The type of these
-quantities is a built-in numeric type when they have no dimensions.
-+/
-enum radian = meter / meter;
+enum radian = meter / meter; // ditto
 enum steradian = square(meter) / square(meter); /// ditto
 enum hertz = 1 / second; /// ditto
 enum newton = kilogram * meter / square(second); /// ditto
@@ -90,6 +73,7 @@ enum siemens = ampere / volt; /// ditto
 enum weber = volt * second; /// ditto
 enum tesla = weber / square(meter); /// ditto
 enum henry = weber / ampere; /// ditto
+enum celsius = kelvin; /// ditto
 enum lumen = candela / steradian; /// ditto
 enum lux = lumen / square(meter); /// ditto
 enum becquerel = 1 / second; /// ditto
@@ -110,6 +94,55 @@ alias litre = liter; /// ditto
 enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
+
+/++
+Predefined quantity type templates for SI quantities
++/
+alias Length(T) = Store!(meter, T);
+alias Mass(T) = Store!(kilogram, T); /// ditto
+alias Time(T) = Store!(second, T); /// ditto
+alias ElectricCurrent(T) = Store!(ampere, T); /// ditto
+alias Temperature(T) = Store!(kelvin, T); /// ditto
+alias AmountOfSubstance(T) = Store!(mole, T); /// ditto
+alias LuminousIntensity(T) = Store!(candela, T); /// ditto
+
+alias Area(T) = Store!(square(meter), T); /// ditto
+alias Volume(T) = Store!(cubic(meter), T); /// ditto
+alias Speed(T) = Store!(meter/second, T); /// ditto
+alias Acceleration(T) = Store!(meter/square(second), T); /// ditto
+alias MassDensity(T) = Store!(kilogram/cubic(meter), T); /// ditto
+alias CurrentDensity(T) = Store!(ampere/square(meter), T); /// ditto
+alias MagneticFieldStrength(T) = Store!(ampere/meter, T); /// ditto
+alias Concentration(T) = Store!(mole/cubic(meter), T); /// ditto
+alias MolarConcentration(T) = Concentration!T; /// ditto
+alias MassicConcentration(T) = Store!(kilogram/cubic(meter)); /// ditto
+alias Luminance(T) = Store!(candela/square(meter), T); /// ditto
+alias RefractiveIndex(T) = Store!(kilogram, T); /// ditto
+
+alias Angle(T) = Store!(radian, T); /// ditto
+alias SolidAngle(T) = Store!(steradian, T); /// ditto
+alias Frequency(T) = Store!(hertz, T); /// ditto
+alias Force(T) = Store!(newton, T); /// ditto
+alias Pressure(T) = Store!(pascal, T); /// ditto
+alias Energy(T) = Store!(joule, T); /// ditto
+alias Work(T) = Energy!T; /// ditto
+alias Heat(T) = Energy!T; /// dutto
+alias Power(T) = Store!(watt, T); /// ditto
+alias ElectricCharge(T) = Store!(coulomb, T); /// ditto
+alias ElectricPotential(T) = Store!(volt, T); /// ditto
+alias Capacitance(T) = Store!(farad, T); /// ditto
+alias ElectricResistance(T) = Store!(ohm, T); /// ditto
+alias ElectricConductance(T) = Store!(siemens, T); /// ditto
+alias MagneticFlux(T) = Store!(weber, T); /// ditto
+alias MagneticFluxDensity(T) = Store!(tesla, T); /// ditto
+alias Inductance(T) = Store!(henry, T); /// ditto
+alias LuminousFlux(T) = Store!(lumen, T); /// ditto
+alias Illuminance(T) = Store!(lux, T); /// ditto
+alias CelsiusTemperature(T) = Store!(celsius, T); /// ditto
+alias Radioactivity(T) = Store!(becquerel, T); /// ditto
+alias AbsorbedDose(T) = Store!(gray, T); /// ditto
+alias DoseEquivalent(T) = Store!(sievert, T); /// ditto
+alias CatalyticActivity(T) = Store!(katal, T); /// ditto
 
 /// Functions that apply a SI prefix to a unit.
 auto yotta(Q)(Q base) { return base * 1e24; }

@@ -130,7 +130,10 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     N value(Q)(Q target) const
         if(isQuantity!Q)
     {
-        mixin(checkDim!"target.dimensions");
+        static if (Q.runtime)
+            mixin(checkDim!("target.dimensions", true));
+        else
+            mixin(checkDim!"target.dimensions");
         return _value / target._value;
     }
     ///
@@ -870,7 +873,7 @@ unittest // Dimension
     static assert(e == f);
     static assert(d * e == e * d);
 
-    enum test = Dimensions(SI.length) * Dimensions(SI.mass);
+    enum test = d * e;
     assert(collectException(test.expInv(2)));
     enum g = test.exp(-1);
     static assert(g.exp(-1) == test);
