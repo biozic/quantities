@@ -58,6 +58,12 @@ struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
     static assert(isFloatingPoint!N);
     alias runtime = rt;
 
+    /// The type of the underlying scalar value.
+    alias valueType = N;
+    
+    /// The payload
+    private N _value;
+    
     /// The dimensions of the quantity.
     static if (runtime)
     {
@@ -74,18 +80,12 @@ struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
         enum code = `%s(` ~ dim ~ ` == dimensions,
                 format("Dimension error: %%s is not compatible with %%s",
                 ` ~ dim ~ `.toString(true), dimensions.toString(true))
-            );`;
+                );`;
         static if (runtime || forceRuntime)
             return format(code, "enforceEx!DimensionException");
         else
             return format(code, "static assert");
     }
-
-    /// The type of the underlying scalar value.
-    alias valueType = N;
-
-    /// The payload
-    private N _value;
 
     // Creates a new quantity from another one that is dimensionally consistent
     package this(T)(T other) inout
@@ -239,24 +239,22 @@ struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
         return opBinary!op(other);
     }
 
-    // Multiply two quantities
+    // Multiply or divide two quantities
     auto opBinary(string op, T)(T other) const
-        if (isQuantity!T && op == "*")
+        if (isQuantity!T && (op == "*" || op == "/"))
     {
         static if (runtime)
-            return RTQuantity(_value * other._value, dimensions + other.dimensions);
+        {
+            return RTQuantity(
+                mixin("_value" ~ op ~ "other._value"),
+                mixin("dimensions" ~ op ~ "other.dimensions")
+                );
+        }
         else
-            return Quantity!(dimensions + other.dimensions, N)(_value * other._value);
-    }
-
-    // Divide two quantities
-    auto opBinary(string op, T)(T other) const
-        if (isQuantity!T && op == "/")
-    {
-        static if (runtime)
-            return RTQuantity(_value / other._value, dimensions - other.dimensions);
-        else
-            return Quantity!(dimensions - other.dimensions, N)(_value / other._value);
+        {
+            return Quantity!(mixin("dimensions" ~ op ~ "other.dimensions"), N)(
+                mixin("_value" ~ op ~ "other._value"));
+        }
     }
 
     // Multiply or divide a quantity by a scalor factor
@@ -281,9 +279,9 @@ struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
         if (isNumeric!T && op == "/")
     {
         static if (runtime)
-            return RTQuantity(other / _value, -dimensions);
+            return RTQuantity(other / _value, dimensions.exp(-1));
         else
-            return Quantity!(-dimensions, N)(other / _value);
+            return Quantity!(dimensions.exp(-1), N)(other / _value);
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
@@ -795,54 +793,55 @@ struct Dimensions
     {
         return dims.length == 0;
     }
-
-    Dimensions opUnary(string op)() const pure nothrow
-        if (op == "+" || op == "-")
-    {
-        Dimensions result;
-        foreach (k; dims.keys)
-            result.dims[k] = Dim(mixin(op ~ "dims[k].power"), dims[k].symbol);
-        return result;
-    }
     
     Dimensions opBinary(string op)(const(Dimensions) other) const pure
-        if (op == "+" || op == "-")
     {
+        static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
+
         Dimensions result;
         foreach (k, v; dims)
             result.dims[k] = Dim(v.power, v.symbol);
         foreach (k; other.dims.keys)
         {
+            enum powop = op == "*" ? "+" : "-";
             if (k in dims)
             {
-                auto p = mixin("dims[k].power" ~ op ~ "other.dims[k].power");
+                auto p = mixin("dims[k].power" ~ powop ~ "other.dims[k].power");
                 if (p == 0)
                     result.dims.remove(k);
                 else
                     result.dims[k] = Dim(p, other.dims[k].symbol);
             }
             else
-                result.dims[k] = Dim(mixin(op ~ "other.dims[k].power"), other.dims[k].symbol);
+                result.dims[k] = Dim(mixin(powop ~ "other.dims[k].power"), other.dims[k].symbol);
         }
         return result;
     }
     
-    Dimensions opBinary(string op)(int value) const pure
-        if (op == "*" || op == "/")
+    Dimensions exp(int value) const pure
     {
+        if (value == 0)
+            return Dimensions.init;
+
+        Dimensions result;
+        foreach (k; dims.keys)
+            result.dims[k] = Dim(dims[k].power * value, dims[k].symbol);
+        return result;
+    }
+
+    Dimensions expInv(int value) const pure
+    {
+        assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
+        
         Dimensions result;
         foreach (k; dims.keys)
         {
-            static if (op == "/")
-            {
-                if (dims[k].power % value != 0)
-                    throw new Exception("Operation results in a non-integral dimension");
-            }
-            result.dims[k] = Dim(mixin("dims[k].power" ~ op ~ "value"), dims[k].symbol);
+            enforce(dims[k].power % value == 0, "Operation results in a non-integral dimension");
+            result.dims[k] = Dim(dims[k].power / value, dims[k].symbol);
         }
         return result;
     }
-    
+
     bool opEquals(const(Dimensions) other) const
     {
         import std.algorithm : sort, equal;
@@ -897,30 +896,29 @@ unittest
 {
     import std.exception;
 
-    enum test = Dimensions(SI.length) + Dimensions(SI.mass);
-    assert(collectException(test / 2));
+    enum test = Dimensions(SI.length) * Dimensions(SI.mass);
+    assert(collectException(test.expInv(2)));
 
     enum d = Dimensions("foo");
     enum e = Dimensions("bar");
     enum f = Dimensions("bar");
     static assert(e == f);
-    enum g = -test;
-    static assert(-g == test);
-    enum h = +test;
-    static assert(h == test);
-    enum i = test + test;
-    static assert(i == test * 2);
-    enum j = test - test;
+    enum g = test.exp(-1);
+    static assert(g.exp(-1) == test);
+    enum i = test * test;
+    static assert(i == test.exp(2));
+    enum j = test / test;
     static assert(j.empty);
     static assert(j.toString == "");
-    enum k = i / 2;
+    enum k = i.expInv(2);
     static assert(k == test);
-    static assert(d + e == e + d);
+    static assert(d * e == e * d);
 
     enum m = Dimensions("mdim", "m");
     enum n = Dimensions("ndim", "n");
     static assert(m.toString == "m");
-    static assert((m*2).toString == "m^2");
-    static assert((-m).toString == "m^-1");
-    static assert((m+n).toString == "m n" || (m+n).toString == "n m");
+    static assert(m.exp(2).toString == "m^2");
+    static assert(m.exp(-1).toString == "m^-1");
+    static assert((m*m).expInv(2).toString == "m");
+    static assert((m*n).toString == "m n" || (m*n).toString == "n m");
 }

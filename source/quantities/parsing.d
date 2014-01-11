@@ -91,8 +91,9 @@ import std.string;
 import std.traits;
 import std.utf;
 
-// TODO: Parse an ForwardRange of Char: stop at position where there is a parsing error and go back to last known good position
-// TODO: Add possibility to add user-defined units in the parser (make the parser an aggregate and make a default one available)
+// TODO: Parse an ForwardRange of Char
+// TODO: Stop parsing at the position where there is a parsing error and go back to last known good position
+// TODO: Add possibility to add user-defined units and prefix (make the SI ones appendable)
 
 version (Have_tested) import tested;
 else private struct name { string dummy; }
@@ -318,7 +319,7 @@ RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
         tokens.advance(Tok.integer);
 
     int n = parseInteger(tokens);
-    ret.resetTo(pow(ret, n));
+    ret.resetTo(ret.pow(n));
     return ret;
 }
 @name(fullyQualifiedName!parseExponentUnit)
@@ -407,6 +408,16 @@ RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
     catch (ParsingException e)
     {
         // Try with a prefix
+
+        // Special case of "da" that is a 2-letter prefix
+        if (str.startsWith("da"))
+        {
+            string unit = str.dropExactly(2).to!string;
+            enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix da");
+            return SIPrefixSymbols["da"] * parseUnitSymbol(unit);
+        }
+
+        // Try 1-letter prefixes
         string prefix = str.takeExactly(1).to!string;
         assert(prefix.length, "Prefix with no length");
         auto factor = prefix in SIPrefixSymbols;

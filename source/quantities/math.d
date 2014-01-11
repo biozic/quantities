@@ -39,16 +39,16 @@ auto pow(int n, U)(U unit)
     if (isQuantity!U)
 {
     static if (U.runtime)
-        return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
+        return RTQuantity(unit.rawValue ^^ n, unit.dimensions.exp(n)); 
     else
-        return Quantity!(U.dimensions * n, U.valueType)(unit.rawValue ^^ n);
+        return Quantity!(U.dimensions.exp(n), U.valueType)(unit.rawValue ^^ n);
 }
 
 // Power function when n is not known at compile time.
 auto pow(U)(U unit, int n)
     if (isQuantity!U && U.runtime)
 {
-    return RTQuantity(unit.rawValue ^^ n, unit.dimensions * n); 
+    return RTQuantity(unit.rawValue ^^ n, unit.dimensions.exp(n)); 
 }
 
 @name("CT square, cubic, pow")
@@ -73,9 +73,9 @@ auto sqrt(Q)(Q quantity)
 {
     import std.math;
     static if (Q.runtime)
-        return RTQuantity(std.math.sqrt(quantity.rawValue), quantity.dimensions / 2);
+        return RTQuantity(std.math.sqrt(quantity.rawValue), quantity.dimensions.expInv(2));
     else
-        return Quantity!(Q.dimensions / 2, Q.valueType)(std.math.sqrt(quantity.rawValue));
+        return Quantity!(Q.dimensions.expInv(2), Q.valueType)(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
@@ -84,9 +84,9 @@ auto cbrt(Q)(Q quantity)
 {
     import std.math;
     static if (Q.runtime)
-        return RTQuantity(std.math.cbrt(quantity.rawValue), quantity.dimensions / 3);
+        return RTQuantity(std.math.cbrt(quantity.rawValue), quantity.dimensions.expInv(3));
     else
-        return Quantity!(Q.dimensions / 3, Q.valueType)(std.math.cbrt(quantity.rawValue));
+        return Quantity!(Q.dimensions.expInv(3), Q.valueType)(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
@@ -95,9 +95,9 @@ auto nthRoot(int n, Q)(Q quantity)
 {
     import std.math;
     static if (Q.runtime)
-        return RTQuantity(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions / n);
+        return RTQuantity(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions.expInv(n));
     else
-        return Quantity!(Q.dimensions / n, Q.valueType)(std.math.pow(quantity.rawValue, 1.0 / n));
+        return Quantity!(Q.dimensions.expInv(n), Q.valueType)(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 ///
