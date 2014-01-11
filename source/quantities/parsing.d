@@ -418,7 +418,7 @@ struct QuantityParser
 }
 
 /// This struct contains the symbols of the units and the prefixes
-/// that the parser can recognize.
+/// that the parser can handle.
 struct SymbolList
 {
     /// An associative arrays of quantities (units) keyed by their symbol
@@ -428,7 +428,7 @@ struct SymbolList
     real[string] prefixSymbols;
 }
 
-/// Returns the default list of symbols that a parser can regonize
+/// Returns the default list, consisting of the main SI units and prefixes.
 SymbolList defaultSymbolList()
 {
     return SymbolList(SIUnitSymbols, SIPrefixSymbols);

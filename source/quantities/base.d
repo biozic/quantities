@@ -21,14 +21,14 @@ version (unittest)
     import quantities.parsing;
 }
 
-enum RTCheck
+enum AtRuntime
 {
     no = false,
     yes = true
 }
 
 /++
-A quantity type, which holds a value and some dimensions.
+Quantity types which holds a value and some dimensions.
 
 The value is stored internally as a field of type N, which defaults to double.
 A dimensionless quantity can be cast to a builtin numeric type.
@@ -36,8 +36,10 @@ A dimensionless quantity can be cast to a builtin numeric type.
 Arithmetic operators (+ - * /), as well as assignment and comparison operators,
 are defined when the operations are dimensionally correct, otherwise an error
 occurs at compile-time.
+
+RTQuantity can be used at runtime.
 +/
-struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
+struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
 {
     static assert(isFloatingPoint!N);
     alias runtime = rt;
@@ -347,9 +349,10 @@ struct Quantity(alias dim, N = double, RTCheck rt = RTCheck.no)
     }
 }
 
-/// A quantity type for runtime calculations.
-alias RTQuantity = Quantity!(null, real, RTCheck.yes);
+/// ditto
+alias RTQuantity = Quantity!(null, real, AtRuntime.yes);
 
+/// Tests whether T is a quantity type
 template isQuantity(T)
 {
     alias U = Unqual!T;
@@ -673,7 +676,7 @@ dimensions, it doesn't bind the stored value to a particular unit. Use in
 conjunction with the store method of quantities.
 +/
 template Store(Q, N = double)
-    if (isQuantityType!Q)
+    if (isQuantity!Q)
 {
     alias Store = Quantity!(Q.dimensions, N);
 }
@@ -708,7 +711,7 @@ unittest // Type conservation
 }
 
 /++
-This struct represents the dimensions of a quantity/unit.
+This struct holds a representation the dimensions of a quantity/unit.
 +/
 struct Dimensions
 {
@@ -720,7 +723,7 @@ struct Dimensions
 
     private Dim[string] dims;
 
-    this(string name, string symbol = null) pure
+    package this(string name, string symbol = null) pure
     {
         if (!name.length)
             throw new Exception("The name of a dimension cannot be empty");
@@ -730,7 +733,7 @@ struct Dimensions
         dims[name] = Dim(1, symbol);
     }
 
-    immutable(Dimensions) idup() const pure
+    package immutable(Dimensions) idup() const pure
     {
         Dimensions result;
         foreach (k, v; dims)
@@ -738,12 +741,13 @@ struct Dimensions
         return cast(immutable) result;
     }
 
+    /// Tests if the dimensions are empty
     @property bool empty() const pure nothrow
     {
         return dims.length == 0;
     }
     
-    Dimensions opBinary(string op)(const(Dimensions) other) const pure
+    package Dimensions opBinary(string op)(const(Dimensions) other) const pure
     {
         static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
 
@@ -767,7 +771,7 @@ struct Dimensions
         return result;
     }
     
-    Dimensions exp(int value) const pure
+    package Dimensions exp(int value) const pure
     {
         if (value == 0)
             return Dimensions.init;
@@ -778,7 +782,7 @@ struct Dimensions
         return result;
     }
 
-    Dimensions expInv(int value) const pure
+    package Dimensions expInv(int value) const pure
     {
         assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
         
@@ -791,6 +795,7 @@ struct Dimensions
         return result;
     }
 
+    /// Returns true if the dimensions are the same
     bool opEquals(const(Dimensions) other) const
     {
         import std.algorithm : sort, equal;
