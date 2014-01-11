@@ -21,9 +21,6 @@ Copyright 2013, Nicolas Sicard.
 
 License: Boost License 1.0.
 
-* DDoc-generated help: http://biozic.github.io/quantities
-* Source: https://github.com/biozic/quantities
-
 ### Synopsis
 
 ```d

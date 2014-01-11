@@ -48,16 +48,14 @@ auto pow(U)(U unit, int n)
     return RTQuantity(unit.rawValue ^^ n, unit.dimensions.exp(n)); 
 }
 
-@name("CT square, cubic, pow")
-unittest
+unittest // CT square, cubic, pow
 {
     auto surface = 1 * square(meter);
     auto volume = 1 * cubic(meter);
     volume = 1 * pow!3(meter);
 }
 
-@name("RT square, cubic, pow")
-unittest
+unittest // RT square, cubic, pow
 {
     RTQuantity surface = 1 * square(meter);
     RTQuantity volume = 1 * cubic(meter);
@@ -98,8 +96,7 @@ auto nthRoot(int n, Q)(Q quantity)
 }
 
 ///
-@name("CT Powers of a quantity")
-unittest
+unittest // CT Powers of a quantity
 {
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);
@@ -111,8 +108,7 @@ unittest
     assert(approxEqual(side.value(deci(meter)), 1));
 }
 
-@name("RT Powers of a quantity")
-unittest
+unittest // RT Powers of a quantity
 {
     RTQuantity surface = 25 * square(meter);
     RTQuantity side = sqrt(surface);
@@ -136,15 +132,13 @@ Q abs(Q)(Q quantity)
         return Q(std.math.fabs(quantity.rawValue));
 }
 ///
-@name("abs")
-unittest
+unittest // abs
 {
     auto deltaT = -10 * second;
     assert(abs(deltaT) == 10 * second);
 }
 
-@name("RT abs")
-unittest
+unittest // RT abs
 {
     RTQuantity deltaT = -10 * RTQuantity(second);
     assert(abs(deltaT) == 10 * RTQuantity(second));

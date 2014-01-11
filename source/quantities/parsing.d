@@ -120,7 +120,6 @@ RTQuantity parseQuantity(S)(S text)
     return value * parseCompoundUnit(tokens);
 }
 ///
-@name("Example of " ~ fullyQualifiedName!parseQuantity)
 unittest
 {
     alias Concentration = Store!(mole/cubic(meter));
@@ -136,8 +135,7 @@ unittest
     assert(t == 1 * hour);
 }
 
-@name(moduleName!parseQuantity ~ " header examples")
-unittest
+unittest // Parsing a range of characters that is not a string
 {
     auto c = parseQuantity(
         ["11.2", "<- value", "µmol/L", "<-unit"]
@@ -147,7 +145,7 @@ unittest
     assert(approxEqual(c.value(nano(mole)/liter), 11200));
 }
 
-unittest
+unittest // Examples from the header
 {
     auto J = RTQuantity(joule);
     assert(parseQuantity("1 N m") == J);
@@ -166,8 +164,7 @@ unittest
     assert(parseQuantity("1 kg/(m s^2)") == Pa);
 }
 
-@name(fullyQualifiedName!parseQuantity)
-unittest
+unittest // Test parsing
 {
     import std.math : approxEqual;
     
@@ -219,7 +216,6 @@ real convert(S, U)(S from, U target)
     return base.value(unit);
 }
 ///
-@name(fullyQualifiedName!convert)
 unittest
 {
     auto k = convert("3 min", "s");
@@ -304,7 +300,6 @@ RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
 
     return ret;
 }
-@name(fullyQualifiedName!parseCompoundUnit)
 unittest
 {
     assert(parseCompoundUnit(lex("m * m")) == square(RTQuantity(meter)));
@@ -333,7 +328,6 @@ RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
     ret.resetTo(ret.pow(n));
     return ret;
 }
-@name(fullyQualifiedName!parseExponentUnit)
 unittest
 {
     assert(parseExponentUnit(lex("m²")) == square(RTQuantity(meter)));
@@ -371,7 +365,6 @@ int parseInteger(T)(auto ref T[] tokens)
         tokens.advance();
     return n;
 }
-@name(fullyQualifiedName!parseInteger)
 unittest
 {
     assert(parseInteger(lex("-123")) == -123);
@@ -396,7 +389,6 @@ RTQuantity parseUnit(T)(auto ref T[] tokens)
 
     return ret;
 }
-@name(fullyQualifiedName!parseUnit)
 unittest
 {
     assert(parseUnit(lex("(m)")) == RTQuantity(meter));
@@ -442,7 +434,6 @@ RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
             return parseUnitSymbol(str);
     }
 }
-@name(fullyQualifiedName!parsePrefixUnit)
 unittest
 {
     assert(approxEqual(parsePrefixUnit(lex("mm")).rawValue, milli(meter).rawValue));
@@ -457,7 +448,6 @@ RTQuantity parseUnitSymbol(string str)
     enforceEx!ParsingException(uptr, "Unknown unit symbol: " ~ str);
     return *uptr;
 }
-@name(fullyQualifiedName!parseUnitSymbol)
 unittest
 {
     assert(parseUnitSymbol("m") == RTQuantity(meter));

@@ -41,7 +41,7 @@ enum RTCheck
     yes = true
 }
 
-/+
+/++
 A quantity type, which holds a value and some dimensions.
 
 The value is stored internally as a field of type N, which defaults to double.
@@ -373,66 +373,57 @@ template isQuantity(T)
         enum isQuantity = false;
 }
 
-@name("Quantity constructor")
-unittest
+unittest // Quantity constructor
 {
     enum time = Store!second(1 * minute);
     assert(time.value(second) == 60);
 }
 
-@name("RTQuantity constructor")
-unittest
+unittest // RTQuantity constructor
 {
     RTQuantity time;
     time = RTQuantity(60, second.dimensions);
     assert(time.value(second) == 60);
 }
 
-@name("Quantity.value")
-unittest
+unittest // Quantity.value
 {
     enum speed = 100 * meter / (5 * second);
     static assert(speed.value(meter / second) == 20);
 }
 
-@name("RTQuantity.value")
-unittest
+unittest // RTQuantity.value
 {
     RTQuantity speed = 100 * meter / (5 * second);
     assert(speed.value(meter / second) == 20);
 }
 
-@name("Quantity.store")
-unittest
+unittest // Quantity.store
 {
     enum length = meter.store!real;
     static assert(is(length.valueType == real));
 }
 
-@name("Quantity.opCast")
-unittest
+unittest // Quantity.opCast
 {
     enum angle = 12 * radian;
     static assert(cast(double) angle == 12);
 }
 
-@name("RTQuantity.opCast")
-unittest
+unittest // RTQuantity.opCast
 {
     RTQuantity angle = 12 * radian;
     assert(cast(double) angle == 12);
 }
 
-@name("Quantity.opAssign Q = Q")
-unittest
+unittest // Quantity.opAssign Q = Q
 {
     auto length = meter;
     length = 2.54 * centi(meter);
     assert(approxEqual(length.value(meter), 0.0254));
 }
 
-@name("RTQuantity.opAssign Q = Q")
-unittest
+unittest // RTQuantity.opAssign Q = Q
 {
     RTQuantity length;
     length = 2.54 * centi(meter);
@@ -441,8 +432,7 @@ unittest
     assert(approxEqual(length.value(meter), 0.0254));
 }
 
-@name("Quantity.opUnary +Q -Q")
-unittest
+unittest // Quantity.opUnary +Q -Q
 {
     enum length = + meter;
     static assert(length == 1 * meter);
@@ -450,8 +440,7 @@ unittest
     static assert(length2 == -1 * meter);
 }
 
-@name("RTQuantity.opUnary +Q -Q")
-unittest
+unittest // RTQuantity.opUnary +Q -Q
 {
     RTQuantity length = + meter;
     assert(length == 1 * meter);
@@ -459,8 +448,7 @@ unittest
     assert(length == -1 * meter);
 }
 
-@name("Quantity.opBinary Q*N Q/N")
-unittest
+unittest // Quantity.opBinary Q*N Q/N
 {
     enum time = second * 60;
     static assert(time.value(second) == 60);
@@ -468,8 +456,7 @@ unittest
     static assert(time2.value(second) == 1.0/2);
 }
 
-@name("RTQuantity.opBinary Q*N Q/N")
-unittest
+unittest // RTQuantity.opBinary Q*N Q/N
 {
     RTQuantity time = second * 60;
     assert(time.value(second) == 60);
@@ -477,8 +464,7 @@ unittest
     assert(time.value(second) == 1.0/2);
 }
 
-@name("Quantity.opBinary Q+Q Q-Q")
-unittest
+unittest // Quantity.opBinary Q+Q Q-Q
 {
     enum length = meter + meter;
     static assert(length.value(meter) == 2);
@@ -486,8 +472,7 @@ unittest
     static assert(length2.value(meter) == 1);
 }
 
-@name("RTQuantity.opBinary Q+Q Q-Q")
-unittest
+unittest // RTQuantity.opBinary Q+Q Q-Q
 {
     RTQuantity length = meter + meter;
     assert(length.value(meter) == 2);
@@ -495,8 +480,7 @@ unittest
     assert(length.value(meter) == 1);
 }
 
-@name("Quantity.opBinary Q*Q Q/Q")
-unittest
+unittest // Quantity.opBinary Q*Q Q/Q
 {
     enum length = meter * 5;
     enum surface = length * length;
@@ -511,8 +495,7 @@ unittest
     static assert(y.rawValue == 60);
 }
 
-@name("RTQuantity.opBinary Q*Q Q/Q")
-unittest
+unittest // RTQuantity.opBinary Q*Q Q/Q
 {
     RTQuantity length = meter * 5;
     RTQuantity surface = length * length;
@@ -527,36 +510,31 @@ unittest
     assert(y.rawValue == 60);
 }
 
-@name("Quantity.opBinaryRight N*Q")
-unittest
+unittest // Quantity.opBinaryRight N*Q
 {
     enum length = 100 * meter;
     static assert(length == meter * 100);
 }
 
-@name("RTQuantity.opBinaryRight N*Q")
-unittest
+unittest // RTQuantity.opBinaryRight N*Q
 {
     RTQuantity length = 100 * meter;
     assert(length == meter * 100);
 }
 
-@name("Quantity.opBinaryRight N/Q")
-unittest
+unittest // Quantity.opBinaryRight N/Q
 {
     enum x = 1 / (2 * meter);
     static assert(x.value(1/meter) == 1.0/2);
 }
 
-@name("RTQuantity.opBinaryRight N/Q")
-unittest
+unittest // RTQuantity.opBinaryRight N/Q
 {
     RTQuantity x = 1 / (2 * meter);
     assert(x.value(1/meter) == 1.0/2);
 }
 
-@name("Quantity.opOpAssign Q+=Q Q-=Q")
-unittest
+unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
     auto time = 10 * second;
     time += 50 * second;
@@ -565,8 +543,7 @@ unittest
     assert(approxEqual(time.value(second), 20));
 }
 
-@name("RTQuantity.opOpAssign Q+=Q Q-=Q")
-unittest
+unittest // RTQuantity.opOpAssign Q+=Q Q-=Q
 {
     RTQuantity time = 10 * second;
     time += 50 * second;
@@ -575,8 +552,7 @@ unittest
     assert(approxEqual(time.value(second), 20));
 }
 
-@name("Quantity.opOpAssign Q*=N Q/=N")
-unittest
+unittest // Quantity.opOpAssign Q*=N Q/=N
 {
     auto time = 20 * second;
     time *= 2;
@@ -585,8 +561,7 @@ unittest
     assert(approxEqual(time.value(second), 10));
 }
 
-@name("RTQuantity.opOpAssign Q*=N Q/=N")
-unittest
+unittest // RTQuantity.opOpAssign Q*=N Q/=N
 {
     RTQuantity time = 20 * second;
     time *= 2;
@@ -595,20 +570,17 @@ unittest
     assert(approxEqual(time.value(second), 10));
 }
 
-@name("Quantity.opEquals")
-unittest
+unittest // Quantity.opEquals
 {
     assert(1 * minute == 60 * second);
 }
 
-@name("RTQuantity.opEquals")
-unittest
+unittest // RTQuantity.opEquals
 {
     assert(RTQuantity(1 * minute) == RTQuantity(60 * second));
 }
 
-@name("Quantity.opCmp")
-unittest
+unittest // Quantity.opCmp
 {
     assert(second < minute);
     assert(minute <= minute);
@@ -616,8 +588,7 @@ unittest
     assert(hour >= hour);
 }
 
-@name("RTQuantity.opCmp")
-unittest
+unittest // RTQuantity.opCmp
 {
     assert(RTQuantity(second) < RTQuantity(minute));
     assert(RTQuantity(minute) <= RTQuantity(minute));
@@ -625,8 +596,7 @@ unittest
     assert(hour >= hour);
 }
 
-@name("Compilation errors for incompatible dimensions")
-unittest
+unittest // Compilation errors for incompatible dimensions
 {
     static assert(!__traits(compiles, Store!meter(1 * second)));
     Store!meter m;
@@ -652,8 +622,7 @@ unittest
     static assert(!__traits(compiles, m < 1));
 }
 
-@name("Exceptions for incompatible dimensions")
-unittest
+unittest // Exceptions for incompatible dimensions
 {
     RTQuantity m = meter;
     assertThrown!DimensionException(m = RTQuantity(1 * second));
@@ -679,8 +648,7 @@ unittest
     assertThrown!DimensionException(m < 1);
 }
 
-@name("immutable Quantity")
-unittest
+unittest // immutable Quantity
 {
     immutable length = 3e5 * kilo(meter);
     immutable time = 1 * second;
@@ -689,8 +657,7 @@ unittest
     assert(speedOfLight > 1 * meter / minute);
 }
 
-@name("immutable RTQuantity")
-unittest
+unittest // immutable RTQuantity
 {
     immutable RTQuantity length = 3e5 * kilo(meter);
     immutable RTQuantity time = 1 * second;
@@ -733,8 +700,7 @@ template Store(alias unit, N = double)
 }
 
 ///
-@name("Store example")
-unittest
+unittest // Store example
 {
     alias Mass = Store!kilogram;
     Mass mass = 15 * ton;
@@ -744,8 +710,7 @@ unittest
     Surface s = 4 * square(meter);
 }
 
-@name("Type conservation")
-unittest
+unittest // Type conservation
 {
     Store!(meter, float) length; 
     Store!(second, double) time;
@@ -889,8 +854,7 @@ struct Dimensions
     }
 }
 
-@name("Dimension")
-unittest
+unittest // Dimension
 {
     import std.exception;
 
