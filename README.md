@@ -104,4 +104,15 @@ assert(c.value(target) == 0.0025);
 import std.exception;
 assertThrown!DimensionException(m = parseQuantity("10 ml"));
 assertThrown!ParsingException(m = parseQuantity("10 qGz"));
+
+// User-defined symbols
+auto byte_ = unit!("byte", "B");
+SymbolList binSymbols;
+binSymbols.unitSymbols["B"] = byte_;
+binSymbols.prefixSymbols["Ki"] = 2^^10;
+binSymbols.prefixSymbols["Mi"] = 2^^20;
+// ...
+auto fileLength = parseQuantity("1.0 MiB", binSymbols);
+writefln("Length: %.0f bytes", fileLength.value(byte_));
+// prints: Length: 1048576 bytes
 ```
