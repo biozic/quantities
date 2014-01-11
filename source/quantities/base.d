@@ -128,8 +128,9 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
     N value(Q)(Q target) const
-        if(isQuantity!Q)
     {
+        static assert(isQuantity!Q, "Unexpected type: " ~ Q.stringof);
+
         static if (Q.runtime)
             mixin(checkDim!("target.dimensions", true));
         else
@@ -144,10 +145,29 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     }
 
     /++
+    Tests wheter this quantity has the same dimensions 
+    +/
+    bool isConsistentWith(Q)(Q other) const
+    {
+        static assert(isQuantity!Q, "Unexpected type: " ~ Q.stringof);
+        return dimensions == other.dimensions;
+    }
+    ///
+    unittest
+    {
+        static assert(minute.isConsistentWith(second));
+
+        auto n = parseQuantity("5 mmol");
+        auto V = parseQuantity("0.5 L");
+        assert((n / V).isConsistentWith(mole/liter));
+    }
+
+    /++
     Returns a new quantity where the value is stored in a field of type T.
     +/
     auto store(T)() const
     {
+        static assert(isFloatingPoint!T, "Unexpected floating point type: " ~ T.stringof);
         return Quantity!(dimensions, T, runtime)(_value);
     }
     ///
