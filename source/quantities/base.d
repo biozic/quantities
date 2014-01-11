@@ -20,8 +20,6 @@ version (unittest)
     import quantities.si;
     import quantities.parsing;
 }
-version (Have_tested) import tested;
-else private struct name { string dummy; }
 
 /// Exception thrown when operating on two units that are not interconvertible.
 class DimensionException : Exception

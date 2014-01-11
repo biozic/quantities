@@ -95,9 +95,6 @@ import std.utf;
 // TODO: Stop parsing at the position where there is a parsing error and go back to last known good position
 // TODO: Add possibility to add user-defined units and prefix (make the SI ones appendable)
 
-version (Have_tested) import tested;
-else private struct name { string dummy; }
-
 version (unittest)
     import std.math : approxEqual;
 

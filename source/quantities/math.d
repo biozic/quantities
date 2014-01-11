@@ -16,9 +16,6 @@ version (unittest)
     import quantities.si;
     import std.math : approxEqual;
 }
-version (Have_tested) import tested;
-else private struct name { string dummy; }
-
 
 /// Transforms a quantity/unit.
 auto square(U)(U unit)
