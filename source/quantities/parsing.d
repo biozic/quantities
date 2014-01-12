@@ -84,6 +84,7 @@ module quantities.parsing;
 import quantities.base;
 import quantities.math;
 import quantities.si;
+import std.array;
 import std.algorithm;
 import std.conv;
 import std.exception;
@@ -110,18 +111,22 @@ RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "text must be a forward range of a character type");
 
-    real value = 1;
+    real value; // nan
     try
     {
         // This throws if there is no value ("no digits seen")
         value = std.conv.parse!real(text);
     }
-    catch {} // Explore the rest...
+    catch
+    {
+        value = 1;
+    }
  
     if (text.empty)
         return RTQuantity(value, Dimensions.init);
 
-    auto tokens = lex(text);
+    auto input = text.to!string;
+    auto tokens = lex(input);
     auto parser = QuantityParser(symbolList);
     return value * parser.parseCompoundUnit(tokens);
 }
@@ -255,7 +260,8 @@ struct QuantityParser
             }
             
             RTQuantity rhs = parseExponentUnit(tokens);
-            ret.resetTo(multiply ? (ret * rhs) : (ret / rhs));
+            ret.permeate();
+            ret = multiply ? (ret * rhs) : (ret / rhs);
             
             if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
                 break;
@@ -291,8 +297,7 @@ struct QuantityParser
             tokens.advance(Tok.integer);
         
         int n = parseInteger(tokens);
-        ret.resetTo(ret.pow(n));
-        return ret;
+        return ret.pow(n);
     }
     unittest
     {
@@ -305,28 +310,7 @@ struct QuantityParser
         if (is(T : Token))
     {
         tokens.check(Tok.integer, Tok.supinteger);
-        auto i = tokens.front;
-        auto slice = i.slice;
-        if (i.type == Tok.supinteger)
-        {
-            slice = translate(slice, [
-                '⁰':'0',
-                '¹':'1',
-                '²':'2',
-                '³':'3',
-                '⁴':'4',
-                '⁵':'5',
-                '⁶':'6',
-                '⁷':'7',
-                '⁸':'8',
-                '⁹':'9',
-                '⁺':'+',
-                '⁻':'-'
-            ]);
-        }
-        auto n = std.conv.parse!int(slice);
-        enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
-        
+        int n = tokens.front.integer;
         if (tokens.length)
             tokens.advance();
         return n;
@@ -368,52 +352,38 @@ struct QuantityParser
         auto str = tokens.front.slice;
         if (tokens.length)
             tokens.advance();
-        
-        try
-        {   
-            // Try a standalone unit symbol (no prefix)
-            return parseUnitSymbol(str);
-        }
-        catch (ParsingException e)
+
+        // Try a standalone unit symbol (no prefix)
+        auto uptr = str in symbolList.unitSymbols;
+        if (uptr)
+            return *uptr;
+
+        // Try with prefixes, the longest prefix first
+        real* factor;
+        for (size_t i = maxPrefixLength; i > 0; i--)
         {
-            // Try with prefixes, the longest prefix first
-            real* factor;
-            for (size_t i = maxPrefixLength; i > 0; i--)
+            if (str.length >= i)
             {
-                if (str.length >= i)
+                string prefix = str[0 .. i].to!string;
+                factor = prefix in symbolList.prefixSymbols;
+                if (factor)
                 {
-                    string prefix = str[0 .. i].to!string;
-                    factor = prefix in symbolList.prefixSymbols;
-                    if (factor)
-                    {
-                        string unit = str[i .. $].to!string;
-                        enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
-                        return *factor * parseUnitSymbol(unit);
-                    }
+                    string unit = str[i .. $].to!string;
+                    enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
+                    uptr = unit in symbolList.unitSymbols;
+                    if (uptr)
+                        return *factor * *uptr;
                 }
             }
-            return parseUnitSymbol(str);
         }
+
+        throw new ParsingException("Unknown unit symbol: '%s'".format(str));
     }
     unittest
     {
         assert(defaultParser.parsePrefixUnit(lex("mm")).rawValue.approxEqual(milli(meter).rawValue));
         assert(defaultParser.parsePrefixUnit(lex("cd")).rawValue.approxEqual(candela.rawValue));
         assertThrown!ParsingException(defaultParser.parsePrefixUnit(lex("Lm")));
-    }
-    
-    RTQuantity parseUnitSymbol(string str)
-    {
-        assert(str.length, "Symbol with no length");
-        auto uptr = str in symbolList.unitSymbols;
-        enforceEx!ParsingException(uptr, "Unknown unit symbol: " ~ str);
-        return *uptr;
-    }
-    unittest
-    {
-        assert(defaultParser.parseUnitSymbol("m") == RTQuantity(meter));
-        assert(defaultParser.parseUnitSymbol("K") == RTQuantity(kelvin));
-        assertThrown!ParsingException(defaultParser.parseUnitSymbol("jZ"));
     }
 }
 
@@ -434,11 +404,27 @@ SymbolList defaultSymbolList()
     return SymbolList(SIUnitSymbols, SIPrefixSymbols);
 }
 
+static dchar[dchar] supintegerMap;
 static RTQuantity[string] SIUnitSymbols;
 static real[string] SIPrefixSymbols;
 
 shared static this()
 {   
+    supintegerMap = [
+        '⁰':'0',
+        '¹':'1',
+        '²':'2',
+        '³':'3',
+        '⁴':'4',
+        '⁵':'5',
+        '⁶':'6',
+        '⁷':'7',
+        '⁸':'8',
+        '⁹':'9',
+        '⁺':'+',
+        '⁻':'-'
+    ];
+
     SIUnitSymbols = [
         "m" : RTQuantity(meter),
         "kg" : RTQuantity(kilogram),
@@ -561,9 +547,10 @@ struct Token
 {
     Tok type;
     string slice;
+    int integer = int.max;
 }
 
-Token[] lex(S)(S input)
+Token[] lex(string input)
 {
     enum State
     {
@@ -574,13 +561,28 @@ Token[] lex(S)(S input)
     }
     
     Token[] tokapp;
-    auto buf = appender!string;
+    auto original = input;
+    size_t i, j;
     State state = State.none;
     
     void pushToken(Tok type)
     {
-        tokapp ~= Token(type, buf.data);
-        buf.clear();
+        tokapp ~= Token(type, original[i .. j]);
+        i = j;
+        state = State.none;
+    }
+
+    void pushInteger(Tok type)
+    {
+        auto slice = original[i .. j];
+        if (type == Tok.supinteger)
+        {
+            slice = translate(slice, supintegerMap);
+        }
+        auto n = std.conv.parse!int(slice);
+        enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
+        tokapp ~= Token(type, null, n);
+        i = j;
         state = State.none;
     }
     
@@ -589,30 +591,33 @@ Token[] lex(S)(S input)
         if (state == State.symbol)
             pushToken(Tok.symbol);
         else if (state == State.integer)
-            pushToken(Tok.integer);
+            pushInteger(Tok.integer);
         else if (state == State.supinteger)
-            pushToken(Tok.supinteger);
+            pushInteger(Tok.supinteger);
     }
     
     while (!input.empty)
     {
         auto cur = input.front;
+        auto len = cur.codeLength!char;
         switch (cur)
         {
             case ' ':
             case '\t':
                 push();
+                j += len;
+                i = j;
                 break;
                 
             case '(':
                 push();
-                buf.put(cur);
+                j += len;
                 pushToken(Tok.lparen);
                 break;
                 
             case ')':
                 push();
-                buf.put(cur);
+                j += len;
                 pushToken(Tok.rparen);
                 break;
                 
@@ -621,20 +626,20 @@ Token[] lex(S)(S input)
             case '⋅':
             case '×':
                 push();
-                buf.put(cur);
+                j += len;
                 pushToken(Tok.mul);
                 break;
                 
             case '/':
             case '÷':
                 push();
-                buf.put(cur);
+                j += len;
                 pushToken(Tok.div);
                 break;
                 
             case '^':
                 push();
-                buf.put(cur);
+                j += len;
                 pushToken(Tok.exp);
                 break;
                 
@@ -644,7 +649,7 @@ Token[] lex(S)(S input)
                 if (state != State.integer)
                     push();
                 state = State.integer;
-                buf.put(cur);
+                j += len;
                 break;
                 
             case '⁰':
@@ -662,14 +667,14 @@ Token[] lex(S)(S input)
                 if (state != State.supinteger)
                     push();
                 state = State.supinteger;
-                buf.put(cur);
+                j += len;
                 break;
                 
             default:
                 if (state == State.integer || state == State.supinteger)
                     push();
                 state = State.symbol;
-                buf.put(cur);
+                j += len;
                 break;
         }
         input.popFront();

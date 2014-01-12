@@ -53,7 +53,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     /// The dimensions of the quantity.
     static if (runtime)
     {
-        immutable(Dimensions) dimensions;
+        Dimensions dimensions;
         private bool initialized = false;
     }
     else
@@ -74,7 +74,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     }
 
     // Creates a new quantity from another one that is dimensionally consistent
-    package this(T)(T other) inout
+    package this(T)(T other)
         if (isQuantity!T)
     {
         static if (runtime) 
@@ -102,14 +102,14 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
         if (isNumeric!T && runtime)
     {
         _value = value;
-        dimensions = dim.idup;
-    }   
+        dimensions = dim.dup;
+    }
 
-    package void resetTo(T)(const T other)
-        if (isQuantity!T && runtime)
+    // Useful for parsing
+    static if (runtime)
+    package void permeate()
     {
-        _value = other._value;
-        cast(Dimensions) dimensions = cast(Dimensions) other.dimensions; // Oohoooh...
+        initialized = false;
     }
 
     /++
@@ -127,11 +127,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     N value(Q)(Q target) const
     {
         static assert(isQuantity!Q, "Unexpected type: " ~ Q.stringof);
-
-        static if (Q.runtime)
-            mixin(checkDim!("target.dimensions", true));
-        else
-            mixin(checkDim!"target.dimensions");
+        mixin(checkDim!("target.dimensions", Q.runtime));
         return _value / target._value;
     }
     ///
@@ -190,7 +186,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
         {
             if (!initialized)
             {
-                cast(Dimensions) dimensions = cast(Dimensions) other.dimensions; // Oohoooh...
+                dimensions = other.dimensions.dup; // Oohoooh...
                 initialized = true;
             }
             else
@@ -663,6 +659,7 @@ unittest // immutable Quantity
     assert(speedOfLight > 1 * meter / minute);
 }
 
+/+
 unittest // immutable RTQuantity
 {
     immutable RTQuantity length = 3e5 * kilo(meter);
@@ -671,6 +668,7 @@ unittest // immutable RTQuantity
     assert(speedOfLight == 3e5 * kilo(meter) / second);
     assert(speedOfLight > 1 * meter / minute);
 }
++/
 
 /// Creates a new monodimensional unit.
 template unit(string symbol, N = double)
@@ -735,29 +733,29 @@ struct Dimensions
     private int[string] dims;
 
     // Constructor used to create monodimensional base units
-    package this(string symbol) pure
+    package this(string symbol)
     {
         enforce(symbol, "The name of a dimension cannot be empty");
         dims[symbol] = 1;
     }
 
-    // Duplicates this object. Compile-time friendly.
-    package immutable(Dimensions) idup() const pure
+    // Duplication
+    package Dimensions dup() const
     {
         Dimensions result;
         foreach (sym, pow; dims)
             result.dims[sym] = pow;
-        return cast(immutable) result;
+        return result;
     }
 
     /// Tests if the dimensions are empty
-    @property bool empty() const pure nothrow
+    @property bool empty() const nothrow
     {
         return dims.length == 0;
     }
 
     // Mul or div two dimensions object
-    package Dimensions opBinary(string op)(const(Dimensions) other) const pure
+    package Dimensions opBinary(string op)(const(Dimensions) other) const
     {
         static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
 
@@ -797,7 +795,7 @@ struct Dimensions
     }
 
     // Raise a dimension to a integer power (value)
-    package Dimensions exp(int value) const pure
+    package Dimensions exp(int value) const
     {
         if (value == 0)
             return Dimensions.init;
@@ -809,7 +807,7 @@ struct Dimensions
     }
 
     // Raise a dimensions to a rational power (1/value)
-    package Dimensions expInv(int value) const pure
+    package Dimensions expInv(int value) const
     {
         assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
         
@@ -850,7 +848,7 @@ struct Dimensions
         return same;
     }
     
-    string toString(bool complete = false) const pure
+    string toString(bool complete = false) const
     {
         import std.algorithm : filter;
         import std.array : join;

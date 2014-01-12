@@ -17,6 +17,13 @@
             "targetType": "library",
             "importPaths": ["tests"],
             "sourcePaths": ["tests"]
+        },
+        {
+            "name": "benchmark",
+            "targetType": "executable",
+            "importPaths": ["benchmark"],
+            "sourcePaths": ["benchmark"],
+            "buildOptions": ["profile"]
         }
     ]
 }

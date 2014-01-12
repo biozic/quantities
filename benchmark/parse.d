@@ -25,7 +25,8 @@ void parseValues()
     {
         try
         {
-            c += parseQuantity(line);
+            if (line.length)
+                c += parseQuantity(line);
             n++;
         }
         catch (Exception e)
