@@ -84,10 +84,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
         }
         else
         {
-            static if (T.runtime)
-                mixin(checkDim!("other.dimensions", true));
-            else
-                mixin(checkDim!("other.dimensions"));
+            mixin(checkDim!("other.dimensions", T.runtime));
         }
 
         _value = other._value;
@@ -201,10 +198,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
         }
         else
         {
-            static if (T.runtime)
-                mixin(checkDim!("other.dimensions", true));
-            else
-                mixin(checkDim!"other.dimensions");
+            mixin(checkDim!("other.dimensions", T.runtime));
         }
         _value = other._value;
     }
@@ -223,7 +217,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     auto opBinary(string op, T)(T other) const
         if (isQuantity!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"other.dimensions");
+        mixin(checkDim!("other.dimensions", T.runtime));
         static if (runtime)
             return RTQuantity(mixin("_value" ~ op ~ "other._value"), dimensions);
         else
@@ -297,7 +291,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     void opOpAssign(string op, T)(T other)
         if (isQuantity!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"other.dimensions");
+        mixin(checkDim!("other.dimensions", T.runtime));
         mixin("_value " ~ op ~ "= other._value;");
     }
 
@@ -313,7 +307,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     void opOpAssign(string op, T)(T other)
         if (isQuantity!T && (op == "*" || op == "/"))
     {
-        mixin(checkDim!"Dimensions.init");
+        mixin(checkDim!("Dimensions.init", T.runtime));
         mixin("_value" ~ op ~ "= other._value;");
     }
 
@@ -328,7 +322,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     bool opEquals(T)(T other) const
         if (isQuantity!T)
     {
-        mixin(checkDim!"other.dimensions");
+        mixin(checkDim!("other.dimensions", T.runtime));
         return _value == other._value;
     }
 
@@ -344,7 +338,7 @@ struct Quantity(alias dim, N = double, AtRuntime rt = AtRuntime.no)
     int opCmp(T)(T other) const
         if (isQuantity!T)
     {
-        mixin(checkDim!"other.dimensions");
+        mixin(checkDim!("other.dimensions", T.runtime));
         if (_value == other._value)
             return 0;
         if (_value < other._value)
