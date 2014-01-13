@@ -1,6 +1,6 @@
 {
     "name": "quantities",
-    "description": "Checking the dimensions of units and quantities at compile time.",
+    "description": "Dimensional analysis of units and quantities at compile time or at runtime",
     "copyright": "Copyright © 2013, Nicolas Sicard",
     "authors": ["Nicolas Sicard"],
     "homepage": "https://github.com/biozic/quantities",
@@ -8,7 +8,7 @@
     "configurations": [
         {
             "name": "library",
-            "targetType": "library",
+            "targetType": "sourcelibrary",
             "importPaths": ["source"],
             "sourcePaths": ["source"]
         },
