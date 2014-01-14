@@ -8,14 +8,14 @@
     "configurations": [
         {
             "name": "library",
-            "targetType": "sourcelibrary",
+            "targetType": "sourceLibrary",
             "importPaths": ["source"],
             "sourcePaths": ["source"]
         },
         {
             "name": "tests",
             "targetType": "library",
-            "importPaths": ["tests"],
+            "importPaths": ["tests", "source"],
             "sourcePaths": ["tests"]
         },
         {
