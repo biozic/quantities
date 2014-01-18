@@ -9,8 +9,6 @@ import quantities;
 
 enum filename = "generated_values.txt";
 
-alias Concentration = SI.Concentration!double;
-
 void generate(size_t n)
 {
     writefln("Generating n value of concentration...");
