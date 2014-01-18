@@ -54,9 +54,11 @@ writeln(volt);   // prints: 1 kg^-1 s^-3 m^2 A^-1
 // Hint: work with quantities at runtime
 
 // Use the predefined quantity types (in module quantity.si)
-MassicConcentration!double conc;
-Volume!double volume;
-Mass!double mass;
+alias MassConc = MassicConcentration;
+
+MassConc conc;
+Volume volume;
+Mass mass;
 
 // I have to make a new solution at the concentration of 2.5 g/l.
 conc = 2.5 * gram/liter;
@@ -84,32 +86,27 @@ static assert(!__traits(compiles, mass = 10 * milli(liter)));
 static assert(!__traits(compiles, conc = 1 * euro/volume));
 
 // -----------------------------
-// Parsing quantities at runtime
+// Parsing quantities/units at runtime
 // -----------------------------
 
-Mass!double m;
-Volume!double V;
-MassicConcentration!double c;
-
-m = parseQuantity("25 mg");
-V = parseQuantity("10 ml");
-c = parseQuantity("2.5 g⋅L⁻¹");
-assert(c.rawValue.approxEqual((m / V).rawValue));
-auto targetUnit = parseQuantity("kg/l");
-assert(c.value(targetUnit).approxEqual(0.0025));
+mass = parseQuantity("25 mg");
+volume = parseQuantity("10 ml");
+conc = parseQuantity("2.5 g⋅L⁻¹");
+auto targetUnit = MassConc("kg/l");
+assert(conc.value(targetUnit).approxEqual(0.0025));
 
 import std.exception;
-assertThrown!ParsingException(c = parseQuantity("10 qGz"));
-assertThrown!DimensionException(c = parseQuantity("2.5 mol⋅L⁻¹"));
+assertThrown!ParsingException(conc = parseQuantity("10 qGz"));
+assertThrown!DimensionException(conc = parseQuantity("2.5 mol⋅L⁻¹"));
 
 // User-defined symbols
 auto byte_ = unit!("B");
 SymbolList binSymbols;
-binSymbols.unitSymbols["B"] = byte_;
+binSymbols.unitSymbols["B"] = byte_.toRuntime;
 binSymbols.prefixSymbols["Ki"] = 2^^10;
 binSymbols.prefixSymbols["Mi"] = 2^^20;
 // ...
-auto fileLength = parseQuantity("1.0 MiB", binSymbols);
+QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
 writefln("Length: %.0f bytes", fileLength.value(byte_));
 // prints: Length: 1048576 bytes
 ```

@@ -9,7 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
-import quantities.parsing : parseQuantity, RTQuantity, toString;
+import quantities.parsing : parseQuantity, RTQuantity, dimstr;
 import std.exception;
 import std.string;
 import std.traits;
@@ -22,7 +22,7 @@ version (unittest)
 }
 
 /++
-Quantity types which holds a value and some dimensions.
+A quantity which holds a value and some dimensions.
 
 The value is stored internally as a field of type N.
 A dimensionless quantity can be cast to a builtin numeric type.
@@ -33,66 +33,112 @@ occurs at compile-time.
 +/
 struct Quantity(N, Dim...)
 {
-    static assert(isFloatingPoint!N);
+    static assert(isNumeric!N);
 
-    /// The type of the underlying scalar value.
+    /// The type of the underlying numeric value.
     alias valueType = N;
+    ///
+    unittest
+    {
+        static assert(is(meter.valueType == real));
+    }
 
     /// The payload
     private N _value;
 
-    /// The dimensions of the quantity.
+    /// The dimension tuple of the quantity.
     alias dimensions = Dim;
+    ///
+    unittest
+    {
+        static assert(meter.dimensions == TypeTuple!("m", 1,));
+        static assert(katal.dimensions == TypeTuple!("mol", 1, "s", -1));
+        static assert(volt.dimensions  == TypeTuple!("kg", 1, "m", 2, "s", -3, "A", -1));
+    }
 
     template checkDim(string dim)
     {
         enum checkDim = 
             `static assert(Is!(` ~ dim ~ `).equalTo!dimensions,
                 "Dimension error: %s is not compatible with %s"
-                .format(.toString!(` ~ dim ~ `)(true), .toString!(dimensions)(true)));`;
+                .format(dimstr!(` ~ dim ~ `)(true), dimstr!(dimensions)(true)));`;
     }
 
-    // Creates a new quantity from another one with the same dimensions
+    /// Creates a new quantity from another one with the same dimensions
     this(Q)(Q other)
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
         _value = other._value;
     }
-
-    /// Creates a new quantity from a runtime-parsed one
-    this(T)(T rtquant)
-        if (is(Unqual!T == RTQuantity))
+    ///
+    unittest
     {
-        enforceEx!DimensionException(toAA!dimensions == rtquant.dimensions,
-                                     "Dimension error: %s is not compatible with %s"
-                                     .format(.toString!dimensions(true), .toString(rtquant.dimensions, true)));
-        _value = rtquant.value;
+        auto size = Length(42 * kilo(meter));
     }
 
-    /// Creates a new quantity from a runtime-parsed string
+    /// Creates a new quantity from a runtime-parsed one
+    this(T)(T other)
+        if (is(Unqual!T == RTQuantity))
+    {
+        enforceEx!DimensionException(toAA!dimensions == other.dimensions,
+                                     "Dimension error: %s is not compatible with %s"
+                                     .format(dimstr!dimensions(true), dimstr(other.dimensions, true)));
+        _value = other.value;
+    }
+    /// ditto
     this(S)(S str)
         if (isSomeString!S)
     {
         this(parseQuantity(str));
     }
+    ///
+    unittest
+    {
+        auto size = Length(parseQuantity("42 km"));
+        size = Length("42 km");
+    }
+    
+    /// Creates a new dimensionless quantity from a scalar value
+    this(T)(T value)
+        if (isNumeric!T && Dim.length == 0)
+    {
+        _value = value;
+    }
+    ///
+    unittest
+    {
+        import std.math : PI;
 
-    // Creates a new quantity from a raw numeric value
+        Angle angle = PI / 2;
+        assert(angle.value(degreeOfAngle) == 90);
+    }
+
+    // Creates a new quantity from a scalar value
     package this(T)(T value)
-        if (isNumeric!T)
+        if (isNumeric!T && Dim.length != 0)
     {
         _value = value;
     }    
-
+    
     /++
-    Get the scalar value of this quantity expressed in a combination of
-    the base dimensions. This value is actually the payload of the Quantity struct.
+    Gets the internal scalar value of this quantity.
+
+    The returned number is the value of the quantity when it is
+    expressed in the corresponding base unit.
     +/
     @property N rawValue() const
     {
         return _value;
     }
+    ///
+    unittest
+    {
+        auto time = 10 * minute;
+        assert(time.rawValue == 600); // There are 600 s in 10 min
+    }
 
+    // Implicitly convert a dimensionless value to the value type
     static if (!Dim.length)
         alias rawValue this;
 
@@ -100,28 +146,63 @@ struct Quantity(N, Dim...)
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
     N value(Q)(Q target) const
+        if (isQuantity!Q)
     {
-        static assert(isQuantity!Q, "Unexpected type: " ~ Q.stringof);
         mixin(checkDim!"target.dimensions");
         return _value / target._value;
+    }
+    /// ditto
+    N value(S)(S targetString) const
+        if (isSomeString!S)
+    {
+        return value(typeof(this)(targetString));
+    }
+    ///
+    unittest
+    {
+        auto time = 120 * minute;
+        assert(time.value(hour)   ==    2);
+        assert(time.value(minute) ==  120);
+        assert(time.value("min")  ==  120);
+        assert(time.value(second) == 7200);
     }
 
     /++
     Tests wheter this quantity has the same dimensions 
     +/
     bool isConsistentWith(Q)(Q other) const
+        if (isQuantity!Q)
     {
-        static assert(isQuantity!Q, "Unexpected type: " ~ Q.stringof);
         return Is!dimensions.equalTo!(other.dimensions);
+    }
+    /// ditto
+    bool isConsistentWith(S)(S str) const
+        if (isSomeString!S)
+    {
+        return isConsistentWith(typeof(this)(targetString));
+    }
+    ///
+    unittest
+    {
+        auto nm = (1.4 * newton) * (0.5 * centi(meter));
+        auto kwh = (4000 * kilo(watt)) * (1200 * hour);
+        assert(nm.isConsistentWith(kwh)); // Energy in both cases
+        assert(!nm.isConsistentWith(second));
     }
 
     /++
     Returns a new quantity where the value is stored in a field of type T.
     +/
     auto store(T)() const
+        if (isNumeric!T)
     {
-        static assert(isFloatingPoint!T, "Unexpected floating point type: " ~ T.stringof);
         return Quantity!(T, dimensions)(_value);
+    }
+    ///
+    unittest
+    {
+        auto size = meter.store!float;
+        static assert(is(size.valueType == float));
     }
 
     /// Cast a quantity to another quantity type with the same dimensions
@@ -131,14 +212,36 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"Q.dimensions");
         return store!(Q.valueType);
     }
+    ///
+    unittest
+    {
+        alias Length = QuantityType!(meter, float);
+        auto m = cast(Length) meter;
+        static assert(is(meter.valueType == real));
+        static assert(is(m.valueType == float));
+
+        static assert(!__traits(compiles, cast(Time) meter));
+    }
 
     /// Cast a dimensionless quantity to a scalar numeric type
     T opCast(T)() const
         if (isNumeric!T)
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         return _value;
     }
+    ///
+    unittest
+    {
+        auto proportion = 12 * gram / (4.5 * kilogram);
+        static assert(is(QuantityType!proportion == Dimensionless));
+        auto prop = cast(real) proportion;
+
+        static assert(!__traits(compiles, cast(real) meter));
+    }
+
+    /// Overloaded operators.
+    /// Only dimensionally correct operations will compile.
 
     // Assign from another quantity
     void opAssign(T)(T other)
@@ -149,22 +252,30 @@ struct Quantity(N, Dim...)
     }
 
     // Assign from a runtime quantity
-    void opAssign(T)(T rtquant)
+    void opAssign(T)(T other) /// ditto
         if (is(Unqual!T == RTQuantity))
     {
-        enforceEx!DimensionException(toAA!dimensions == rtquant.dimensions);
-        _value = rtquant.value;
+        enforceEx!DimensionException(toAA!dimensions == other.dimensions);
+        _value = other.value;
+    }
+
+    // Assign from a numeric value if this quantity is dimensionless
+    void opAssign(T)(T other) /// ditto
+        if (isNumeric!T)
+    {
+        mixin(checkDim!"");
+        _value = other;
     }
 
     // Unary + and -
-    auto opUnary(string op)() const
+    auto opUnary(string op)() const /// ditto
         if (op == "+" || op == "-")
     {
         return Quantity!(N, dimensions)(mixin(op ~ "_value"));
     }
 
     // Add (or substract) two quantities if they share the same dimensions
-    auto opBinary(string op, T)(T other) const
+    auto opBinary(string op, T)(T other) const /// ditto
         if (isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
@@ -172,22 +283,22 @@ struct Quantity(N, Dim...)
     }
 
     // Add (or substract) a dimensionless quantity and a scalar
-    auto opBinary(string op, T)(T other) const
+    auto opBinary(string op, T)(T other) const /// ditto
         if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         return Quantity!(CommonType!(N, T), dimensions)(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
-    auto opBinaryRight(string op, T)(T other) const
+    auto opBinaryRight(string op, T)(T other) const /// ditto
         if (isNumeric!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
 
     // Multiply or divide two quantities
-    auto opBinary(string op, T)(T other) const
+    auto opBinary(string op, T)(T other) const /// ditto
         if (isQuantity!T && (op == "*" || op == "/"))
     {
         return Quantity!(CommonType!(N, T.valueType), OpBinary!(dimensions, op, other.dimensions))
@@ -195,28 +306,28 @@ struct Quantity(N, Dim...)
     }
 
     // Multiply or divide a quantity by a scalar factor
-    auto opBinary(string op, T)(T other) const
+    auto opBinary(string op, T)(T other) const /// ditto
         if (isNumeric!T && (op == "*" || op == "/"))
     {
         return Quantity!(CommonType!(N, T), dimensions)(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
-    auto opBinaryRight(string op, T)(T other) const
+    auto opBinaryRight(string op, T)(T other) const /// ditto
         if (isNumeric!T && op == "*")
     {
         return this * other;
     }
 
     // ditto
-    auto opBinaryRight(string op, T)(T other) const
+    auto opBinaryRight(string op, T)(T other) const /// ditto
         if (isNumeric!T && op == "/")
     {
         return Quantity!(CommonType!(N, T), Invert!dimensions)(other / _value);
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
-    void opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other) /// ditto
         if (isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
@@ -224,30 +335,30 @@ struct Quantity(N, Dim...)
     }
 
     // Add/sub assign a scalar to a dimensionless quantity
-    void opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other) /// ditto
         if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         mixin("_value " ~ op ~ "= other;");
     }
     
     // Mul/div assign with a dimensionless quantity
-    void opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other) /// ditto
         if (isQuantity!T && (op == "*" || op == "/"))
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         mixin("_value" ~ op ~ "= other._value;");
     }
 
     // Mul/div assign with a scalar factor
-    void opOpAssign(string op, T)(T other)
+    void opOpAssign(string op, T)(T other) /// ditto
         if (isNumeric!T && (op == "*" || op == "/"))
     {
         mixin("_value" ~ op ~ "= other;");
     }
 
     // Exact equality between quantities
-    bool opEquals(T)(T other) const
+    bool opEquals(T)(T other) const /// ditto
         if (isQuantity!T)
     {
         mixin(checkDim!"other.dimensions");
@@ -255,15 +366,15 @@ struct Quantity(N, Dim...)
     }
 
     // Exact equality between a dimensionless quantity and a scalar
-    bool opEquals(T)(T other) const
+    bool opEquals(T)(T other) const /// ditto
         if (isNumeric!T)
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         return _value == other;
     }
 
     // Comparison between two quantities
-    int opCmp(T)(T other) const
+    int opCmp(T)(T other) const /// ditto
         if (isQuantity!T)
     {
         mixin(checkDim!"other.dimensions");
@@ -275,10 +386,10 @@ struct Quantity(N, Dim...)
     }
 
     // Comparision between a dimensionless quantity and a scalar
-    int opCmp(T)(T other) const
+    int opCmp(T)(T other) const /// ditto
         if (isNumeric!T)
     {
-        mixin(checkDim!"TypeTuple!()");
+        mixin(checkDim!"");
         if (_value == other)
             return 0;
         if (_value < other)
@@ -286,27 +397,18 @@ struct Quantity(N, Dim...)
         return 1;
     }
 
+    /// Returns a default string representation of the quantity.
     void toString(scope void delegate(const(char)[]) sink) const
     {
         import std.format;
         formattedWrite(sink, "%s ", _value);
-        sink(.toString!dimensions());
+        sink(dimstr!dimensions());
     }
-}
-
-/// Tests whether T is a quantity type
-template isQuantity(T)
-{
-    alias U = Unqual!T;
-    static if (is(U _ : Quantity!X, X...))
-        enum isQuantity = true;
-    else
-        enum isQuantity = false;
 }
 
 unittest // Quantity constructor
 {
-    enum time = Store!second(1 * minute);
+    enum time = QuantityType!second(1 * minute);
     assert(time.value(second) == 60);
 }
 
@@ -419,8 +521,8 @@ unittest // Quantity.opCmp
 
 unittest // Compilation errors for incompatible dimensions
 {
-    static assert(!__traits(compiles, Store!meter(1 * second)));
-    Store!meter m;
+    static assert(!__traits(compiles, QuantityType!meter(1 * second)));
+    QuantityType!meter m;
     static assert(!__traits(compiles, m.value(second)));
     static assert(!__traits(compiles, m = second));
     static assert(!__traits(compiles, m + second));
@@ -452,8 +554,27 @@ unittest // immutable Quantity
     assert(speedOfLight > 1 * meter / minute);
 }
 
+
+/// Tests whether T is a quantity type
+template isQuantity(T)
+{
+    alias U = Unqual!T;
+    static if (is(U _ : Quantity!X, X...))
+        enum isQuantity = true;
+    else
+        enum isQuantity = false;
+}
+///
+unittest
+{
+    static assert(isQuantity!Time);
+    static assert(isQuantity!(QuantityType!meter));
+    static assert(!isQuantity!real);
+}
+
+
 /// Creates a new monodimensional unit.
-template unit(string symbol, N = double)
+template unit(string symbol, N = real)
 {
     enum unit = Quantity!(N, symbol, 1)(1.0);
 }
@@ -464,46 +585,6 @@ unittest
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
     assert((1.35 * dollar).value(euro).approxEqual(1));
-}
-
-/++
-Utility templates to create quantity types. The unit is only used to set the
-dimensions, it doesn't bind the stored value to a particular unit. Use in 
-conjunction with the store method of quantities.
-+/
-template Store(Q, N = double)
-    if (isQuantity!Q)
-{
-    alias Store = Quantity!(N, Q.dimensions);
-}
-
-/// ditto
-template Store(alias unit, N = double)
-    if (isQuantity!(typeof(unit)))
-{
-    alias Store = Quantity!(N, unit.dimensions);
-}
-
-///
-unittest // Store example
-{
-    alias Mass = Store!kilogram;
-    Mass mass = 15 * ton;
-    
-    alias Surface = Store!(square(meter), float);
-    assert(is(Surface.valueType == float));
-    Surface s = 4 * square(meter);
-}
-
-unittest // Type conservation
-{
-    Store!(meter, float) length; 
-    Store!(second, double) time;
-    Store!(meter/second, real) speed;
-    length = 1 * kilo(meter);
-    time = 2 * hour;
-    speed = length / time;
-    assert(is(speed.valueType == real));
 }
 
 
@@ -528,14 +609,7 @@ auto pow(int n, U)(U unit)
     return Quantity!(U.valueType, Pow!(n, U.dimensions))(unit.rawValue ^^ n);
 }
 
-unittest // square, cubic, pow
-{
-    auto surface = 1 * square(meter);
-    auto volume = 1 * cubic(meter);
-    volume = 1 * pow!3(meter);
-}
-
-/// Returns the square root, the cubic root of the nth root of a quantity.
+/// ditto
 auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
@@ -560,16 +634,15 @@ auto nthRoot(int n, Q)(Q quantity)
 }
 
 ///
-unittest // Powers of a quantity
+unittest
 {
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);
     assert(side.value(meter).approxEqual(5));
-    
-    auto volume = 1 * liter;
+
+    auto volume = 27 * liter;
     side = cbrt(volume);
-    assert(nthRoot!3(volume).value(deci(meter)).approxEqual(1));
-    assert(side.value(deci(meter)).approxEqual(1));
+    assert(side.value(deci(meter)).approxEqual(3));
 }
 
 /// Returns the absolute value of a quantity
@@ -584,6 +657,81 @@ unittest // abs
 {
     auto deltaT = -10 * second;
     assert(abs(deltaT) == 10 * second);
+}
+
+
+/// Returns the quantity type of a unit
+template QuantityType(alias unit, N = real)
+    if (isQuantity!(typeof(unit)))
+{
+    alias QuantityType = Quantity!(N, unit.dimensions);
+}
+///
+unittest // QuantityType example
+{
+    alias Mass = QuantityType!kilogram;
+    Mass mass = 15 * ton;
+    
+    alias Surface = QuantityType!(square(meter), float);
+    assert(is(Surface.valueType == float));
+    Surface s = 4 * square(meter);
+}
+
+/// The type of a quantity where the payload is stored as another numeric type.
+template Store(Q, N)
+    if (isQuantity!Q)
+{
+    alias Store = Quantity!(N, Q.dimensions);
+}
+///
+unittest
+{
+    alias TimeF = Store!(Time, float);
+}
+
+/// Utility templates to manipulate quantity types
+template Inverse(Q, N = real)
+    if (isQuantity!Q)
+{
+    alias Inverse = Quantity!(N, typeof(1 / Q.init).dimensions);
+}
+
+/// ditto
+template Product(Q1, Q2, N = real)
+    if (isQuantity!Q1 && isQuantity!Q2)
+{
+    alias Product = Quantity!(N, typeof(Q1.init * Q2.init).dimensions);
+}
+
+/// ditto
+template Quotient(Q1, Q2, N = real)
+    if (isQuantity!Q1 && isQuantity!Q2)
+{
+    alias Quotient = Quantity!(N, typeof(Q1.init / Q2.init).dimensions);
+}
+
+/// ditto
+template Square(Q, N = real)
+    if (isQuantity!Q)
+{
+    alias Square = Quantity!(N, typeof(square(Q.init)).dimensions);
+}
+
+/// ditto
+template Cubic(Q, N = real)
+    if (isQuantity!Q)
+{
+    alias Cubic = Quantity!(N, typeof(cubic(Q.init)).dimensions);
+}
+
+///
+unittest
+{
+    static assert(is(Inverse!Time == Frequency));
+    static assert(is(Product!(Power, Time) == Energy));
+    static assert(is(Quotient!(Length, Time) == Speed)); 
+    static assert(is(Square!Length == Area));
+    static assert(is(Cubic!Length == Volume));
 }
 
 
@@ -603,6 +751,7 @@ class DimensionException : Exception
     }
 }
 
+package:
 
 // Adapted from std.typetuple
 template Is(T...)
@@ -729,7 +878,7 @@ template OpBinary(Dim...)
 {
     static assert(Dim.length % 2 == 1);
 
-    static if (staticIndexOf!("/", Dim) > 0)
+    static if (staticIndexOf!("/", Dim) >= 0)
     {
         // Division
         enum op = staticIndexOf!("/", Dim);
@@ -737,7 +886,7 @@ template OpBinary(Dim...)
         alias denominator = Dim[op+1 .. $];
         alias OpBinary = RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator))));
     }
-    else static if (staticIndexOf!("*", Dim) > 0)
+    else static if (staticIndexOf!("*", Dim) >= 0)
     {
         // Multiplication
         enum op = staticIndexOf!("*", Dim);
@@ -833,7 +982,7 @@ unittest
 }
 
 
-string toString(Dim...)(bool complete = false)
+string dimstr(Dim...)(bool complete = false)
 {
     import std.algorithm : filter;
     import std.array : join;

@@ -26,7 +26,7 @@ auto toFahrenheit(T)(T kelv)
     return fahrenheit * ((kelv.value(kelvin) - 273.15) * 1.8 + 32);
 }
 
-void main()
+unittest
 {
     auto boiling = 100 * celsius;
     writefln("Water boils at %s K", boiling.toSI.value(kelvin));

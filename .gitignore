@@ -1,7 +1,5 @@
 .dub
-doc
-__test__tests__
-__test__library__
+__test__*
 generated_values.txt
 bench
 trace.*

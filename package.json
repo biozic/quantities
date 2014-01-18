@@ -13,10 +13,10 @@
             "sourcePaths": ["source"]
         },
         {
-            "name": "tests",
+            "name": "examples",
             "targetType": "library",
-            "importPaths": ["tests", "source"],
-            "sourcePaths": ["tests"]
+            "importPaths": ["examples", "source"],
+            "sourcePaths": ["examples"]
         },
         {
             "name": "benchmark",

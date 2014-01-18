@@ -136,38 +136,39 @@ RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
 ///
 unittest
 {
-    alias Concentration = Store!(mole/cubic(meter));
+    alias Concentration = QuantityType!(mole/cubic(meter));
+    alias Length = QuantityType!meter;
     
     // Parse a concentration value
     Concentration c = parseQuantity("11.2 µmol/L");
     assert(c.value(nano(mole)/liter).approxEqual(11200));
     
     // Below, 'second' is only a hint for dimensional analysis
-    Store!second t = parseQuantity("90 min");
+    QuantityType!second t = parseQuantity("90 min");
     assert(t == 90 * minute);
     t = parseQuantity("h");
     assert(t == 1 * hour);
 
     // User-defined unit
     auto symbols = defaultSymbolList();
-    symbols.unitSymbols["in"] = rt(2.54 * centi(meter));
-    SI.Length!double len = parseQuantity("17 in", symbols);
+    symbols.unitSymbols["in"] = toRuntime(2.54 * centi(meter));
+    Length len = parseQuantity("17 in", symbols);
     assert(len.value(centi(meter)).approxEqual(17 * 2.54));
 
     // User-defined symbols
     auto byte_ = unit!("B");
     SymbolList binSymbols;
-    binSymbols.unitSymbols["B"] = byte_.rt;
+    binSymbols.unitSymbols["B"] = byte_.toRuntime;
     binSymbols.prefixSymbols["Ki"] = 2^^10;
     binSymbols.prefixSymbols["Mi"] = 2^^20;
     // ...
-    Store!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
+    QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
     assert(fileLength.value(byte_).approxEqual(1_048_576));
 }
 
 unittest // Parsing a range of characters that is not a string
 {
-    SI.Concentration!double c = parseQuantity(
+    Concentration c = parseQuantity(
         ["11.2", "<- value", "µmol/L", "<-unit"]
         .filter!(x => !x.startsWith("<"))
         .joiner(" ")
@@ -177,19 +178,19 @@ unittest // Parsing a range of characters that is not a string
 
 unittest // Examples from the header
 {
-    auto J = rt(joule);
+    auto J = toRuntime(joule);
     assert(parseQuantity("1 N m") == J);
     assert(parseQuantity("1 N.m") == J);
     assert(parseQuantity("1 N⋅m") == J);
     assert(parseQuantity("1 N * m") == J);
     assert(parseQuantity("1 N × m") == J);
 
-    auto kat = rt(katal);
+    auto kat = toRuntime(katal);
     assert(parseQuantity("1 mol s^-1") == kat);
     assert(parseQuantity("1 mol s⁻¹") == kat);
     assert(parseQuantity("1 mol/s") == kat);
 
-    auto Pa = rt(pascal);
+    auto Pa = toRuntime(pascal);
     assert(parseQuantity("1 kg m^-1 s^-2") == Pa);
     assert(parseQuantity("1 kg/(m s^2)") == Pa);
 }
@@ -202,26 +203,26 @@ unittest // Test parsing
     assertThrown!ParsingException(parseQuantity("1 µ"));
 
     string test = "1    m    ";
-    assert(parseQuantity(test) == meter.rt);
+    assert(parseQuantity(test) == meter.toRuntime);
     assert(parseQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
     
-    assert(parseQuantity("1 m^-1") == rt(1 / meter));
-    assert(parseQuantity("1 m²") == square(meter).rt);
-    assert(parseQuantity("1 m⁻¹") == rt(1 / meter));
-    assert(parseQuantity("1 (m)") == meter.rt);
-    assert(parseQuantity("1 (m^-1)") == rt(1 / meter));
-    assert(parseQuantity("1 ((m)^-1)^-1") == meter.rt);
+    assert(parseQuantity("1 m^-1") == toRuntime(1 / meter));
+    assert(parseQuantity("1 m²") == square(meter).toRuntime);
+    assert(parseQuantity("1 m⁻¹") == toRuntime(1 / meter));
+    assert(parseQuantity("1 (m)") == meter.toRuntime);
+    assert(parseQuantity("1 (m^-1)") == toRuntime(1 / meter));
+    assert(parseQuantity("1 ((m)^-1)^-1") == meter.toRuntime);
 
-    assert(parseQuantity("1 m * m") == square(meter).rt);
-    assert(parseQuantity("1 m m") == square(meter).rt);
-    assert(parseQuantity("1 m . m") == square(meter).rt);
-    assert(parseQuantity("1 m ⋅ m") == square(meter).rt);
-    assert(parseQuantity("1 m × m") == square(meter).rt);
-    assert(parseQuantity("1 m / m") == rt(meter / meter));
-    assert(parseQuantity("1 m ÷ m") == rt(meter / meter));
+    assert(parseQuantity("1 m * m") == square(meter).toRuntime);
+    assert(parseQuantity("1 m m") == square(meter).toRuntime);
+    assert(parseQuantity("1 m . m") == square(meter).toRuntime);
+    assert(parseQuantity("1 m ⋅ m") == square(meter).toRuntime);
+    assert(parseQuantity("1 m × m") == square(meter).toRuntime);
+    assert(parseQuantity("1 m / m") == toRuntime(meter / meter));
+    assert(parseQuantity("1 m ÷ m") == toRuntime(meter / meter));
     
-    assert(parseQuantity("1 N.m") == rt(newton * meter));
-    assert(parseQuantity("1 N m") == rt(newton * meter));
+    assert(parseQuantity("1 N.m") == toRuntime(newton * meter));
+    assert(parseQuantity("1 N m") == toRuntime(newton * meter));
     
     assert(parseQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
     assert(parseQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
@@ -286,9 +287,9 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(meter).rt);
-        assert(defaultParser.parseCompoundUnit(lex("m m")) == square(meter).rt);
-        assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == meter.rt);
+        assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(meter).toRuntime);
+        assert(defaultParser.parseCompoundUnit(lex("m m")) == square(meter).toRuntime);
+        assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == meter.toRuntime);
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m ) m")));
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
     }
@@ -314,8 +315,8 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parseExponentUnit(lex("m²")) == square(meter).rt);
-        assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).rt);
+        assert(defaultParser.parseExponentUnit(lex("m²")) == square(meter).toRuntime);
+        assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).toRuntime);
         assertThrown!ParsingException(defaultParser.parseExponentUnit(lex("m^²")));
     }
     
@@ -354,7 +355,7 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parseUnit(lex("(m)")) == meter.rt);
+        assert(defaultParser.parseUnit(lex("(m)")) == meter.toRuntime);
         assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
     }
     
@@ -439,43 +440,43 @@ shared static this()
     ];
 
     SIUnitSymbols = [
-        "m" : meter.rt,
-        "kg" : kilogram.rt,
-        "s" : second.rt,
-        "A" : ampere.rt,
-        "K" : kelvin.rt,
-        "mol" : mole.rt,
-        "cd" : candela.rt,
-        "rad" : radian.rt,
-        "sr" : steradian.rt,
-        "Hz" : hertz.rt,
-        "N" : newton.rt,
-        "Pa" : pascal.rt,
-        "J" : joule.rt,
-        "W" : watt.rt,
-        "C" : coulomb.rt,
-        "V" : volt.rt,
-        "F" : farad.rt,
-        "Ω" : ohm.rt,
-        "S" : siemens.rt,
-        "Wb" : weber.rt,
-        "T" : tesla.rt,
-        "H" : henry.rt,
-        "lm" : lumen.rt,
-        "lx" : lux.rt,
-        "Bq" : becquerel.rt,
-        "Gy" : gray.rt,
-        "Sv" : sievert.rt,
-        "kat" : katal.rt,
-        "g" : gram.rt,
-        "min" : minute.rt,
-        "h" : hour.rt,
-        "d" : day.rt,
-        "l" : liter.rt,
-        "L" : liter.rt,
-        "t" : ton.rt,
-        "eV" : electronVolt.rt,
-        "Da" : dalton.rt,
+        "m" : meter.toRuntime,
+        "kg" : kilogram.toRuntime,
+        "s" : second.toRuntime,
+        "A" : ampere.toRuntime,
+        "K" : kelvin.toRuntime,
+        "mol" : mole.toRuntime,
+        "cd" : candela.toRuntime,
+        "rad" : radian.toRuntime,
+        "sr" : steradian.toRuntime,
+        "Hz" : hertz.toRuntime,
+        "N" : newton.toRuntime,
+        "Pa" : pascal.toRuntime,
+        "J" : joule.toRuntime,
+        "W" : watt.toRuntime,
+        "C" : coulomb.toRuntime,
+        "V" : volt.toRuntime,
+        "F" : farad.toRuntime,
+        "Ω" : ohm.toRuntime,
+        "S" : siemens.toRuntime,
+        "Wb" : weber.toRuntime,
+        "T" : tesla.toRuntime,
+        "H" : henry.toRuntime,
+        "lm" : lumen.toRuntime,
+        "lx" : lux.toRuntime,
+        "Bq" : becquerel.toRuntime,
+        "Gy" : gray.toRuntime,
+        "Sv" : sievert.toRuntime,
+        "kat" : katal.toRuntime,
+        "g" : gram.toRuntime,
+        "min" : minute.toRuntime,
+        "h" : hour.toRuntime,
+        "d" : day.toRuntime,
+        "l" : liter.toRuntime,
+        "L" : liter.toRuntime,
+        "t" : ton.toRuntime,
+        "eV" : electronVolt.toRuntime,
+        "Da" : dalton.toRuntime,
     ];
     
     SIPrefixSymbols = [
@@ -518,7 +519,7 @@ real convert(S, U)(S from, U target)
     RTQuantity unit = parseQuantity("1" ~ target);
     enforceEx!DimensionException(base.dimensions == unit.dimensions,
                                  "Dimension error: %s is not compatible with %s"
-                                 .format(toString(base.dimensions, true), toString(unit.dimensions, true)));
+                                 .format(dimstr(base.dimensions, true), dimstr(unit.dimensions, true)));
     return base.value / unit.value;
 }
 ///
@@ -526,6 +527,29 @@ unittest
 {
     auto k = convert("3 min", "s");
     assert(k == 180);
+}
+
+/// Convert a compile-time quantity to its runtime equivalent.
+RTQuantity toRuntime(Q)(Q quantity)
+    if (isQuantity!Q)
+{
+    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
+}
+///
+unittest
+{
+    auto distance = toRuntime(42 * kilo(meter));
+    assert(distance == parseQuantity("42 km"));
+}
+
+/// Holds a value and a dimensions for parsing
+struct RTQuantity
+{
+    // The payload
+    real value;
+    
+    // The dimensions of the quantity
+    int[string] dimensions;
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -542,23 +566,6 @@ class ParsingException : Exception
     {
         super(msg, file, line, next);
     }
-}
-
-/// Holds a value and a dimensions for parsing
-struct RTQuantity
-{
-    // The payload
-    real value;
-    
-    // The dimensions of the quantity
-    int[string] dimensions;
-}
-
-/// Convert a compile-time quantity to its runtime equivalent.
-RTQuantity rt(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
 }
 
 package:
@@ -810,7 +817,7 @@ int[string] expInv(int[string] dim, int value)
 }
 
 // Returns the string representation of a dimension array
-string toString(int[string] dim, bool complete = false)
+string dimstr(int[string] dim, bool complete = false)
 {
     import std.algorithm : filter;
     import std.array : join;

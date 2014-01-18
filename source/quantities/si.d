@@ -94,57 +94,57 @@ enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-///
-static struct SI
-{
-    template Length(T) { alias Length = Store!(meter, T); } /// Predefined quantity type templates for SI quantities
-    template Mass(T) { alias Mass = Store!(kilogram, T); } /// ditto
-    template Time(T) { alias Time = Store!(second, T); } /// ditto
-    template ElectricCurrent(T) { alias ElectricCurrent = Store!(ampere, T); } /// ditto
-    template Temperature(T) { alias Temperature = Store!(kelvin, T); } /// ditto
-    template AmountOfSubstance(T) { alias AmountOfSubstance = Store!(mole, T); } /// ditto
-    template LuminousIntensity(T) { alias LuminousIntensity = Store!(candela, T); } /// ditto
-    
-    template Dimensionless(T) { alias Dimensionless = Store!(meter/meter, T); } /// ditto
+enum one = Quantity!real(1); /// The dimensionless unit 'one'
 
-    template Area(T) { alias Area = Store!(square(meter), T); } /// ditto
-    template Volume(T) { alias Volume = Store!(cubic(meter), T); } /// ditto
-    template Speed(T) { alias Speed = Store!(meter/second, T); } /// ditto
-    template Acceleration(T) { alias Acceleration = Store!(meter/square(second), T); } /// ditto
-    template MassDensity(T) { alias MassDensity = Store!(kilogram/cubic(meter), T); } /// ditto
-    template CurrentDensity(T) { alias CurrentDensity = Store!(ampere/square(meter), T); } /// ditto
-    template MagneticFieldStrength(T) { alias MagneticFieldStrength = Store!(ampere/meter, T); } /// ditto
-    template Concentration(T) { alias Concentration = Store!(mole/cubic(meter), T); } /// ditto
-    template MolarConcentration(T) { alias MolarConcentration = Concentration!T; } /// ditto
-    template MassicConcentration(T) { alias MassicConcentration = Store!(kilogram/cubic(meter)); } /// ditto
-    template Luminance(T) { alias Luminance = Store!(candela/square(meter), T); } /// ditto
-    template RefractiveIndex(T) { alias RefractiveIndex = Store!(kilogram, T); } /// ditto
-    
-    template Angle(T) { alias Angle = Store!(radian, T); } /// ditto
-    template SolidAngle(T) { alias SolidAngle = Store!(steradian, T); } /// ditto
-    template Frequency(T) { alias Frequency = Store!(hertz, T); } /// ditto
-    template Force(T) { alias Force = Store!(newton, T); } /// ditto
-    template Pressure(T) { alias Pressure = Store!(pascal, T); } /// ditto
-    template Energy(T) { alias Energy = Store!(joule, T); } /// ditto
-    template Work(T) { alias Work = Energy!T; } /// ditto
-    template Heat(T) { alias Heat = Energy!T; } /// ditto
-    template Power(T) { alias Power = Store!(watt, T); } /// ditto
-    template ElectricCharge(T) { alias ElectricCharge = Store!(coulomb, T); } /// ditto
-    template ElectricPotential(T) { alias ElectricPotential = Store!(volt, T); } /// ditto
-    template Capacitance(T) { alias Capacitance = Store!(farad, T); } /// ditto
-    template ElectricResistance(T) { alias ElectricResistance = Store!(ohm, T); } /// ditto
-    template ElectricConductance(T) { alias ElectricConductance = Store!(siemens, T); } /// ditto
-    template MagneticFlux(T) { alias MagneticFlux = Store!(weber, T); } /// ditto
-    template MagneticFluxDensity(T) { alias MagneticFluxDensity = Store!(tesla, T); } /// ditto
-    template Inductance(T) { alias Inductance = Store!(henry, T); } /// ditto
-    template LuminousFlux(T) { alias LuminousFlux = Store!(lumen, T); } /// ditto
-    template Illuminance(T) { alias Illuminance = Store!(lux, T); } /// ditto
-    template CelsiusTemperature(T) { alias CelsiusTemperature = Store!(celsius, T); } /// ditto
-    template Radioactivity(T) { alias Radioactivity = Store!(becquerel, T); } /// ditto
-    template AbsorbedDose(T) { alias AbsorbedDose = Store!(gray, T); } /// ditto
-    template DoseEquivalent(T) { alias DoseEquivalent = Store!(sievert, T); } /// ditto
-    template CatalyticActivity(T) { alias CatalyticActivity = Store!(katal, T); } /// ditto
-}
+alias Length = QuantityType!(meter); /// Predefined quantity type templates for SI quantities
+alias Mass = QuantityType!(kilogram); /// ditto
+alias Time = QuantityType!(second); /// ditto
+alias ElectricCurrent = QuantityType!(ampere); /// ditto
+alias Temperature = QuantityType!(kelvin); /// ditto
+alias AmountOfSubstance = QuantityType!(mole); /// ditto
+alias LuminousIntensity = QuantityType!(candela); /// ditto
+
+alias Area = QuantityType!(square(meter)); /// ditto
+alias Surface = Area;
+alias Volume = QuantityType!(cubic(meter)); /// ditto
+alias Speed = QuantityType!(meter/second); /// ditto
+alias Acceleration = QuantityType!(meter/square(second)); /// ditto
+alias MassDensity = QuantityType!(kilogram/cubic(meter)); /// ditto
+alias CurrentDensity = QuantityType!(ampere/square(meter)); /// ditto
+alias MagneticFieldStrength = QuantityType!(ampere/meter); /// ditto
+alias Concentration = QuantityType!(mole/cubic(meter)); /// ditto
+alias MolarConcentration = Concentration; /// ditto
+alias MassicConcentration = QuantityType!(kilogram/cubic(meter)); /// ditto
+alias Luminance = QuantityType!(candela/square(meter)); /// ditto
+alias RefractiveIndex = QuantityType!(kilogram); /// ditto
+
+alias Angle = QuantityType!(radian); /// ditto
+alias SolidAngle = QuantityType!(steradian); /// ditto
+alias Frequency = QuantityType!(hertz); /// ditto
+alias Force = QuantityType!(newton); /// ditto
+alias Pressure = QuantityType!(pascal); /// ditto
+alias Energy = QuantityType!(joule); /// ditto
+alias Work = Energy; /// ditto
+alias Heat = Energy; /// ditto
+alias Power = QuantityType!(watt); /// ditto
+alias ElectricCharge = QuantityType!(coulomb); /// ditto
+alias ElectricPotential = QuantityType!(volt); /// ditto
+alias Capacitance = QuantityType!(farad); /// ditto
+alias ElectricResistance = QuantityType!(ohm); /// ditto
+alias ElectricConductance = QuantityType!(siemens); /// ditto
+alias MagneticFlux = QuantityType!(weber); /// ditto
+alias MagneticFluxDensity = QuantityType!(tesla); /// ditto
+alias Inductance = QuantityType!(henry); /// ditto
+alias LuminousFlux = QuantityType!(lumen); /// ditto
+alias Illuminance = QuantityType!(lux); /// ditto
+alias CelsiusTemperature = QuantityType!(celsius); /// ditto
+alias Radioactivity = QuantityType!(becquerel); /// ditto
+alias AbsorbedDose = QuantityType!(gray); /// ditto
+alias DoseEquivalent = QuantityType!(sievert); /// ditto
+alias CatalyticActivity = QuantityType!(katal); /// ditto
+
+alias Dimensionless = QuantityType!(meter/meter); /// The type of dimensionless quantities
+
 
 /// Functions that apply a SI prefix to a unit.
 auto yotta(Q)(Q base) { return base * 1e24; }

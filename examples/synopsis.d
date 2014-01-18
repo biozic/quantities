@@ -1,16 +1,5 @@
-// Written in the D programming language
-/++
-Test code and synospis code for the README.md file.
-
-Copyright: Copyright 2013, Nicolas Sicard
-Authors: Nicolas Sicard
-License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-Source: $(LINK https://github.com/biozic/quantities)
-+/
 import std.math : approxEqual;
-import quantities.base;
-import quantities.si;
-import quantities.parsing;
+import quantities;
 
 unittest
 {
@@ -44,10 +33,8 @@ unittest
     // Hint: work with quantities at runtime
 
     // Use the predefined quantity types (in module quantity.si)
-    alias MassConc = SI.MassicConcentration!double;
-    alias Volume = SI.Volume!double;
-    alias Mass = SI.Mass!double;
-
+    alias MassConc = MassicConcentration;
+    
     MassConc conc;
     Volume volume;
     Mass mass;
@@ -94,11 +81,11 @@ unittest
     // User-defined symbols
     auto byte_ = unit!("B");
     SymbolList binSymbols;
-    binSymbols.unitSymbols["B"] = byte_.rt;
+    binSymbols.unitSymbols["B"] = byte_.toRuntime;
     binSymbols.prefixSymbols["Ki"] = 2^^10;
     binSymbols.prefixSymbols["Mi"] = 2^^20;
     // ...
-    Store!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
+    QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
     writefln("Length: %.0f bytes", fileLength.value(byte_));
     // prints: Length: 1048576 bytes
 }
