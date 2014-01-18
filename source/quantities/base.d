@@ -21,8 +21,6 @@ version (unittest)
     import std.math : approxEqual;
 }
 
-// TODO: CommonType for all operations
-
 /++
 Quantity types which holds a value and some dimensions.
 
@@ -42,7 +40,7 @@ struct Quantity(N, Dim...)
 
     /// The payload
     private N _value;
-    
+
     /// The dimensions of the quantity.
     alias dimensions = Dim;
 
@@ -94,7 +92,10 @@ struct Quantity(N, Dim...)
     {
         return _value;
     }
-    
+
+    static if (!Dim.length)
+        alias rawValue this;
+
     /++
     Gets the scalar _value of this quantity expressed in the given target unit.
     +/
@@ -808,17 +809,22 @@ unittest
 
 int[string] toAA(Dim...)()
 {
-    static assert(Dim.length % 2 == 0);
-    int[string] ret;
-    string sym;
-    foreach (i, d; Dim)
+    static if (Dim.length == 0)
+        return null;
+    else
     {
-        static if (i % 2 == 0)
-            sym = d;
-        else
-            ret[sym] = d;
+        static assert(Dim.length % 2 == 0);
+        int[string] ret;
+        string sym;
+        foreach (i, d; Dim)
+        {
+            static if (i % 2 == 0)
+                sym = d;
+            else
+                ret[sym] = d;
+        }
+        return ret;
     }
-    return ret;
 }
 unittest
 {
