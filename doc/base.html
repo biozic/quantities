@@ -259,6 +259,16 @@ Surface s = 4 * square(meter);
 </pre>
 <br><br>
 </dd>
+<dt><big><a name="AreConsistent"></a>template <u>AreConsistent</u>(Q1, Q2) if (isQuantity!Q1 &amp;&amp; isQuantity!Q2)</big></dt>
+<dd>Check that two quantity types are dimensionally consistent<br><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>alias</font> Speed = QuantityType!(meter/second);
+<font color=blue>alias</font> Velocity = QuantityType!((1/second * meter));
+<font color=blue>static</font> <font color=blue>assert</font>(<u>AreConsistent</u>!(Speed, Velocity));
+</pre>
+<br><br>
+</dd>
 <dt><big><a name="Inverse"></a>template <u>Inverse</u>(Q, N = real) if (isQuantity!Q)<br><a name="Product"></a>template <u>Product</u>(Q1, Q2, N = real) if (isQuantity!Q1 &amp;&amp; isQuantity!Q2)<br><a name="Quotient"></a>template <u>Quotient</u>(Q1, Q2, N = real) if (isQuantity!Q1 &amp;&amp; isQuantity!Q2)<br><a name="Square"></a>template <u>Square</u>(Q, N = real) if (isQuantity!Q)<br><a name="Cubic"></a>template <u>Cubic</u>(Q, N = real) if (isQuantity!Q)</big></dt>
 <dd>Utility templates to manipulate quantity types<br><br>
 
@@ -269,6 +279,7 @@ Surface s = 4 * square(meter);
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(Quotient!(Length, Time) == Speed)); 
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(Square!Length == Area));
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<u>Cubic</u>!Length == Volume));
+<font color=blue>static</font> <font color=blue>assert</font>(AreConsistent!(Product!(Inverse!Time, Length), Speed));
 </pre>
 <br><br></dd>
 <dt><big><a name="DimensionException"></a>class <u>DimensionException</u>: object.Exception;

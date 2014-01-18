@@ -509,6 +509,7 @@ unittest // Quantity.opOpAssign Q*=N Q/=N
 unittest // Quantity.opEquals
 {
     assert(1 * minute == 60 * second);
+    assert((1 / second) * meter == meter / second);
 }
 
 unittest // Quantity.opCmp
@@ -689,6 +690,21 @@ unittest
     alias TimeF = Store!(Time, float);
 }
 
+/// Check that two quantity types are dimensionally consistent
+template AreConsistent(Q1, Q2)
+    if (isQuantity!Q1 && isQuantity!Q2)
+{
+    enum AreConsistent = Q1.init.isConsistentWith(Q2.init);
+}
+///
+unittest
+{
+    alias Speed = QuantityType!(meter/second);
+    alias Velocity = QuantityType!((1/second * meter));
+    static assert(AreConsistent!(Speed, Velocity));
+}
+
+
 /// Utility templates to manipulate quantity types
 template Inverse(Q, N = real)
     if (isQuantity!Q)
@@ -732,6 +748,7 @@ unittest
     static assert(is(Quotient!(Length, Time) == Speed)); 
     static assert(is(Square!Length == Area));
     static assert(is(Cubic!Length == Volume));
+    static assert(AreConsistent!(Product!(Inverse!Time, Length), Speed));
 }
 
 
@@ -753,20 +770,32 @@ class DimensionException : Exception
 
 package:
 
-// Adapted from std.typetuple
+// Inspired from std.typetuple.Is
 template Is(T...)
 {
-    alias T tuple;
+    template includedIn(U...)
+    {
+        static assert(T.length == 2);
+        static assert(U.length % 2 == 0);
+        static if (U.length == 0)
+            enum includedIn = false;
+        else
+            enum includedIn = (T[0] == U[0] && T[1] == U[1]) || Is!T.includedIn!(U[2 .. $]);
+    }
+
+    template allIncludedIn(U...)
+    {
+        static assert(T.length % 2 == 0);
+        static if (T.length == 0)
+            enum allIncludedIn = true;
+        else
+            enum allIncludedIn = Is!(T[0 .. 2]).includedIn!U && Is!(T[2 .. $]).allIncludedIn!U;
+    }
 
     template equalTo(U...)
     {
         static if (T.length == U.length)
-        {
-            static if (T.length == 0)
-                enum equalTo = true;
-            else
-                enum equalTo = T[0] == U[0] && Is!(T[1 .. $]).equalTo!(U[1 .. $]);
-        }
+            enum equalTo = Is!T.allIncludedIn!U && Is!U.allIncludedIn!T; 
         else
             enum equalTo = false;
     }
@@ -774,8 +803,22 @@ template Is(T...)
 unittest
 {
     alias T = TypeTuple!("a", 1, "b", -1);
+    static assert(Is!(TypeTuple!("a", 1)).includedIn!T);
+    static assert(Is!(TypeTuple!("b", -1)).includedIn!T);
+}
+unittest
+{
+    alias T = TypeTuple!("a", 1, "b", -1);
+    alias U = TypeTuple!("b", -1, "a", 1);
+    static assert(Is!T.allIncludedIn!U);
+}
+unittest
+{
+    alias T = TypeTuple!("a", 1, "b", -1);
     alias U = TypeTuple!("a", 1, "b", -1);
+    alias V = TypeTuple!("b", -1, "a", 1);
     static assert(Is!T.equalTo!U);
+    static assert(Is!T.equalTo!V);
 }
 
 
