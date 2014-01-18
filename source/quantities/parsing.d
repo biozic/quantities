@@ -82,8 +82,8 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.parsing;
 
 import quantities.base;
-import quantities.math;
 import quantities.si;
+
 import std.array;
 import std.algorithm;
 import std.conv;
@@ -123,12 +123,15 @@ RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
     }
  
     if (text.empty)
-        return RTQuantity(value, Dimensions.init);
+        return RTQuantity(value, null);
 
     auto input = text.to!string;
     auto tokens = lex(input);
     auto parser = QuantityParser(symbolList);
-    return value * parser.parseCompoundUnit(tokens);
+
+    RTQuantity result = parser.parseCompoundUnit(tokens);
+    result.value *= value;
+    return result;
 }
 ///
 unittest
@@ -147,23 +150,24 @@ unittest
 
     // User-defined unit
     auto symbols = defaultSymbolList();
-    symbols.unitSymbols["in"] = 2.54 * centi(meter);
-    assert(parseQuantity("17 in", symbols).value(centi(meter)).approxEqual(17 * 2.54));
+    symbols.unitSymbols["in"] = rt(2.54 * centi(meter));
+    SI.Length!double len = parseQuantity("17 in", symbols);
+    assert(len.value(centi(meter)).approxEqual(17 * 2.54));
 
     // User-defined symbols
     auto byte_ = unit!("B");
     SymbolList binSymbols;
-    binSymbols.unitSymbols["B"] = byte_;
+    binSymbols.unitSymbols["B"] = byte_.rt;
     binSymbols.prefixSymbols["Ki"] = 2^^10;
     binSymbols.prefixSymbols["Mi"] = 2^^20;
     // ...
-    auto fileLength = parseQuantity("1.0 MiB", binSymbols);
+    Store!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
     assert(fileLength.value(byte_).approxEqual(1_048_576));
 }
 
 unittest // Parsing a range of characters that is not a string
 {
-    auto c = parseQuantity(
+    SI.Concentration!double c = parseQuantity(
         ["11.2", "<- value", "µmol/L", "<-unit"]
         .filter!(x => !x.startsWith("<"))
         .joiner(" ")
@@ -173,19 +177,19 @@ unittest // Parsing a range of characters that is not a string
 
 unittest // Examples from the header
 {
-    auto J = RTQuantity(joule);
+    auto J = rt(joule);
     assert(parseQuantity("1 N m") == J);
     assert(parseQuantity("1 N.m") == J);
     assert(parseQuantity("1 N⋅m") == J);
     assert(parseQuantity("1 N * m") == J);
     assert(parseQuantity("1 N × m") == J);
 
-    auto kat = RTQuantity(katal);
+    auto kat = rt(katal);
     assert(parseQuantity("1 mol s^-1") == kat);
     assert(parseQuantity("1 mol s⁻¹") == kat);
     assert(parseQuantity("1 mol/s") == kat);
 
-    auto Pa = RTQuantity(pascal);
+    auto Pa = rt(pascal);
     assert(parseQuantity("1 kg m^-1 s^-2") == Pa);
     assert(parseQuantity("1 kg/(m s^2)") == Pa);
 }
@@ -198,31 +202,31 @@ unittest // Test parsing
     assertThrown!ParsingException(parseQuantity("1 µ"));
 
     string test = "1    m    ";
-    assert(parseQuantity(test) == meter);
-    assert(parseQuantity("1 µm").rawValue.approxEqual(micro(meter).rawValue));
+    assert(parseQuantity(test) == meter.rt);
+    assert(parseQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
     
-    assert(parseQuantity("1 m^-1") == 1 / meter);
-    assert(parseQuantity("1 m²") == square(meter));
-    assert(parseQuantity("1 m⁻¹") == 1 / meter);
-    assert(parseQuantity("1 (m)") == meter);
-    assert(parseQuantity("1 (m^-1)") == 1 / meter);
-    assert(parseQuantity("1 ((m)^-1)^-1") == meter);
+    assert(parseQuantity("1 m^-1") == rt(1 / meter));
+    assert(parseQuantity("1 m²") == square(meter).rt);
+    assert(parseQuantity("1 m⁻¹") == rt(1 / meter));
+    assert(parseQuantity("1 (m)") == meter.rt);
+    assert(parseQuantity("1 (m^-1)") == rt(1 / meter));
+    assert(parseQuantity("1 ((m)^-1)^-1") == meter.rt);
+
+    assert(parseQuantity("1 m * m") == square(meter).rt);
+    assert(parseQuantity("1 m m") == square(meter).rt);
+    assert(parseQuantity("1 m . m") == square(meter).rt);
+    assert(parseQuantity("1 m ⋅ m") == square(meter).rt);
+    assert(parseQuantity("1 m × m") == square(meter).rt);
+    assert(parseQuantity("1 m / m") == rt(meter / meter));
+    assert(parseQuantity("1 m ÷ m") == rt(meter / meter));
     
-    assert(parseQuantity("1 m * m") == square(meter));
-    assert(parseQuantity("1 m m") == square(meter));
-    assert(parseQuantity("1 m . m") == square(meter));
-    assert(parseQuantity("1 m ⋅ m") == square(meter));
-    assert(parseQuantity("1 m × m") == square(meter));
-    assert(parseQuantity("1 m / m") == meter / meter);
-    assert(parseQuantity("1 m ÷ m") == meter / meter);
+    assert(parseQuantity("1 N.m") == rt(newton * meter));
+    assert(parseQuantity("1 N m") == rt(newton * meter));
     
-    assert(parseQuantity("1 N.m") == (newton * meter));
-    assert(parseQuantity("1 N m") == (newton * meter));
-    
-    assert(parseQuantity("6.3 L.mmol^-1.cm^-1").value(square(meter)/mole).approxEqual(630));
-    assert(parseQuantity("6.3 L/(mmol*cm)").value(square(meter)/mole).approxEqual(630));
-    assert(parseQuantity("6.3 L*(mmol*cm)^-1").value(square(meter)/mole).approxEqual(630));
-    assert(parseQuantity("6.3 L/mmol/cm").value(square(meter)/mole).approxEqual(630));
+    assert(parseQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
+    assert(parseQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
+    assert(parseQuantity("6.3 L*(mmol*cm)^-1").value.approxEqual(630));
+    assert(parseQuantity("6.3 L/mmol/cm").value.approxEqual(630));
 }
 
 // A parser that can parse a text for a unit or a quantity
@@ -245,7 +249,7 @@ struct QuantityParser
         RTQuantity ret = parseExponentUnit(tokens);
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             return ret;
-        
+
         do {
             auto cur = tokens.front;
             
@@ -260,8 +264,16 @@ struct QuantityParser
             }
             
             RTQuantity rhs = parseExponentUnit(tokens);
-            ret.permeate();
-            ret = multiply ? (ret * rhs) : (ret / rhs);
+            if (multiply)
+            {
+                ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
+                ret.value = ret.value * rhs.value;
+            }
+            else
+            {
+                ret.dimensions = ret.dimensions.binop!"/"(rhs.dimensions);
+                ret.value = ret.value / rhs.value;
+            }
             
             if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
                 break;
@@ -274,9 +286,9 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(RTQuantity(meter)));
-        assert(defaultParser.parseCompoundUnit(lex("m m")) == square(RTQuantity(meter)));
-        assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == RTQuantity(meter));
+        assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(meter).rt);
+        assert(defaultParser.parseCompoundUnit(lex("m m")) == square(meter).rt);
+        assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == meter.rt);
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m ) m")));
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
     }
@@ -297,12 +309,13 @@ struct QuantityParser
             tokens.advance(Tok.integer);
         
         int n = parseInteger(tokens);
-        return ret.pow(n);
+
+        return RTQuantity(ret.value ^^ n, ret.dimensions.exp(n));
     }
     unittest
     {
-        assert(defaultParser.parseExponentUnit(lex("m²")) == square(RTQuantity(meter)));
-        assert(defaultParser.parseExponentUnit(lex("m^2")) == square(RTQuantity(meter)));
+        assert(defaultParser.parseExponentUnit(lex("m²")) == square(meter).rt);
+        assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).rt);
         assertThrown!ParsingException(defaultParser.parseExponentUnit(lex("m^²")));
     }
     
@@ -341,7 +354,7 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parseUnit(lex("(m)")) == RTQuantity(meter));
+        assert(defaultParser.parseUnit(lex("(m)")) == meter.rt);
         assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
     }
     
@@ -372,7 +385,7 @@ struct QuantityParser
                     enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
                     uptr = unit in symbolList.unitSymbols;
                     if (uptr)
-                        return *factor * *uptr;
+                        return RTQuantity(*factor * uptr.value, uptr.dimensions);
                 }
             }
         }
@@ -381,8 +394,8 @@ struct QuantityParser
     }
     unittest
     {
-        assert(defaultParser.parsePrefixUnit(lex("mm")).rawValue.approxEqual(milli(meter).rawValue));
-        assert(defaultParser.parsePrefixUnit(lex("cd")).rawValue.approxEqual(candela.rawValue));
+        assert(defaultParser.parsePrefixUnit(lex("mm")).value.approxEqual(milli(meter).rawValue));
+        assert(defaultParser.parsePrefixUnit(lex("cd")).value.approxEqual(candela.rawValue));
         assertThrown!ParsingException(defaultParser.parsePrefixUnit(lex("Lm")));
     }
 }
@@ -426,43 +439,43 @@ shared static this()
     ];
 
     SIUnitSymbols = [
-        "m" : RTQuantity(meter),
-        "kg" : RTQuantity(kilogram),
-        "s" : RTQuantity(second),
-        "A" : RTQuantity(ampere),
-        "K" : RTQuantity(kelvin),
-        "mol" : RTQuantity(mole),
-        "cd" : RTQuantity(candela),
-        "rad" : RTQuantity(radian),
-        "sr" : RTQuantity(steradian),
-        "Hz" : RTQuantity(hertz),
-        "N" : RTQuantity(newton),
-        "Pa" : RTQuantity(pascal),
-        "J" : RTQuantity(joule),
-        "W" : RTQuantity(watt),
-        "C" : RTQuantity(coulomb),
-        "V" : RTQuantity(volt),
-        "F" : RTQuantity(farad),
-        "Ω" : RTQuantity(ohm),
-        "S" : RTQuantity(siemens),
-        "Wb" : RTQuantity(weber),
-        "T" : RTQuantity(tesla),
-        "H" : RTQuantity(henry),
-        "lm" : RTQuantity(lumen),
-        "lx" : RTQuantity(lux),
-        "Bq" : RTQuantity(becquerel),
-        "Gy" : RTQuantity(gray),
-        "Sv" : RTQuantity(sievert),
-        "kat" : RTQuantity(katal),
-        "g" : RTQuantity(gram),
-        "min" : RTQuantity(minute),
-        "h" : RTQuantity(hour),
-        "d" : RTQuantity(day),
-        "l" : RTQuantity(liter),
-        "L" : RTQuantity(liter),
-        "t" : RTQuantity(ton),
-        "eV" : RTQuantity(electronVolt),
-        "Da" : RTQuantity(dalton),
+        "m" : meter.rt,
+        "kg" : kilogram.rt,
+        "s" : second.rt,
+        "A" : ampere.rt,
+        "K" : kelvin.rt,
+        "mol" : mole.rt,
+        "cd" : candela.rt,
+        "rad" : radian.rt,
+        "sr" : steradian.rt,
+        "Hz" : hertz.rt,
+        "N" : newton.rt,
+        "Pa" : pascal.rt,
+        "J" : joule.rt,
+        "W" : watt.rt,
+        "C" : coulomb.rt,
+        "V" : volt.rt,
+        "F" : farad.rt,
+        "Ω" : ohm.rt,
+        "S" : siemens.rt,
+        "Wb" : weber.rt,
+        "T" : tesla.rt,
+        "H" : henry.rt,
+        "lm" : lumen.rt,
+        "lx" : lux.rt,
+        "Bq" : becquerel.rt,
+        "Gy" : gray.rt,
+        "Sv" : sievert.rt,
+        "kat" : katal.rt,
+        "g" : gram.rt,
+        "min" : minute.rt,
+        "h" : hour.rt,
+        "d" : day.rt,
+        "l" : liter.rt,
+        "L" : liter.rt,
+        "t" : ton.rt,
+        "eV" : electronVolt.rt,
+        "Da" : dalton.rt,
     ];
     
     SIPrefixSymbols = [
@@ -503,7 +516,10 @@ real convert(S, U)(S from, U target)
 {
     RTQuantity base = parseQuantity(from);
     RTQuantity unit = parseQuantity("1" ~ target);
-    return base.value(unit);
+    enforceEx!DimensionException(base.dimensions == unit.dimensions,
+                                 "Dimension error: %s is not compatible with %s"
+                                 .format(toString(base.dimensions, true), toString(unit.dimensions, true)));
+    return base.value / unit.value;
 }
 ///
 unittest
@@ -526,6 +542,23 @@ class ParsingException : Exception
     {
         super(msg, file, line, next);
     }
+}
+
+/// Holds a value and a dimensions for parsing
+struct RTQuantity
+{
+    // The payload
+    real value;
+    
+    // The dimensions of the quantity
+    int[string] dimensions;
+}
+
+/// Convert a compile-time quantity to its runtime equivalent.
+RTQuantity rt(Q)(Q quantity)
+    if (isQuantity!Q)
+{
+    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
 }
 
 package:
@@ -713,3 +746,92 @@ void check(Types...)(Token[] tokens, Types types)
                                );
 }    
 
+// Mul or div two dimension arrays
+int[string] binop(string op)(int[string] dim1, int[string] dim2)
+{
+    static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
+
+    // Clone these dimensions in the result
+    int[string] result = dim1.dup;
+    
+    // Merge the other dimensions
+    foreach (sym, pow; dim2)
+    {
+        enum powop = op == "*" ? "+" : "-";
+        
+        if (sym in dim1)
+        {
+            // A dimension is common between this one and the other:
+            // add or sub them
+            auto p = mixin("dim1[sym]" ~ powop ~ "pow");
+            
+            // If the power becomes 0, remove the dimension from the list
+            // otherwise, set the new power
+            if (p == 0)
+                result.remove(sym);
+            else
+                result[sym] = p;
+        }
+        else
+        {
+            // Add this new dimensions to the result
+            // (with a negative power if op == "/")
+            result[sym] = mixin(powop ~ "pow");
+        }
+    }
+    
+    return result;
+}
+
+// Raise a dimension array to a integer power (value)
+int[string] exp(int[string] dim, int value)
+{
+    if (value == 0)
+        return null;
+    
+    int[string] result;
+    foreach (sym, pow; dim)
+        result[sym] = pow * value;
+    return result;
+}
+
+// Raise a dimension array to a rational power (1/value)
+int[string] expInv(int[string] dim, int value)
+{
+    assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
+    
+    int[string] result;
+    foreach (sym, pow; dim)
+    {
+        enforce(pow % value == 0, "Operation results in a non-integral dimension");
+        result[sym] = pow / value;
+    }
+    return result;
+}
+
+// Returns the string representation of a dimension array
+string toString(int[string] dim, bool complete = false)
+{
+    import std.algorithm : filter;
+    import std.array : join;
+    import std.conv : to;
+    
+    static string stringize(string base, int power)
+    {
+        if (power == 0)
+            return null;
+        if (power == 1)
+            return base;
+        return base ~ "^" ~ to!string(power);
+    }
+    
+    string[] dimstrs;
+    foreach (sym, pow; dim)
+        dimstrs ~= stringize(sym, pow);
+    
+    string result = dimstrs.filter!"a !is null".join(" ");
+    if (!result.length)
+        return complete ? "scalar" : "";
+    
+    return result;
+}

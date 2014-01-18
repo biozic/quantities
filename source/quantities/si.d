@@ -11,7 +11,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.si;
 
 import quantities.base;
-import quantities.math;
 import std.math : PI;
 import core.time : Duration, dur;
 
@@ -95,54 +94,54 @@ enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-/++
-Predefined quantity type templates for SI quantities
-+/
-alias Length(T) = Store!(meter, T);
-alias Mass(T) = Store!(kilogram, T); /// ditto
-alias Time(T) = Store!(second, T); /// ditto
-alias ElectricCurrent(T) = Store!(ampere, T); /// ditto
-alias Temperature(T) = Store!(kelvin, T); /// ditto
-alias AmountOfSubstance(T) = Store!(mole, T); /// ditto
-alias LuminousIntensity(T) = Store!(candela, T); /// ditto
+///
+static struct SI {
+template Length(T) { alias Length = Store!(meter, T); } /// Predefined quantity type templates for SI quantities
+template Mass(T) { alias Mass = Store!(kilogram, T); } /// ditto
+template Time(T) { alias Time = Store!(second, T); } /// ditto
+template ElectricCurrent(T) { alias ElectricCurrent = Store!(ampere, T); } /// ditto
+template Temperature(T) { alias Temperature = Store!(kelvin, T); } /// ditto
+template AmountOfSubstance(T) { alias AmountOfSubstance = Store!(mole, T); } /// ditto
+template LuminousIntensity(T) { alias LuminousIntensity = Store!(candela, T); } /// ditto
 
-alias Area(T) = Store!(square(meter), T); /// ditto
-alias Volume(T) = Store!(cubic(meter), T); /// ditto
-alias Speed(T) = Store!(meter/second, T); /// ditto
-alias Acceleration(T) = Store!(meter/square(second), T); /// ditto
-alias MassDensity(T) = Store!(kilogram/cubic(meter), T); /// ditto
-alias CurrentDensity(T) = Store!(ampere/square(meter), T); /// ditto
-alias MagneticFieldStrength(T) = Store!(ampere/meter, T); /// ditto
-alias Concentration(T) = Store!(mole/cubic(meter), T); /// ditto
-alias MolarConcentration(T) = Concentration!T; /// ditto
-alias MassicConcentration(T) = Store!(kilogram/cubic(meter)); /// ditto
-alias Luminance(T) = Store!(candela/square(meter), T); /// ditto
-alias RefractiveIndex(T) = Store!(kilogram, T); /// ditto
+template Area(T) { alias Area = Store!(square(meter), T); } /// ditto
+template Volume(T) { alias Volume = Store!(cubic(meter), T); } /// ditto
+template Speed(T) { alias Speed = Store!(meter/second, T); } /// ditto
+template Acceleration(T) { alias Acceleration = Store!(meter/square(second), T); } /// ditto
+template MassDensity(T) { alias MassDensity = Store!(kilogram/cubic(meter), T); } /// ditto
+template CurrentDensity(T) { alias CurrentDensity = Store!(ampere/square(meter), T); } /// ditto
+template MagneticFieldStrength(T) { alias MagneticFieldStrength = Store!(ampere/meter, T); } /// ditto
+template Concentration(T) { alias Concentration = Store!(mole/cubic(meter), T); } /// ditto
+template MolarConcentration(T) { alias MolarConcentration = Concentration!T; } /// ditto
+template MassicConcentration(T) { alias MassicConcentration = Store!(kilogram/cubic(meter)); } /// ditto
+template Luminance(T) { alias Luminance = Store!(candela/square(meter), T); } /// ditto
+template RefractiveIndex(T) { alias RefractiveIndex = Store!(kilogram, T); } /// ditto
 
-alias Angle(T) = Store!(radian, T); /// ditto
-alias SolidAngle(T) = Store!(steradian, T); /// ditto
-alias Frequency(T) = Store!(hertz, T); /// ditto
-alias Force(T) = Store!(newton, T); /// ditto
-alias Pressure(T) = Store!(pascal, T); /// ditto
-alias Energy(T) = Store!(joule, T); /// ditto
-alias Work(T) = Energy!T; /// ditto
-alias Heat(T) = Energy!T; /// dutto
-alias Power(T) = Store!(watt, T); /// ditto
-alias ElectricCharge(T) = Store!(coulomb, T); /// ditto
-alias ElectricPotential(T) = Store!(volt, T); /// ditto
-alias Capacitance(T) = Store!(farad, T); /// ditto
-alias ElectricResistance(T) = Store!(ohm, T); /// ditto
-alias ElectricConductance(T) = Store!(siemens, T); /// ditto
-alias MagneticFlux(T) = Store!(weber, T); /// ditto
-alias MagneticFluxDensity(T) = Store!(tesla, T); /// ditto
-alias Inductance(T) = Store!(henry, T); /// ditto
-alias LuminousFlux(T) = Store!(lumen, T); /// ditto
-alias Illuminance(T) = Store!(lux, T); /// ditto
-alias CelsiusTemperature(T) = Store!(celsius, T); /// ditto
-alias Radioactivity(T) = Store!(becquerel, T); /// ditto
-alias AbsorbedDose(T) = Store!(gray, T); /// ditto
-alias DoseEquivalent(T) = Store!(sievert, T); /// ditto
-alias CatalyticActivity(T) = Store!(katal, T); /// ditto
+template Angle(T) { alias Angle = Store!(radian, T); } /// ditto
+template SolidAngle(T) { alias SolidAngle = Store!(steradian, T); } /// ditto
+template Frequency(T) { alias Frequency = Store!(hertz, T); } /// ditto
+template Force(T) { alias Force = Store!(newton, T); } /// ditto
+template Pressure(T) { alias Pressure = Store!(pascal, T); } /// ditto
+template Energy(T) { alias Energy = Store!(joule, T); } /// ditto
+template Work(T) { alias Work = Energy!T; } /// ditto
+template Heat(T) { alias Heat = Energy!T; } /// ditto
+template Power(T) { alias Power = Store!(watt, T); } /// ditto
+template ElectricCharge(T) { alias ElectricCharge = Store!(coulomb, T); } /// ditto
+template ElectricPotential(T) { alias ElectricPotential = Store!(volt, T); } /// ditto
+template Capacitance(T) { alias Capacitance = Store!(farad, T); } /// ditto
+template ElectricResistance(T) { alias ElectricResistance = Store!(ohm, T); } /// ditto
+template ElectricConductance(T) { alias ElectricConductance = Store!(siemens, T); } /// ditto
+template MagneticFlux(T) { alias MagneticFlux = Store!(weber, T); } /// ditto
+template MagneticFluxDensity(T) { alias MagneticFluxDensity = Store!(tesla, T); } /// ditto
+template Inductance(T) { alias Inductance = Store!(henry, T); } /// ditto
+template LuminousFlux(T) { alias LuminousFlux = Store!(lumen, T); } /// ditto
+template Illuminance(T) { alias Illuminance = Store!(lux, T); } /// ditto
+template CelsiusTemperature(T) { alias CelsiusTemperature = Store!(celsius, T); } /// ditto
+template Radioactivity(T) { alias Radioactivity = Store!(becquerel, T); } /// ditto
+template AbsorbedDose(T) { alias AbsorbedDose = Store!(gray, T); } /// ditto
+template DoseEquivalent(T) { alias DoseEquivalent = Store!(sievert, T); } /// ditto
+template CatalyticActivity(T) { alias CatalyticActivity = Store!(katal, T); } /// ditto
+}
 
 /// Functions that apply a SI prefix to a unit.
 auto yotta(Q)(Q base) { return base * 1e24; }

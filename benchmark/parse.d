@@ -1,23 +1,30 @@
 import std.algorithm;
 import std.datetime;
 import std.file;
+import std.getopt;
 import std.random;
 import std.stdio;
 import std.string;
 import quantities;
 
-void generate()
+enum filename = "generated_values.txt";
+
+alias Concentration = SI.Concentration!double;
+
+void generate(size_t n)
 {
+    writefln("Generating n value of concentration...");
     string[] units = ["mol/L", "mol.L⁻¹", "(L mol⁻¹)⁻¹", "mmol/m³", "mmol/L", "µmol/cl"];
-    auto file = File("generated_values.txt", "w");
-    foreach (i; 0 .. 10_000)
-        file.writefln("%.2f %s", uniform(-10.0, 10.0), randomSample(units, 1).front);
+    auto file = File(filename, "w");
+    foreach (i; 0 .. n)
+        file.writefln("%.2f %s", uniform(0.0, 10.0), randomSample(units, 1).front);
+    writeln("Values generated.");
 }
 
-void parseValues()
+long parseValuesTime()
 {
     auto input = readText("generated_values.txt").splitter("\n");
-    Concentration!double c = 0 * mole/liter;
+    Concentration sum = 0 * mole/liter;
     size_t n = 1;
     StopWatch sw;
     sw.start();
@@ -26,7 +33,7 @@ void parseValues()
         try
         {
             if (line.length)
-                c += parseQuantity(line);
+                sum += Concentration(parseQuantity(line));
             n++;
         }
         catch (Exception e)
@@ -35,13 +42,26 @@ void parseValues()
         }
     }
     sw.stop();
-    writefln("Mean: %.2f mol/L (done in %s ms)", c.value(mole/liter), sw.peek.msecs());
+    auto time = sw.peek.msecs();
+    writefln("Mean: %.2f mol/L (done in %s ms)", sum.value(mole/liter) / n, time);
+    return time;
 }
 
 void main(string[] args)
 {
-    if (args.length > 1 && args[1] == "generate")
-        generate();    
-    else foreach (_; 0..10)
-        parseValues();
+    size_t number = 10_000;
+    size_t iterations = 10;
+
+    getopt(args, "number|n", &number, "iterations|i", &iterations);
+
+    generate(number);   
+
+    long time = 0;
+    foreach (_; 0..iterations)
+        time += parseValuesTime();
+    writefln("Iteration mean duration: %s ms", time / cast(double) iterations);
+
+    writeln("Removing generated file...");
+    std.file.remove(filename);
+    writeln("Done.");
 }

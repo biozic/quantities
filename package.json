@@ -20,6 +20,7 @@
         },
         {
             "name": "benchmark",
+            "targetName": "bench",
             "targetType": "executable",
             "importPaths": ["benchmark"],
             "sourcePaths": ["benchmark"],
