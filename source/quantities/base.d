@@ -86,17 +86,10 @@ struct Quantity(N, Dim...)
                                      .format(dimstr!dimensions(true), dimstr(other.dimensions, true)));
         _value = other.value;
     }
-    /// ditto
-    this(S)(S str)
-        if (isSomeString!S)
-    {
-        this(parseQuantity(str));
-    }
     ///
     unittest
     {
         auto size = Length(parseQuantity("42 km"));
-        size = Length("42 km");
     }
     
     /// Creates a new dimensionless quantity from a scalar value
@@ -151,19 +144,12 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"target.dimensions");
         return _value / target._value;
     }
-    /// ditto
-    N value(S)(S targetString) const
-        if (isSomeString!S)
-    {
-        return value(typeof(this)(targetString));
-    }
     ///
     unittest
     {
         auto time = 120 * minute;
-        assert(time.value(hour)   ==    2);
-        assert(time.value(minute) ==  120);
-        assert(time.value("min")  ==  120);
+        assert(time.value(hour) == 2);
+        assert(time.value(minute) == 120);
         assert(time.value(second) == 7200);
     }
 

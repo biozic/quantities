@@ -57,16 +57,14 @@ occurs at compile-time.<br><br>
 <br><br>
 </dd>
 <dt><big><a name="this"></a> this(T)(T <i>other</i>) if (is(Unqual!T == RTQuantity));
-<br><a name="this"></a> this(S)(S <i>str</i>) if (isSomeString!S);
 </big></dt>
 <dd>Creates a new quantity from a runtime-parsed one<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> size = Length(parseQuantity(<font color=red>"42 km"</font>));
-size = Length(<font color=red>"42 km"</font>);
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="this"></a> this(T)(T <i>value</i>) if (isNumeric!T &amp;&amp; Dim.length == 0);
 </big></dt>
 <dd>Creates a new dimensionless quantity from a scalar value<br><br>
@@ -93,19 +91,17 @@ The returned number is the value of the quantity when it is
 <br><br>
 </dd>
 <dt><big><a name="value"></a>const N <u>value</u>(Q)(Q <i>target</i>) if (isQuantity!Q);
-<br><a name="value"></a>const N <u>value</u>(S)(S <i>targetString</i>) if (isSomeString!S);
 </big></dt>
 <dd>Gets the scalar value of this quantity expressed in the given target unit.<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> time = 120 * minute;
-<font color=blue>assert</font>(time.<u>value</u>(hour)   ==    2);
-<font color=blue>assert</font>(time.<u>value</u>(minute) ==  120);
-<font color=blue>assert</font>(time.<u>value</u>(<font color=red>"min"</font>)  ==  120);
+<font color=blue>assert</font>(time.<u>value</u>(hour) == 2);
+<font color=blue>assert</font>(time.<u>value</u>(minute) == 120);
 <font color=blue>assert</font>(time.<u>value</u>(second) == 7200);
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(Q)(Q <i>other</i>) if (isQuantity!Q);
 <br><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(S)(S <i>str</i>) if (isSomeString!S);
 </big></dt>
