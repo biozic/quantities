@@ -113,10 +113,19 @@ are the units and prefixes available from $(D_PSYMBOL defaultSymbolList).
 +/
 template qty(string str, N = real)
 {
-    enum q = parseQuantity(str);
-    enum dimStr = dimTup(q.dimensions);
-    mixin("alias Qty = Quantity!(N, %s);".format(dimStr));
-    enum qty = Qty(q.value);
+    enum msg = () { return collectExceptionMsg(parseQuantity(str)); } ();
+    static if (msg)
+    {
+        static assert(false, msg);
+        enum qty = one;
+    }
+    else
+    {
+        enum q = parseQuantity(str);
+        enum dimStr = dimTup(q.dimensions);
+        mixin("alias Qty = Quantity!(N, %s);".format(dimStr));
+        enum qty = Qty(q.value);
+    }
 }
 ///
 unittest
