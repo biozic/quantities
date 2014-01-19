@@ -87,7 +87,19 @@ Nicolas Sicard
 <b>Source:</b><br>
 <a href="https://github.com/biozic/quantities">https://github.com/biozic/quantities</a><br><br>
 
-<dl><dt><big><a name="parseQuantity"></a>RTQuantity <u>parseQuantity</u>(S)(S <i>text</i>, SymbolList <i>symbolList</i> = defaultSymbolList());
+<dl><dt><big><a name="qty"></a>template <u>qty</u>(string str, N = real)</big></dt>
+<dd>Parses a string for a quantity/unit at compile time.
+<br><br>
+Currently, only official SI units and prefixes can be parsed. These
+are the units and prefixes available from <u>defaultSymbolList</u>.<br><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> min = <u>qty</u>!<font color=red>"min"</font>;
+<font color=blue>enum</font> inch = <u>qty</u>!<font color=red>"2.54 cm"</font>;
+</pre>
+<br><br>
+</dd>
+<dt><big><a name="parseQuantity"></a>RTQuantity <u>parseQuantity</u>(S)(S <i>text</i>, SymbolList <i>symbolList</i> = defaultSymbolList());
 </big></dt>
 <dd>Parses text for a unit or a quantity at runtime.<br><br>
 <b>Examples:</b><br>

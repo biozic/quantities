@@ -103,7 +103,35 @@ version (unittest)
     }
 }
 
- debug import std.stdio;
+//debug import std.stdio;
+
+/++
+Parses a string for a quantity/unit at compile time.
+
+Currently, only official SI units and prefixes can be parsed. These
+are the units and prefixes available from $(D_PSYMBOL defaultSymbolList).
++/
+template qty(string str, N = real)
+{
+    enum q = parseQuantity(str);
+    enum dimStr = dimTup(q.dimensions);
+    mixin("alias Qty = Quantity!(N, %s);".format(dimStr));
+    enum qty = Qty(q.value);
+}
+///
+unittest
+{
+    enum min = qty!"min";
+    enum inch = qty!"2.54 cm";
+}
+
+private string dimTup(int[string] dims)
+{
+    return dims.keys
+        .map!(x => `"%s", %s`.format(x, dims[x]))
+        .join(", ");
+}
+
 
 /// Parses text for a unit or a quantity at runtime.
 RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
@@ -415,8 +443,89 @@ struct SymbolList
 /// Returns the default list, consisting of the main SI units and prefixes.
 SymbolList defaultSymbolList()
 {
+    if (__ctfe)
+        return SymbolList(eSIUnitSymbols, eSIPrefixSymbols);
     return SymbolList(SIUnitSymbols, SIPrefixSymbols);
 }
+
+
+enum eSupintegerMap = [
+    '⁰':'0',
+    '¹':'1',
+    '²':'2',
+    '³':'3',
+    '⁴':'4',
+    '⁵':'5',
+    '⁶':'6',
+    '⁷':'7',
+    '⁸':'8',
+    '⁹':'9',
+    '⁺':'+',
+    '⁻':'-'
+];
+
+enum eSIUnitSymbols = [
+    "m" : meter.toRuntime,
+    "kg" : kilogram.toRuntime,
+    "s" : second.toRuntime,
+    "A" : ampere.toRuntime,
+    "K" : kelvin.toRuntime,
+    "mol" : mole.toRuntime,
+    "cd" : candela.toRuntime,
+    "rad" : radian.toRuntime,
+    "sr" : steradian.toRuntime,
+    "Hz" : hertz.toRuntime,
+    "N" : newton.toRuntime,
+    "Pa" : pascal.toRuntime,
+    "J" : joule.toRuntime,
+    "W" : watt.toRuntime,
+    "C" : coulomb.toRuntime,
+    "V" : volt.toRuntime,
+    "F" : farad.toRuntime,
+    "Ω" : ohm.toRuntime,
+    "S" : siemens.toRuntime,
+    "Wb" : weber.toRuntime,
+    "T" : tesla.toRuntime,
+    "H" : henry.toRuntime,
+    "lm" : lumen.toRuntime,
+    "lx" : lux.toRuntime,
+    "Bq" : becquerel.toRuntime,
+    "Gy" : gray.toRuntime,
+    "Sv" : sievert.toRuntime,
+    "kat" : katal.toRuntime,
+    "g" : gram.toRuntime,
+    "min" : minute.toRuntime,
+    "h" : hour.toRuntime,
+    "d" : day.toRuntime,
+    "l" : liter.toRuntime,
+    "L" : liter.toRuntime,
+    "t" : ton.toRuntime,
+    "eV" : electronVolt.toRuntime,
+    "Da" : dalton.toRuntime,
+];
+
+enum eSIPrefixSymbols = [
+    "Y" : 1e24,
+    "Z" : 1e21,
+    "E" : 1e18,
+    "P" : 1e15,
+    "T" : 1e12,
+    "G" : 1e9,
+    "M" : 1e6,
+    "k" : 1e3,
+    "h" : 1e2,
+    "da": 1e1,
+    "d" : 1e-1,
+    "c" : 1e-2,
+    "m" : 1e-3,
+    "µ" : 1e-6,
+    "n" : 1e-9,
+    "p" : 1e-12,
+    "f" : 1e-15,
+    "a" : 1e-18,
+    "z" : 1e-21,
+    "y" : 1e-24
+];
 
 static dchar[dchar] supintegerMap;
 static RTQuantity[string] SIUnitSymbols;
@@ -424,83 +533,9 @@ static real[string] SIPrefixSymbols;
 
 shared static this()
 {   
-    supintegerMap = [
-        '⁰':'0',
-        '¹':'1',
-        '²':'2',
-        '³':'3',
-        '⁴':'4',
-        '⁵':'5',
-        '⁶':'6',
-        '⁷':'7',
-        '⁸':'8',
-        '⁹':'9',
-        '⁺':'+',
-        '⁻':'-'
-    ];
-
-    SIUnitSymbols = [
-        "m" : meter.toRuntime,
-        "kg" : kilogram.toRuntime,
-        "s" : second.toRuntime,
-        "A" : ampere.toRuntime,
-        "K" : kelvin.toRuntime,
-        "mol" : mole.toRuntime,
-        "cd" : candela.toRuntime,
-        "rad" : radian.toRuntime,
-        "sr" : steradian.toRuntime,
-        "Hz" : hertz.toRuntime,
-        "N" : newton.toRuntime,
-        "Pa" : pascal.toRuntime,
-        "J" : joule.toRuntime,
-        "W" : watt.toRuntime,
-        "C" : coulomb.toRuntime,
-        "V" : volt.toRuntime,
-        "F" : farad.toRuntime,
-        "Ω" : ohm.toRuntime,
-        "S" : siemens.toRuntime,
-        "Wb" : weber.toRuntime,
-        "T" : tesla.toRuntime,
-        "H" : henry.toRuntime,
-        "lm" : lumen.toRuntime,
-        "lx" : lux.toRuntime,
-        "Bq" : becquerel.toRuntime,
-        "Gy" : gray.toRuntime,
-        "Sv" : sievert.toRuntime,
-        "kat" : katal.toRuntime,
-        "g" : gram.toRuntime,
-        "min" : minute.toRuntime,
-        "h" : hour.toRuntime,
-        "d" : day.toRuntime,
-        "l" : liter.toRuntime,
-        "L" : liter.toRuntime,
-        "t" : ton.toRuntime,
-        "eV" : electronVolt.toRuntime,
-        "Da" : dalton.toRuntime,
-    ];
-    
-    SIPrefixSymbols = [
-        "Y" : 1e24,
-        "Z" : 1e21,
-        "E" : 1e18,
-        "P" : 1e15,
-        "T" : 1e12,
-        "G" : 1e9,
-        "M" : 1e6,
-        "k" : 1e3,
-        "h" : 1e2,
-        "da": 1e1,
-        "d" : 1e-1,
-        "c" : 1e-2,
-        "m" : 1e-3,
-        "µ" : 1e-6,
-        "n" : 1e-9,
-        "p" : 1e-12,
-        "f" : 1e-15,
-        "a" : 1e-18,
-        "z" : 1e-21,
-        "y" : 1e-24
-    ];
+    supintegerMap = eSupintegerMap;
+    SIUnitSymbols = eSIUnitSymbols;
+    SIPrefixSymbols = eSIPrefixSymbols;
 }
 
 /++
@@ -758,8 +793,16 @@ int[string] binop(string op)(int[string] dim1, int[string] dim2)
 {
     static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
 
+    int[string] result;
+
     // Clone these dimensions in the result
-    int[string] result = dim1.dup;
+    if (__ctfe)
+    {
+        foreach (key; dim1.keys)
+            result[key] = dim1[key];
+    }
+    else
+        result = dim1.dup;
     
     // Merge the other dimensions
     foreach (sym, pow; dim2)
