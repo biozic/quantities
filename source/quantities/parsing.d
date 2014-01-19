@@ -134,8 +134,9 @@ unittest
     enum min = qty!"min";
     enum inch = qty!"2.54 cm";
 
-    Concentration c = qty!"1 mol/L";
+    Concentration c = qty!"1 µmol/L";
     Speed s = qty!"m s^-1";
+    Dimensionless val = qty!"0.5";
 }
 
 private string dimTup(int[string] dims)

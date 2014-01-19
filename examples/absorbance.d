@@ -15,6 +15,6 @@ Absorbance absorbance(Flux incident, Flux transmitted)
 unittest
 {
     Absorbance a;
-    a = absorbance(Flux("4.23 lm"), Flux("2.87 lm"));
+    a = absorbance(qty!"4.23 lm", qty!"2.87 lm");
     writefln("Absorbance: %.3f", cast(real) a);
 }

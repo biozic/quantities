@@ -34,9 +34,9 @@ unittest
     alias Time = QuantityType!second;
     
     LinearCalibration!(Time, EPD) cal;
-    cal.calibrate2Points(10*minute, 15*volt, 2*hour, 91*volt);
+    cal.calibrate2Points(10 * minute, 15 * volt, 2 * hour, 91 * volt);
     
-    auto unknown = cal.quantityFor(30*volt);
+    auto unknown = cal.quantityFor(30 * volt);
     writefln("Time: %.2f min", unknown.value(minute));
 }
 
@@ -46,8 +46,8 @@ unittest
     alias A = Dimensionless;
     
     LinearCalibration!(C, A) cal;
-    cal.calibrate2Points(C("0 mmol/L"), A("0"), C("25 mmol/L"), A("0.507"));
+    cal.calibrate2Points(qty!"0 mmol/L", qty!"0", qty!"25 mmol/L", qty!"0.507");
     
-    auto unknown = cal.quantityFor(A("0.113"));
-    writefln("Concentration: %.2f mmol/L", unknown.value("mmol/L"));
+    auto unknown = cal.quantityFor(qty!"0.113");
+    writefln("Concentration: %.2f mmol/L", unknown.value(qty!"mmol/L"));
 }
