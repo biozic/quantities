@@ -88,6 +88,7 @@ import std.array;
 import std.algorithm;
 import std.conv;
 import std.exception;
+import std.math;
 import std.range;
 import std.string;
 import std.traits;
@@ -132,6 +133,9 @@ unittest
 {
     enum min = qty!"min";
     enum inch = qty!"2.54 cm";
+
+    Concentration c = qty!"1 mol/L";
+    Speed s = qty!"m s^-1";
 }
 
 private string dimTup(int[string] dims)
@@ -348,7 +352,7 @@ struct QuantityParser
         
         int n = parseInteger(tokens);
 
-        return RTQuantity(ret.value ^^ n, ret.dimensions.exp(n));
+        return RTQuantity(std.math.pow(ret.value, n), ret.dimensions.exp(n));
     }
     unittest
     {
@@ -661,11 +665,14 @@ Token[] lex(string input)
         auto slice = original[i .. j];
         if (type == Tok.supinteger)
         {
-            slice = translate(slice, supintegerMap);
+            if (__ctfe)
+                slice = translate(slice, eSupintegerMap);
+            else
+                slice = translate(slice, supintegerMap);
         }
         auto n = std.conv.parse!int(slice);
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
-        tokapp ~= Token(type, null, n);
+        tokapp ~= Token(type, original[i .. j], n);
         i = j;
         state = State.none;
     }

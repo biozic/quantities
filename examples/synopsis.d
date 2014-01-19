@@ -57,7 +57,7 @@ unittest
     // Parsing quantities/units at compile-time
     // ----------------------------------------
 
-    enum ctConcentration = qty!"2.5 g/L";
+    enum ctConcentration = qty!"2.5 g⋅L⁻¹";
     enum ctVolume = qty!"10 mL";
     enum ctMass = ctConcentration * ctVolume;
     static assert(ctMass.value(qty!"mg").approxEqual(25));
