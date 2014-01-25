@@ -170,7 +170,7 @@ struct Quantity(N, Dim...)
     }
     /// ditto
     bool isConsistentWith(Q)(Q other) const
-        if (is(Unqual!T == RTQuantity))
+        if (is(Unqual!Q == RTQuantity))
     {
         return toAA!Dim == other.dimensions;
     }
