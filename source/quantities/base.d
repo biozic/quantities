@@ -63,6 +63,12 @@ struct Quantity(N, Dim...)
                 "Dimension error: %s is not compatible with %s"
                 .format(dimstr!(` ~ dim ~ `)(true), dimstr!(dimensions)(true)));`;
     }
+    
+    /// Gets the base unit of this quantity
+    static @property Quantity baseUnit()
+    {
+        return Quantity(1);
+    }
 
     /// Creates a new quantity from another one with the same dimensions
     this(Q)(Q other)
@@ -390,6 +396,11 @@ struct Quantity(N, Dim...)
         formattedWrite(sink, "%s ", _value);
         sink(dimstr!dimensions());
     }
+}
+
+unittest // Quantity.baseUnit
+{
+    static assert(minute.baseUnit == second);
 }
 
 unittest // Quantity constructor
