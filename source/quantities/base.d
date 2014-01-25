@@ -18,6 +18,7 @@ import std.typetuple;
 version (unittest)
 {
     import quantities.si;
+    import quantities.parsing : qty;
     import std.math : approxEqual;
 }
 
@@ -168,18 +169,20 @@ struct Quantity(N, Dim...)
         return Is!dimensions.equalTo!(other.dimensions);
     }
     /// ditto
-    bool isConsistentWith(S)(S str) const
-        if (isSomeString!S)
+    bool isConsistentWith(Q)(Q other) const
+        if (is(Unqual!T == RTQuantity))
     {
-        return isConsistentWith(typeof(this)(targetString));
+        return toAA!Dim == other.dimensions;
     }
     ///
     unittest
     {
         auto nm = (1.4 * newton) * (0.5 * centi(meter));
-        auto kwh = (4000 * kilo(watt)) * (1200 * hour);
-        assert(nm.isConsistentWith(kwh)); // Energy in both cases
+        auto kWh = (4000 * kilo(watt)) * (1200 * hour);
+        assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
+        assert(nm.isConsistentWith(qty!"kW h"));
+        assert(!nm.isConsistentWith(qty!"s"));
     }
 
     /++
