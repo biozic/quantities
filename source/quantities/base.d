@@ -151,6 +151,12 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"target.dimensions");
         return _value / target._value;
     }
+    /// ditto
+    N value(Q)(Q target) const
+        if (is(Unqual!Q == RTQuantity))
+    {
+        return value(typeof(this)(target));
+    }
     ///
     unittest
     {
@@ -158,6 +164,7 @@ struct Quantity(N, Dim...)
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
         assert(time.value(second) == 7200);
+        assert(time.value(qty!"h") == 2);
     }
 
     /++
