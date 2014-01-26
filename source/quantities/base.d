@@ -49,18 +49,11 @@ struct Quantity(N, Dim...)
 
     /// The dimension tuple of the quantity.
     alias dimensions = Dim;
-    ///
-    unittest
-    {
-        static assert(Is!(meter.dimensions).equalTo!("m", 1,));
-        static assert(Is!(katal.dimensions).equalTo!("mol", 1, "s", -1));
-        static assert(Is!(volt.dimensions).equalTo!("kg", 1, "m", 2, "s", -3, "A", -1));
-    }
 
     template checkDim(string dim)
     {
         enum checkDim = 
-            `static assert(Is!(` ~ dim ~ `).equalTo!dimensions,
+            `static assert(Is!(` ~ dim ~ `).equivalentTo!dimensions,
                 "Dimension error: %s is not compatible with %s"
                 .format(dimstr!(` ~ dim ~ `)(true), dimstr!(dimensions)(true)));`;
     }
@@ -173,7 +166,7 @@ struct Quantity(N, Dim...)
     bool isConsistentWith(Q)(Q other) const
         if (isQuantity!Q)
     {
-        return Is!dimensions.equalTo!(other.dimensions);
+        return AreConsistent!(typeof(this), Q);
     }
     /// ditto
     bool isConsistentWith(Q)(Q other) const
@@ -406,11 +399,6 @@ struct Quantity(N, Dim...)
         formattedWrite(sink, "%s ", _value);
         sink(dimstr!dimensions());
     }
-}
-
-unittest // Quantity type equality
-{
-    static assert(is(QuantityType!(meter * second) == QuantityType!(second * meter)));
 }
 
 unittest // Quantity.baseUnit
@@ -706,7 +694,7 @@ unittest
 template AreConsistent(Q1, Q2)
     if (isQuantity!Q1 && isQuantity!Q2)
 {
-    enum AreConsistent = Q1.init.isConsistentWith(Q2.init);
+    enum AreConsistent = Is!(Q1.dimensions).equivalentTo!(Q2.dimensions);
 }
 ///
 unittest
@@ -785,44 +773,25 @@ package:
 // Inspired from std.typetuple.Pack
 template Is(T...)
 {
-    template includedIn(U...)
-    {
-        static assert(T.length == 2);
-        static assert(U.length % 2 == 0);
-        static if (U.length == 0)
-            enum includedIn = false;
-        else
-            enum includedIn = (T[0] == U[0] && T[1] == U[1]) || Is!T.includedIn!(U[2 .. $]);
-    }
-
-    template allIncludedIn(U...)
-    {
-        static assert(T.length % 2 == 0);
-        static if (T.length == 0)
-            enum allIncludedIn = true;
-        else
-            enum allIncludedIn = Is!(T[0 .. 2]).includedIn!U && Is!(T[2 .. $]).allIncludedIn!U;
-    }
+    static assert(T.length % 2 == 0);
 
     template equalTo(U...)
     {
         static if (T.length == U.length)
-            enum equalTo = Is!T.allIncludedIn!U && Is!U.allIncludedIn!T; 
+        {
+            static if (T.length == 0)
+                enum equalTo = true;
+            else
+                enum equalTo = IsDim!(T[0..2]).equalTo!(U[0..2]) && Is!(T[2..$]).equalTo!(U[2..$]); 
+        }
         else
             enum equalTo = false;
     }
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", -1);
-    static assert(Is!(TypeTuple!("a", 1)).includedIn!T);
-    static assert(Is!(TypeTuple!("b", -1)).includedIn!T);
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", -1);
-    alias U = TypeTuple!("b", -1, "a", 1);
-    static assert(Is!T.allIncludedIn!U);
+
+    template equivalentTo(U...)
+    {
+        alias equivalentTo = Is!(Sort!T).equalTo!(Sort!U);
+    }
 }
 unittest
 {
@@ -830,45 +799,62 @@ unittest
     alias U = TypeTuple!("a", 1, "b", -1);
     alias V = TypeTuple!("b", -1, "a", 1);
     static assert(Is!T.equalTo!U);
-    static assert(Is!T.equalTo!V);
+    static assert(!Is!T.equalTo!V);
+    static assert(Is!T.equivalentTo!V);
 }
-
 
 template IsDim(string d1, int p1)
 {
     template equalTo(string d2, int p2)
     {
-        static if (d1 == d2 && p1 == p2)
-            enum equalTo = true;
-        else
-            enum equalTo = false;
+        enum equalTo = (d1 == d2 && p1 == p2);
     }
 
     template dimEqualTo(string d2, int p2)
     {
-        static if (d1 == d2)
-            enum dimEqualTo = true;
-        else
-            enum dimEqualTo = false;
+        enum dimEqualTo = (d1 == d2);
     }
 
     template dimLessOrEqual(string d2, int p2)
     {
-        static if (d1 <= d2)
+        alias siInOrder = TypeTuple!("m", "kg", "s", "A", "K", "mol", "cd");
+        enum id1 = staticIndexOf!(d1, siInOrder);
+        enum id2 = staticIndexOf!(d2, siInOrder);
+
+        static if (id1 >= 0 && id2 >= 0) // both SI
+            enum dimLessOrEqual = id1 < id2;
+        else static if (id1 >= 0 && id2 == -1) // SI before non-SI
             enum dimLessOrEqual = true;
-        else
+        else static if (id1 == -1 && id2 >= 0) // non-SI after SI
             enum dimLessOrEqual = false;
+        else
+            enum dimLessOrEqual = d1 <= d2; // Usual comparison
     }
 
     template powEqualTo(string d2, int p2)
     {
-        static if (p1 == p2)
-            enum powEqualTo = true;
-        else
-            enum powEqualTo = false;
+        enum powEqualTo = (p1 == p2);
     }
 }
+unittest
+{
+    static assert(IsDim!("a", 0).equalTo!("a", 0));
+    static assert(!IsDim!("a", 0).equalTo!("a", 1));
+    static assert(!IsDim!("a", 0).equalTo!("b", 0));
+    static assert(!IsDim!("a", 0).equalTo!("b", 1));
 
+    static assert(IsDim!("a", 0).dimEqualTo!("a", 1));
+    static assert(!IsDim!("a", 0).dimEqualTo!("b", 1));
+
+    static assert(IsDim!("a", 0).powEqualTo!("b", 0));
+    static assert(!IsDim!("a", 0).powEqualTo!("b", 1));
+
+    static assert(IsDim!("m", 0).dimLessOrEqual!("kg", 0));
+    static assert(!IsDim!("kg", 0).dimLessOrEqual!("m", 1));
+    static assert(IsDim!("m", 0).dimLessOrEqual!("U", 0));
+    static assert(!IsDim!("U", 0).dimLessOrEqual!("kg", 0));
+    static assert(IsDim!("U", 0).dimLessOrEqual!("V", 0));
+}
 
 template FilterPred(alias pred, Dim...)
 {
@@ -882,7 +868,6 @@ template FilterPred(alias pred, Dim...)
         alias FilterPred = FilterPred!(pred, Dim[2 .. $]);
 }
 
-
 template RemoveNull(Dim...)
 {
     alias RemoveNull = FilterPred!(templateNot!(IsDim!("_", 0).powEqualTo), Dim);
@@ -892,7 +877,6 @@ unittest
     alias T = TypeTuple!("a", 1, "b", 0, "c", -1);
     static assert(Is!(RemoveNull!T).equalTo!("a", 1, "c", -1));
 }
-
 
 template Filter(string s, Dim...)
 {
@@ -904,7 +888,6 @@ unittest
     static assert(Is!(Filter!("a", T)).equalTo!("a", 1, "a", -1));
 }
 
-
 template FilterOut(string s, Dim...)
 {
     alias FilterOut = FilterPred!(templateNot!(IsDim!(s, 0).dimEqualTo), Dim);
@@ -914,7 +897,6 @@ unittest
     alias T = TypeTuple!("a", 1, "b", 0, "a", -1, "c", 2);
     static assert(Is!(FilterOut!("a", T)).equalTo!("b", 0, "c", 2));
 }
-
 
 template Reduce(int seed, Dim...)
 {
@@ -933,7 +915,6 @@ unittest
     alias U = TypeTuple!("a", 1, "a", -1);
     static assert(Is!(Reduce!(0, U)).equalTo!("a", 0));
 }
-
 
 template Simplify(Dim...)
 {
@@ -956,7 +937,6 @@ unittest
     static assert(Is!(Simplify!T).equalTo!("a", 0, "b", 3, "c", 4));
 }
 
-
 template Sort(Dim...)
 {
     static assert(Dim.length % 2 == 0);
@@ -967,8 +947,8 @@ template Sort(Dim...)
     {
         enum i = (Dim.length / 4) * 2; // Pivot index
         alias list = TypeTuple!(Dim[0..i], Dim[i+2..$]);
-        alias less = FilterPred!(IsDim!(Dim[i], 0).dimLessOrEqual, list);
-        alias greater = FilterPred!(templateNot!(IsDim!(Dim[i], 0).dimLessOrEqual), list);
+        alias greater = FilterPred!(IsDim!(Dim[i], 0).dimLessOrEqual, list);
+        alias less = FilterPred!(templateNot!(IsDim!(Dim[i], 0).dimLessOrEqual), list);
         alias Sort = TypeTuple!(Sort!less, Dim[i], Dim[i+1], Sort!greater);
     }
 }
@@ -977,7 +957,6 @@ unittest
     alias T = TypeTuple!("d", -1, "c", 2, "a", 4, "e", 0, "b", -3);
     static assert(Is!(Sort!T).equalTo!("a", 4, "b", -3, "c", 2, "d", -1, "e", 0));
 }
-
 
 template OpBinary(Dim...)
 {
@@ -1008,7 +987,6 @@ unittest
     static assert(Is!(OpBinary!(T, "/", U)).equalTo!("b", 4, "c", -3));
 }
 
-
 template Invert(Dim...)
 {
     static assert(Dim.length % 2 == 0);
@@ -1024,7 +1002,6 @@ unittest
     static assert(Is!(Invert!T).equalTo!("a", -1, "b", 1));
 }
 
-
 template Pow(int n, Dim...)
 {
     static assert(Dim.length % 2 == 0);
@@ -1039,7 +1016,6 @@ unittest
     alias T = TypeTuple!("a", 1, "b", -1);
     static assert(Is!(Pow!(2, T)).equalTo!("a", 2, "b", -2));
 }
-
 
 template PowInverse(int n, Dim...)
 {
@@ -1059,7 +1035,6 @@ unittest
     alias T = TypeTuple!("a", 4, "b", -2);
     static assert(Is!(PowInverse!(2, T)).equalTo!("a", 2, "b", -1));
 }
-
 
 int[string] toAA(Dim...)()
 {
@@ -1086,7 +1061,6 @@ unittest
     static assert(toAA!T == ["a":1, "b":-1]);
 }
 
-
 string dimstr(Dim...)(bool complete = false)
 {
     import std.algorithm : filter;
@@ -1102,6 +1076,9 @@ string dimstr(Dim...)(bool complete = false)
         return base ~ "^" ~ to!string(power);
     }
 
+    if (Dim.length == 0)
+        return complete ? "scalar" : "";
+
     string[] dimstrs;
     string sym;
     foreach (i, d; Dim)
@@ -1112,9 +1089,5 @@ string dimstr(Dim...)(bool complete = false)
             dimstrs ~= stringize(sym, d);
     }
     
-    string result = dimstrs.filter!"a !is null".join(" ");
-    if (!result.length)
-        return complete ? "scalar" : "";
-    
-    return result;
+    return dimstrs.join(" ");
 }

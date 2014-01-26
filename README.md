@@ -46,7 +46,7 @@ enum dollar = euro / 1.35;
 writeln(meter);  // prints: 1 m
 writeln(inch);   // prints: 0.0254 m
 writeln(dollar); // prints: 0.740741 €
-writeln(volt);   // prints: 1 kg^-1 s^-3 m^2 A^-1 
+writeln(volt);   // prints: 1 m^2 kg s^-3 A^-1 
 
 // -----------------------
 // Working with quantities

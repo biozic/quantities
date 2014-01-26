@@ -124,8 +124,8 @@ template qty(string str, N = real)
     {
         enum q = parseQuantity(str);
         enum dimStr = dimTup(q.dimensions);
-        mixin("alias Qty = Quantity!(N, %s);".format(dimStr));
-        enum qty = Qty(q.value);
+        mixin("alias dims = TypeTuple!(%s);".format(dimStr));
+        enum qty = Quantity!(N, Sort!dims)(q.value);
     }
 }
 ///
