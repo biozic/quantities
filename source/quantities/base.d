@@ -1076,18 +1076,19 @@ string dimstr(Dim...)(bool complete = false)
         return base ~ "^" ~ to!string(power);
     }
 
-    if (Dim.length == 0)
+    static if (Dim.length == 0)
         return complete ? "scalar" : "";
-
-    string[] dimstrs;
-    string sym;
-    foreach (i, d; Dim)
-    {
-        static if (i % 2 == 0)
-            sym = d;
-        else
-            dimstrs ~= stringize(sym, d);
-    }
-    
-    return dimstrs.join(" ");
+    else
+   	{
+	    string[] dimstrs;
+	    string sym;
+	    foreach (i, d; Dim)
+	    {
+	        static if (i % 2 == 0)
+	            sym = d;
+	        else
+	            dimstrs ~= stringize(sym, d);
+	    }
+	    return dimstrs.join(" ");
+	}
 }
