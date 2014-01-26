@@ -1,5 +1,5 @@
 .dub
 __test__*
 generated_values.txt
-bench
 trace.*
+benchmark
