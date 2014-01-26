@@ -565,7 +565,7 @@ real convert(S, U)(S from, U target)
     if (isSomeString!S && isSomeString!U)
 {
     RTQuantity base = parseQuantity(from);
-    RTQuantity unit = parseQuantity("1" ~ target);
+    RTQuantity unit = parseQuantity(target);
     enforceEx!DimensionException(base.dimensions == unit.dimensions,
                                  "Dimension error: %s is not compatible with %s"
                                  .format(dimstr(base.dimensions, true), dimstr(unit.dimensions, true)));
@@ -575,7 +575,7 @@ real convert(S, U)(S from, U target)
 unittest
 {
     auto k = convert("3 min", "s");
-    assert(k == 180);
+    assert(k == 3 * 60);
 }
 
 /// Convert a compile-time quantity to its runtime equivalent.
