@@ -15,10 +15,9 @@ limitations).
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.
 
-Important: **requires DMD 2.065** (for associative array literals template
-parameters to work properly).
+Tested with DMD 2.065+
 
-Copyright 2013, Nicolas Sicard.
+Copyright 2013-2014, Nicolas Sicard.
 
 License: Boost License 1.0.
 
