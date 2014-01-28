@@ -947,8 +947,8 @@ template Sort(Dim...)
     {
         enum i = (Dim.length / 4) * 2; // Pivot index
         alias list = TypeTuple!(Dim[0..i], Dim[i+2..$]);
-        alias greater = FilterPred!(IsDim!(Dim[i], 0).dimLessOrEqual, list);
         alias less = FilterPred!(templateNot!(IsDim!(Dim[i], 0).dimLessOrEqual), list);
+        alias greater = FilterPred!(IsDim!(Dim[i], 0).dimLessOrEqual, list);
         alias Sort = TypeTuple!(Sort!less, Dim[i], Dim[i+1], Sort!greater);
     }
 }

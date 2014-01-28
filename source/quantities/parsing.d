@@ -104,7 +104,7 @@ version (unittest)
     }
 }
 
-//debug import std.stdio;
+// debug import std.stdio;
 
 /++
 Parses a string for a quantity/unit at compile time.
@@ -114,11 +114,16 @@ are the units and prefixes available from $(D_PSYMBOL defaultSymbolList).
 +/
 template qty(string str, N = real)
 {
-    enum msg = () { return collectExceptionMsg(parseQuantity(str)); } ();
+    private string dimTup(int[string] dims)
+    {
+        return dims.keys.map!(x => `"%s", %s`.format(x, dims[x])).join(", ");
+    }
+
+    // This is for a nice compile-time error message
+    enum msg = { return collectExceptionMsg(parseQuantity(str)); }();
     static if (msg)
     {
         static assert(false, msg);
-        enum qty = one;
     }
     else
     {
@@ -134,16 +139,13 @@ unittest
     enum min = qty!"min";
     enum inch = qty!"2.54 cm";
 
-    Concentration c = qty!"1 µmol/L";
-    Speed s = qty!"m s^-1";
-    Dimensionless val = qty!"0.5";
-}
+    auto conc = qty!"1 µmol/L";
+    auto speed = qty!"m s^-1";
+    auto value = qty!"0.5";
 
-private string dimTup(int[string] dims)
-{
-    return dims.keys
-        .map!(x => `"%s", %s`.format(x, dims[x]))
-        .join(", ");
+    static assert(is(typeof(conc) == Concentration));
+    static assert(is(typeof(speed) == Speed));
+    static assert(is(typeof(value) == Dimensionless));
 }
 
 
@@ -519,26 +521,26 @@ enum eSIUnitSymbols = [
 ];
 
 enum eSIPrefixSymbols = [
-    "Y" : 1e24,
-    "Z" : 1e21,
-    "E" : 1e18,
-    "P" : 1e15,
-    "T" : 1e12,
-    "G" : 1e9,
-    "M" : 1e6,
-    "k" : 1e3,
-    "h" : 1e2,
-    "da": 1e1,
-    "d" : 1e-1,
-    "c" : 1e-2,
-    "m" : 1e-3,
-    "µ" : 1e-6,
-    "n" : 1e-9,
-    "p" : 1e-12,
-    "f" : 1e-15,
-    "a" : 1e-18,
-    "z" : 1e-21,
-    "y" : 1e-24
+    "Y" : 1e24L,
+    "Z" : 1e21L,
+    "E" : 1e18L,
+    "P" : 1e15L,
+    "T" : 1e12L,
+    "G" : 1e9L,
+    "M" : 1e6L,
+    "k" : 1e3L,
+    "h" : 1e2L,
+    "da": 1e1L,
+    "d" : 1e-1L,
+    "c" : 1e-2L,
+    "m" : 1e-3L,
+    "µ" : 1e-6L,
+    "n" : 1e-9L,
+    "p" : 1e-12L,
+    "f" : 1e-15L,
+    "a" : 1e-18L,
+    "z" : 1e-21L,
+    "y" : 1e-24L
 ];
 
 static dchar[dchar] supintegerMap;
