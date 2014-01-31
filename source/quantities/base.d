@@ -442,6 +442,7 @@ struct Quantity(N, Dim...)
 
         return fmt.format(value(qty!(extractUnit(fmt))));
     }
+    ///
     unittest
     {
         enum inch = qty!"2.54 cm";
@@ -575,6 +576,22 @@ unittest // Quantity.opCmp
     assert(hour >= hour);
 }
 
+unittest // Quantity.toString
+{
+    import quantities.utils.locale;
+    auto loc = ScopedLocale("fr_FR");
+
+    enum inch = qty!"2.54 cm";
+    
+    // Format parsed at runtime
+    assert(inch.toString("%s cm") == "2,54 cm");
+    assert(inch.toString("%.2f mm") == "25,40 mm");
+    
+    // Format parsed at compile-time
+    assert(inch.toString!"%s cm" == "2,54 cm");
+    assert(inch.toString!"%.2f mm" == "25,40 mm");
+}
+
 unittest // Compilation errors for incompatible dimensions
 {
     static assert(!__traits(compiles, QuantityType!meter(1 * second)));
@@ -632,7 +649,7 @@ unittest
 /// Creates a new monodimensional unit.
 template unit(string symbol, N = real)
 {
-    enum unit = Quantity!(N, symbol, 1)(1.0);
+    enum unit = Quantity!(N, symbol, 1)(1);
 }
 ///
 unittest
