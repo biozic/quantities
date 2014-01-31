@@ -182,7 +182,6 @@ struct Quantity(N, Dim...)
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
         assert(nm.isConsistentWith(qty!"kW h"));
-        assert(!nm.isConsistentWith(qty!"s"));
     }
 
     /++
@@ -392,12 +391,68 @@ struct Quantity(N, Dim...)
         return 1;
     }
 
-    /// Returns a default string representation of the quantity.
-    void toString(scope void delegate(const(char)[]) sink) const
+    /// Returns the default string representation of the quantity.
+    string toString() const
     {
-        import std.format;
-        formattedWrite(sink, "%s ", _value);
-        sink(dimstr!dimensions());
+        return "%s %s".format(_value, dimstr!dimensions);
+    }
+    ///
+    unittest
+    {
+        enum inch = qty!"2.54 cm";
+        assert(inch.toString == "0.0254 m");
+    }
+
+    /++
+     + Returns a formatted string from the quantity.
+     + 
+     + The format string must be formed of a format specifier for the numeric value
+     + (e.g %s, %g, %.2f, etc.), followed by a unit. The whitespace between the
+     + format specifier and the unit is not significant.
+     + 
+     + The unit present in the format is parsed each time the function is called, in
+     + order to calculate the value. If this quantity can be known at runtime,
+     + the template version of this function should be more efficient.
+     +/
+    string toString(string fmt) const
+    {
+        import std.array, std.format;
+        auto app = appender!string;
+        auto spec = FormatSpec!char(fmt);
+        spec.writeUpToNextSpec(app);
+        app.formatValue(value(parseQuantity(spec.trailing)), spec);
+        app.put(spec.trailing);
+        return app.data;
+    }
+    ///
+    string toString(string fmt)() const
+    {
+        static assert(fmt.startsWith("%"), "Expecting a format specifier starting with '%'");
+
+        // Get the unit at compile time
+        static string extractUnit(string fmt)
+        {
+            import std.algorithm, std.array;
+            auto ret = fmt.findAmong([
+                's', 'c', 'b', 'd', 'o', 'x', 'X', 'e', 
+                'E', 'f', 'F', 'g', 'G', 'a', 'A']);
+            ret.popFront();
+            return ret;
+        }
+
+        return fmt.format(value(qty!(extractUnit(fmt))));
+    }
+    unittest
+    {
+        enum inch = qty!"2.54 cm";
+
+        // Format parsed at runtime
+        assert(inch.toString("%s cm") == "2.54 cm");
+        assert(inch.toString("%.2f mm") == "25.40 mm");
+
+        // Format parsed at compile-time
+        assert(inch.toString!"%s cm" == "2.54 cm");
+        assert(inch.toString!"%.2f mm" == "25.40 mm");
     }
 }
 

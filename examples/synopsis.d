@@ -37,17 +37,18 @@ unittest
 
     // I have to make a new solution at the concentration of 2.5 g/l.
     concentration = 2.5 * gram/liter;
+
     // The final volume is 10 ml.
     volume = 10 * milli(liter);
+
     // What mass should I weigh?
     mass = concentration * volume;
     writefln("Weigh %f kg of substance", mass.value(kilogram)); 
     // prints: Weigh 0.000025 kg of substance
+
     // Wait! My scales graduations are 0.1 milligrams!
     writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
     // prints: Weigh 25.0 mg of substance
-    // I knew the result would be 25 mg.
-    assert(mass.value(milli(gram)).approxEqual(25));
 
     // Type checking prevents incorrect assignments and operations
     static assert(!__traits(compiles, mass = 10 * milli(liter)));
@@ -61,7 +62,8 @@ unittest
     enum ctVolume = qty!"10 mL";
     enum ctMass = ctConcentration * ctVolume;
     static assert(ctMass.value(qty!"mg").approxEqual(25));
-
+    writefln("Weigh %s of substance", mass.toString!"%.1f mg");
+    // prints: Weigh 25.0 mg of substance
 
     // -----------------------------------
     // Parsing quantities/units at runtime
