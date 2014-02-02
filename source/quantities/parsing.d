@@ -118,14 +118,14 @@ template qty(string str, N = real)
     }
 
     // This is for a nice compile-time error message
-    enum msg = { return collectExceptionMsg(parseQuantity(str)); }();
+    enum msg = { return collectExceptionMsg(parseRTQuantity(str)); }();
     static if (msg)
     {
         static assert(false, msg);
     }
     else
     {
-        enum q = parseQuantity(str);
+        enum q = parseRTQuantity(str);
         enum dimStr = dimTup(q.dimensions);
         mixin("alias dims = TypeTuple!(%s);".format(dimStr));
         enum qty = Quantity!(N, Sort!dims)(q.value);
@@ -146,9 +146,43 @@ unittest
     static assert(is(typeof(value) == Dimensionless));
 }
 
-
 /// Parses text for a unit or a quantity at runtime.
-RTQuantity parseQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultList)
+auto parseQuantity(Q, S)(S text, SymbolList symbolList = SymbolList.defaultList)
+    if (isQuantity!Q)
+{
+    return Q(parseRTQuantity(text, symbolList));
+}
+///
+unittest
+{
+    alias Time = QuantityType!second;
+    alias Length = QuantityType!meter;
+    // Note: these are also predefined in quantities.si
+
+    // Parse times
+    auto t = parseQuantity!Time("90 min");
+    assert(t == 90 * minute);
+    t = parseQuantity!Time("h");
+    assert(t == 1 * hour);
+
+    // Add a user-defined unit to the default list
+    auto symbols = SymbolList.defaultList;
+    symbols.addUnit("in", 2.54 * centi(meter));
+    auto len = parseQuantity!Length("17 in", symbols);
+    assert(len.value(centi(meter)).approxEqual(17 * 2.54));
+    
+    // User-defined symbol list
+    auto byte_ = unit!"B";
+    alias FileSize = QuantityType!byte_;
+    auto mySymbolList = SymbolList.defaultList;
+    mySymbolList.addUnit("B", byte_);
+    mySymbolList.addPrefix("Mi", 2^^20);
+    assertThrown!ParsingException(parseQuantity!FileSize("1.0 MiB"));
+    auto fileSize = parseQuantity!FileSize("1.0 MiB", mySymbolList);
+    assert(fileSize.value(byte_).approxEqual(1048576));
+}
+
+RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultList)
 {
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "text must be a forward range of a character type");
@@ -175,42 +209,10 @@ RTQuantity parseQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultLi
     result.value *= value;
     return result;
 }
-///
-unittest
-{
-    alias Concentration = QuantityType!(mole/cubic(meter));
-    alias Length = QuantityType!meter;
-
-    // Parse a concentration value
-    Concentration c = parseQuantity("11.2 µmol/L");
-    assert(c.value(nano(mole)/liter).approxEqual(11200));
-
-    // Below, 'second' is only a hint for dimensional analysis
-    QuantityType!second t = parseQuantity("90 min");
-    assert(t == 90 * minute);
-    t = parseQuantity("h");
-    assert(t == 1 * hour);
-
-    // Add a user-defined unit to the default list
-    auto symbols = SymbolList.defaultList;
-    symbols.addUnit("in", 2.54 * centi(meter));
-    Length len = parseQuantity("17 in", symbols);
-    assert(len.value(centi(meter)).approxEqual(17 * 2.54));
-
-    // User-defined symbol list
-    auto byte_ = unit!("B");
-    SymbolList binSymbols;
-    binSymbols.addUnit("B", byte_);
-    binSymbols.addPrefix("Ki", 2^^10);
-    binSymbols.addPrefix("Mi", 2^^20);
-    // ...
-    QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
-    assert(fileLength.value(byte_).approxEqual(1_048_576));
-}
 
 unittest // Parsing a range of characters that is not a string
 {
-    Concentration c = parseQuantity(
+    Concentration c = parseRTQuantity(
         ["11.2", "<- value", "µmol/L", "<-unit"]
         .filter!(x => !x.startsWith("<"))
         .joiner(" ")
@@ -221,55 +223,57 @@ unittest // Parsing a range of characters that is not a string
 unittest // Examples from the header
 {
     auto J = toRuntime(joule);
-    assert(parseQuantity("1 N m") == J);
-    assert(parseQuantity("1 N.m") == J);
-    assert(parseQuantity("1 N⋅m") == J);
-    assert(parseQuantity("1 N * m") == J);
-    assert(parseQuantity("1 N × m") == J);
+    assert(parseRTQuantity("1 N m") == J);
+    assert(parseRTQuantity("1 N.m") == J);
+    assert(parseRTQuantity("1 N⋅m") == J);
+    assert(parseRTQuantity("1 N * m") == J);
+    assert(parseRTQuantity("1 N × m") == J);
 
     auto kat = toRuntime(katal);
-    assert(parseQuantity("1 mol s^-1") == kat);
-    assert(parseQuantity("1 mol s⁻¹") == kat);
-    assert(parseQuantity("1 mol/s") == kat);
+    assert(parseRTQuantity("1 mol s^-1") == kat);
+    assert(parseRTQuantity("1 mol s⁻¹") == kat);
+    assert(parseRTQuantity("1 mol/s") == kat);
 
     auto Pa = toRuntime(pascal);
-    assert(parseQuantity("1 kg m^-1 s^-2") == Pa);
-    assert(parseQuantity("1 kg/(m s^2)") == Pa);
+    assert(parseRTQuantity("1 kg m^-1 s^-2") == Pa);
+    assert(parseRTQuantity("1 kg/(m s^2)") == Pa);
 }
 
 unittest // Test parsing
 {
     import std.math : approxEqual;
 
-    assertThrown!ParsingException(parseQuantity("1 µ m"));
-    assertThrown!ParsingException(parseQuantity("1 µ"));
+    assertThrown!ParsingException(parseRTQuantity("1 µ m"));
+    assertThrown!ParsingException(parseRTQuantity("1 µ"));
+    assertThrown!ParsingException(parseRTQuantity("1 g/"));
+    assertThrown!ParsingException(parseRTQuantity("1 g^"));
 
     string test = "1    m    ";
-    assert(parseQuantity(test) == meter.toRuntime);
-    assert(parseQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
+    assert(parseRTQuantity(test) == meter.toRuntime);
+    assert(parseRTQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
 
-    assert(parseQuantity("1 m^-1") == toRuntime(1 / meter));
-    assert(parseQuantity("1 m²") == square(meter).toRuntime);
-    assert(parseQuantity("1 m⁻¹") == toRuntime(1 / meter));
-    assert(parseQuantity("1 (m)") == meter.toRuntime);
-    assert(parseQuantity("1 (m^-1)") == toRuntime(1 / meter));
-    assert(parseQuantity("1 ((m)^-1)^-1") == meter.toRuntime);
+    assert(parseRTQuantity("1 m^-1") == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 m²") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m⁻¹") == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 (m)") == meter.toRuntime);
+    assert(parseRTQuantity("1 (m^-1)") == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 ((m)^-1)^-1") == meter.toRuntime);
 
-    assert(parseQuantity("1 m * m") == square(meter).toRuntime);
-    assert(parseQuantity("1 m m") == square(meter).toRuntime);
-    assert(parseQuantity("1 m . m") == square(meter).toRuntime);
-    assert(parseQuantity("1 m ⋅ m") == square(meter).toRuntime);
-    assert(parseQuantity("1 m × m") == square(meter).toRuntime);
-    assert(parseQuantity("1 m / m") == toRuntime(meter / meter));
-    assert(parseQuantity("1 m ÷ m") == toRuntime(meter / meter));
+    assert(parseRTQuantity("1 m * m") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m m") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m . m") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m ⋅ m") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m × m") == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m / m") == toRuntime(meter / meter));
+    assert(parseRTQuantity("1 m ÷ m") == toRuntime(meter / meter));
 
-    assert(parseQuantity("1 N.m") == toRuntime(newton * meter));
-    assert(parseQuantity("1 N m") == toRuntime(newton * meter));
+    assert(parseRTQuantity("1 N.m") == toRuntime(newton * meter));
+    assert(parseRTQuantity("1 N m") == toRuntime(newton * meter));
 
-    assert(parseQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
-    assert(parseQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
-    assert(parseQuantity("6.3 L*(mmol*cm)^-1").value.approxEqual(630));
-    assert(parseQuantity("6.3 L/mmol/cm").value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L*(mmol*cm)^-1").value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L/mmol/cm").value.approxEqual(630));
 }
 
 /// Holds a value and a dimensions for parsing
@@ -295,6 +299,7 @@ struct QuantityParser
             return ret;
 
         do {
+            tokens.check();
             auto cur = tokens.front;
 
             bool multiply = true;
@@ -304,6 +309,7 @@ struct QuantityParser
             if (cur.type == Tok.mul || cur.type == Tok.div)
             {
                 tokens.advance();
+                tokens.check();
                 cur = tokens.front;
             }
 
@@ -578,8 +584,8 @@ Returns:
 real convert(S, U)(S from, U target)
     if (isSomeString!S && isSomeString!U)
 {
-    RTQuantity base = parseQuantity(from);
-    RTQuantity unit = parseQuantity(target);
+    RTQuantity base = parseRTQuantity(from);
+    RTQuantity unit = parseRTQuantity(target);
     enforceEx!DimensionException(base.dimensions == unit.dimensions,
                                  "Dimension error: %s is not compatible with %s"
                                  .format(dimstr(base.dimensions, true), dimstr(unit.dimensions, true)));
@@ -602,7 +608,7 @@ RTQuantity toRuntime(Q)(Q quantity)
 unittest
 {
     auto distance = toRuntime(42 * kilo(meter));
-    assert(distance == parseQuantity("42 km"));
+    assert(distance == parseRTQuantity("42 km"));
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -804,7 +810,8 @@ void advance(Types...)(ref Token[] tokens, Types types)
 {
     enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
     tokens.popFront();
-    if (Types.length)
+
+    static if (Types.length)
         check(tokens, types);
 }
 
@@ -813,21 +820,24 @@ void check(Types...)(Token[] tokens, Types types)
     enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
     auto token = tokens.front;
 
-    bool ok = false;
-    Tok[] valid = [types];
-    foreach (type; types)
+    static if (Types.length)
     {
-        if (token.type == type)
+        bool ok = false;
+        Tok[] valid = [types];
+        foreach (type; types)
         {
-            ok = true;
-            break;
+            if (token.type == type)
+            {
+                ok = true;
+                break;
+            }
         }
+        import std.string : format;
+        enforceEx!ParsingException(ok, valid.length > 1
+                                   ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
+                                   : format("Found '%s' while expecting %s", token.slice, valid.front)
+                                   );
     }
-    import std.string : format;
-    enforceEx!ParsingException(ok, valid.length > 1
-                               ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
-                               : format("Found '%s' while expecting %s", token.slice, valid.front)
-                               );
 }
 
 // Mul or div two dimension arrays

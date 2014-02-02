@@ -9,7 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
-import quantities.parsing : qty, parseQuantity, RTQuantity, dimstr;
+import quantities.parsing;
 import std.exception;
 import std.string;
 import std.traits;
@@ -76,19 +76,15 @@ struct Quantity(N, Dim...)
         auto size = Length(42 * kilo(meter));
     }
 
-    /// Creates a new quantity from a runtime-parsed one
-    this(T)(T other)
+    // Creates a new quantity from a runtime-parsed one
+    package this(T)(T other)
         if (is(Unqual!T == RTQuantity))
     {
-        enforceEx!DimensionException(toAA!dimensions == other.dimensions,
-                                     "Dimension error: %s is not compatible with %s"
-                                     .format(dimstr!dimensions(true), dimstr(other.dimensions, true)));
+        enforceEx!DimensionException(
+            toAA!dimensions == other.dimensions,
+            "Dimension error: %s is not compatible with %s"
+            .format(dimstr!dimensions(true), quantities.parsing.dimstr(other.dimensions, true)));
         _value = other.value;
-    }
-    ///
-    unittest
-    {
-        auto size = Length(parseQuantity("42 km"));
     }
     
     /// Creates a new dimensionless quantity from a scalar value
@@ -424,7 +420,7 @@ struct Quantity(N, Dim...)
         auto app = appender!string;
         auto spec = FormatSpec!char(fmt);
         spec.writeUpToNextSpec(app);
-        app.formatValue(value(parseQuantity(spec.trailing)), spec);
+        app.formatValue(value(parseRTQuantity(spec.trailing)), spec);
         app.put(spec.trailing);
         return app.data;
     }

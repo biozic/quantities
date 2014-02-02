@@ -31,24 +31,30 @@ unittest
     // -----------------------
 
     // Use the predefined quantity types (in module quantity.si)
-    MassicConcentration concentration;
     Volume volume;
+    Concentration concentration;
     Mass mass;
 
-    // I have to make a new solution at the concentration of 2.5 g/l.
-    concentration = 2.5 * gram/liter;
+    // Define a new quantity type
+    alias MolarMass = QuantityType!(kilogram/mole);
 
-    // The final volume is 10 ml.
-    volume = 10 * milli(liter);
+    // I have to make a new solution at the concentration of 25 mmol/L.
+    concentration = 25 * milli(mole)/liter;
+
+    // The final volume is 100 ml.
+    volume = 100 * milli(liter);
+
+    // The molar mass of my compound is 118.9 g/mol.
+    MolarMass mm = 118.9 * gram/mole;
 
     // What mass should I weigh?
-    mass = concentration * volume;
+    mass = concentration * volume * mm;
     writefln("Weigh %f kg of substance", mass.value(kilogram)); 
-    // prints: Weigh 0.000025 kg of substance
+    // prints: Weigh 0.000297 kg of substance
 
-    // Wait! My scales graduations are 0.1 milligrams!
+    // Wait! My scales graduations are in milligrams!
     writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
-    // prints: Weigh 25.0 mg of substance
+    // prints: Weigh 297.3 mg of substance
 
     // Type checking prevents incorrect assignments and operations
     static assert(!__traits(compiles, mass = 10 * milli(liter)));
@@ -58,36 +64,35 @@ unittest
     // Parsing quantities/units at compile-time
     // ----------------------------------------
 
-    enum ctConcentration = qty!"2.5 g⋅L⁻¹";
-    enum ctVolume = qty!"10 mL";
-    enum ctMass = ctConcentration * ctVolume;
-    static assert(ctMass.value(qty!"mg").approxEqual(25));
+    enum ctConcentration = qty!"25 mmol⋅L⁻¹";
+    enum ctVolume = qty!"100 mL";
+    enum ctMass = ctConcentration * ctVolume * qty!"118.9 g/mol";
     writefln("Weigh %s of substance", mass.toString!"%.1f mg");
-    // prints: Weigh 25.0 mg of substance
+    // prints: Weigh 297.3 mg of substance
 
     // -----------------------------------
     // Parsing quantities/units at runtime
     // -----------------------------------
 
-    mass = parseQuantity("25 mg");
-    volume = parseQuantity("10 ml");
-    concentration = parseQuantity("2.5 g⋅L⁻¹");
-    auto targetUnit = qty!"kg/l";
-    assert(concentration.value(targetUnit).approxEqual(0.0025));
+    mass = parseQuantity!Mass("297.3 mg");
+    volume = parseQuantity!Volume("100 ml");
+    mm = parseQuantity!MolarMass("118.9 g/mol");
+    concentration = parseQuantity!Concentration("2.5 mmol⋅l⁻¹");
 
     import std.exception;
-    assertThrown!ParsingException(concentration = parseQuantity("10 qGz"));
-    assertThrown!DimensionException(concentration = parseQuantity("2.5 mol⋅L⁻¹"));
+    assertThrown!ParsingException(concentration = parseQuantity!Concentration("10 qGz"));
+    assertThrown!DimensionException(concentration = parseQuantity!Concentration("2.5 g⋅L⁻¹"));
 
     // User-defined symbols
     auto byte_ = unit!"B";
+    alias FileSize = QuantityType!byte_;
     auto mySymbolList = SymbolList.defaultList;
     mySymbolList.addUnit("B", byte_);
     mySymbolList.addPrefix("Ki", 2^^10);
     mySymbolList.addPrefix("Mi", 2^^20);
     // ...
-    assertThrown!ParsingException(parseQuantity("1.0 MiB"));
-    QuantityType!byte_ fileLen = parseQuantity("1.0 MiB", mySymbolList);
-    writefln("Length: %.0f bytes", fileLen.value(byte_));
+    assertThrown!ParsingException(parseQuantity!FileSize("1.0 MiB"));
+    auto fileSize = parseQuantity!FileSize("1.0 MiB", mySymbolList);
+    writefln("Length: %.0f bytes", fileSize.value(byte_));
     // prints: Length: 1048576 bytes
 }
