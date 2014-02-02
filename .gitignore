@@ -2,5 +2,5 @@
 __test__*
 generated_values.txt
 trace.*
-benchmark
+bench*
 TODO.txt

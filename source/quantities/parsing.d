@@ -98,19 +98,17 @@ version (unittest)
 {
     import std.math : approxEqual;
 
-    QuantityParser defaultParser()
+    private QuantityParser defaultParser()
     {
-        return QuantityParser(defaultSymbolList);
+        return QuantityParser(SymbolList.defaultList);
     }
 }
-
-// debug import std.stdio;
 
 /++
 Parses a string for a quantity/unit at compile time.
 
 Currently, only official SI units and prefixes can be parsed. These
-are the units and prefixes available from $(D_PSYMBOL defaultSymbolList).
+are the units and prefixes available from $(D_PSYMBOL SymbolList.defaultList).
 +/
 template qty(string str, N = real)
 {
@@ -150,7 +148,7 @@ unittest
 
 
 /// Parses text for a unit or a quantity at runtime.
-RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
+RTQuantity parseQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultList)
 {
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "text must be a forward range of a character type");
@@ -165,7 +163,7 @@ RTQuantity parseQuantity(S)(S text, SymbolList symbolList = defaultSymbolList())
     {
         value = 1;
     }
- 
+
     if (text.empty)
         return RTQuantity(value, null);
 
@@ -182,29 +180,29 @@ unittest
 {
     alias Concentration = QuantityType!(mole/cubic(meter));
     alias Length = QuantityType!meter;
-    
+
     // Parse a concentration value
     Concentration c = parseQuantity("11.2 µmol/L");
     assert(c.value(nano(mole)/liter).approxEqual(11200));
-    
+
     // Below, 'second' is only a hint for dimensional analysis
     QuantityType!second t = parseQuantity("90 min");
     assert(t == 90 * minute);
     t = parseQuantity("h");
     assert(t == 1 * hour);
 
-    // User-defined unit
-    auto symbols = defaultSymbolList();
-    symbols.unitSymbols["in"] = toRuntime(2.54 * centi(meter));
+    // Add a user-defined unit to the default list
+    auto symbols = SymbolList.defaultList;
+    symbols.addUnit("in", 2.54 * centi(meter));
     Length len = parseQuantity("17 in", symbols);
     assert(len.value(centi(meter)).approxEqual(17 * 2.54));
 
-    // User-defined symbols
+    // User-defined symbol list
     auto byte_ = unit!("B");
     SymbolList binSymbols;
-    binSymbols.unitSymbols["B"] = byte_.toRuntime;
-    binSymbols.prefixSymbols["Ki"] = 2^^10;
-    binSymbols.prefixSymbols["Mi"] = 2^^20;
+    binSymbols.addUnit("B", byte_);
+    binSymbols.addPrefix("Ki", 2^^10);
+    binSymbols.addPrefix("Mi", 2^^20);
     // ...
     QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
     assert(fileLength.value(byte_).approxEqual(1_048_576));
@@ -242,14 +240,14 @@ unittest // Examples from the header
 unittest // Test parsing
 {
     import std.math : approxEqual;
-    
+
     assertThrown!ParsingException(parseQuantity("1 µ m"));
     assertThrown!ParsingException(parseQuantity("1 µ"));
 
     string test = "1    m    ";
     assert(parseQuantity(test) == meter.toRuntime);
     assert(parseQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
-    
+
     assert(parseQuantity("1 m^-1") == toRuntime(1 / meter));
     assert(parseQuantity("1 m²") == square(meter).toRuntime);
     assert(parseQuantity("1 m⁻¹") == toRuntime(1 / meter));
@@ -264,29 +262,30 @@ unittest // Test parsing
     assert(parseQuantity("1 m × m") == square(meter).toRuntime);
     assert(parseQuantity("1 m / m") == toRuntime(meter / meter));
     assert(parseQuantity("1 m ÷ m") == toRuntime(meter / meter));
-    
+
     assert(parseQuantity("1 N.m") == toRuntime(newton * meter));
     assert(parseQuantity("1 N m") == toRuntime(newton * meter));
-    
+
     assert(parseQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
     assert(parseQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
     assert(parseQuantity("6.3 L*(mmol*cm)^-1").value.approxEqual(630));
     assert(parseQuantity("6.3 L/mmol/cm").value.approxEqual(630));
 }
 
+/// Holds a value and a dimensions for parsing
+struct RTQuantity
+{
+    // The payload
+    real value;
+
+    // The dimensions of the quantity
+    int[string] dimensions;
+}
+
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser
 {
     private SymbolList symbolList;
-    size_t maxPrefixLength; // TODO: keep this memoized in the SymbolList
-
-    this(SymbolList symbolList)
-    {
-        this.symbolList = symbolList;
-        foreach (prefix; symbolList.prefixSymbols.keys)
-            if (prefix.length > maxPrefixLength)
-                maxPrefixLength = prefix.length;
-    }
 
     RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
         if (is(T : Token))
@@ -297,17 +296,17 @@ struct QuantityParser
 
         do {
             auto cur = tokens.front;
-            
+
             bool multiply = true;
             if (cur.type == Tok.div)
                 multiply = false;
-            
+
             if (cur.type == Tok.mul || cur.type == Tok.div)
             {
                 tokens.advance();
                 cur = tokens.front;
             }
-            
+
             RTQuantity rhs = parseExponentUnit(tokens);
             if (multiply)
             {
@@ -319,14 +318,14 @@ struct QuantityParser
                 ret.dimensions = ret.dimensions.binop!"/"(rhs.dimensions);
                 ret.value = ret.value / rhs.value;
             }
-            
+
             if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
                 break;
-            
+
             cur = tokens.front;
-        } 
+        }
         while (!tokens.empty);
-        
+
         return ret;
     }
     unittest
@@ -337,22 +336,22 @@ struct QuantityParser
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m ) m")));
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
     }
-    
+
     RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
         RTQuantity ret = parseUnit(tokens);
-        
+
         if (tokens.empty)
             return ret;
-        
+
         auto next = tokens.front;
         if (next.type != Tok.exp && next.type != Tok.supinteger)
             return ret;
-        
+
         if (next.type == Tok.exp)
             tokens.advance(Tok.integer);
-        
+
         int n = parseInteger(tokens);
 
         return RTQuantity(std.math.pow(ret.value, n), ret.dimensions.exp(n));
@@ -363,7 +362,7 @@ struct QuantityParser
         assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).toRuntime);
         assertThrown!ParsingException(defaultParser.parseExponentUnit(lex("m^²")));
     }
-    
+
     int parseInteger(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
@@ -379,12 +378,12 @@ struct QuantityParser
         assert(defaultParser.parseInteger(lex("⁻¹²³")) == -123);
         assertThrown!ParsingException(defaultParser.parseInteger(lex("1-⁺⁵")));
     }
-    
+
     RTQuantity parseUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
         RTQuantity ret;
-        
+
         if (tokens.front.type == Tok.lparen)
         {
             tokens.advance();
@@ -394,7 +393,7 @@ struct QuantityParser
         }
         else
             ret = parsePrefixUnit(tokens);
-        
+
         return ret;
     }
     unittest
@@ -402,7 +401,7 @@ struct QuantityParser
         assert(defaultParser.parseUnit(lex("(m)")) == meter.toRuntime);
         assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
     }
-    
+
     RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
@@ -412,23 +411,23 @@ struct QuantityParser
             tokens.advance();
 
         // Try a standalone unit symbol (no prefix)
-        auto uptr = str in symbolList.unitSymbols;
+        auto uptr = str in symbolList.units;
         if (uptr)
             return *uptr;
 
         // Try with prefixes, the longest prefix first
         real* factor;
-        for (size_t i = maxPrefixLength; i > 0; i--)
+        for (size_t i = symbolList.maxPrefixLength; i > 0; i--)
         {
             if (str.length >= i)
             {
                 string prefix = str[0 .. i].to!string;
-                factor = prefix in symbolList.prefixSymbols;
+                factor = prefix in symbolList.prefixes;
                 if (factor)
                 {
                     string unit = str[i .. $].to!string;
                     enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
-                    uptr = unit in symbolList.unitSymbols;
+                    uptr = unit in symbolList.units;
                     if (uptr)
                         return RTQuantity(*factor * uptr.value, uptr.dimensions);
                 }
@@ -445,121 +444,134 @@ struct QuantityParser
     }
 }
 
-/// This struct contains the symbols of the units and the prefixes
-/// that the parser can handle.
+/**
+This struct contains the symbols of the units and the prefixes that the
+parser can handle.
+*/
 struct SymbolList
 {
-    /// An associative arrays of quantities (units) keyed by their symbol
-    RTQuantity[string] unitSymbols;
+    private
+    {
+        RTQuantity[string] units;
+        real[string] prefixes;
+        size_t maxPrefixLength;
 
-    /// An associative arrays of prefix factors keyed by their prefix symbol
-    real[string] prefixSymbols;
+        static SymbolList _defaultList;
+        static this()
+        {
+            _defaultList = SymbolList(siRTUnits, siRTPrefixes, 2);
+        }
+    }
+
+    /// Returns the default list, consisting of the main SI units and prefixes.
+    static SymbolList defaultList()
+    {
+        if (__ctfe)
+            return SymbolList(siRTUnits, siRTPrefixes, 2);
+        return _defaultList;
+    }
+
+    /// Adds a new prefix to the list
+    void addPrefix(string symbol, real factor)
+    {
+        // COW
+        if (prefixes is _defaultList.prefixes)
+            prefixes = _defaultList.prefixes.dup;
+
+        prefixes[symbol] = factor;
+        if (symbol.length > maxPrefixLength)
+            maxPrefixLength = symbol.length;
+    }
+
+    /// Adds a new unit to the list
+    void addUnit(Q)(string symbol, Q unit)
+        if (isQuantity!Q || is(Unqual!Q == RTQuantity))
+    {
+        // COW
+        if (units is _defaultList.units)
+            units = _defaultList.units.dup;
+
+        static if (isQuantity!Q)
+            units[symbol] = unit.toRuntime;
+        else
+            units[symbol] = unit;
+    }
 }
 
-/// Returns the default list, consisting of the main SI units and prefixes.
-SymbolList defaultSymbolList()
+private
 {
-    if (__ctfe)
-        return SymbolList(eSIUnitSymbols, eSIPrefixSymbols);
-    return SymbolList(SIUnitSymbols, SIPrefixSymbols);
-}
-
-
-enum eSupintegerMap = [
-    '⁰':'0',
-    '¹':'1',
-    '²':'2',
-    '³':'3',
-    '⁴':'4',
-    '⁵':'5',
-    '⁶':'6',
-    '⁷':'7',
-    '⁸':'8',
-    '⁹':'9',
-    '⁺':'+',
-    '⁻':'-'
-];
-
-enum eSIUnitSymbols = [
-    "m" : meter.toRuntime,
-    "kg" : kilogram.toRuntime,
-    "s" : second.toRuntime,
-    "A" : ampere.toRuntime,
-    "K" : kelvin.toRuntime,
-    "mol" : mole.toRuntime,
-    "cd" : candela.toRuntime,
-    "rad" : radian.toRuntime,
-    "sr" : steradian.toRuntime,
-    "Hz" : hertz.toRuntime,
-    "N" : newton.toRuntime,
-    "Pa" : pascal.toRuntime,
-    "J" : joule.toRuntime,
-    "W" : watt.toRuntime,
-    "C" : coulomb.toRuntime,
-    "V" : volt.toRuntime,
-    "F" : farad.toRuntime,
-    "Ω" : ohm.toRuntime,
-    "S" : siemens.toRuntime,
-    "Wb" : weber.toRuntime,
-    "T" : tesla.toRuntime,
-    "H" : henry.toRuntime,
-    "lm" : lumen.toRuntime,
-    "lx" : lux.toRuntime,
-    "Bq" : becquerel.toRuntime,
-    "Gy" : gray.toRuntime,
-    "Sv" : sievert.toRuntime,
-    "kat" : katal.toRuntime,
-    "g" : gram.toRuntime,
-    "min" : minute.toRuntime,
-    "h" : hour.toRuntime,
-    "d" : day.toRuntime,
-    "l" : liter.toRuntime,
-    "L" : liter.toRuntime,
-    "t" : ton.toRuntime,
-    "eV" : electronVolt.toRuntime,
-    "Da" : dalton.toRuntime,
-];
-
-enum eSIPrefixSymbols = [
-    "Y" : 1e24L,
-    "Z" : 1e21L,
-    "E" : 1e18L,
-    "P" : 1e15L,
-    "T" : 1e12L,
-    "G" : 1e9L,
-    "M" : 1e6L,
-    "k" : 1e3L,
-    "h" : 1e2L,
-    "da": 1e1L,
-    "d" : 1e-1L,
-    "c" : 1e-2L,
-    "m" : 1e-3L,
-    "µ" : 1e-6L,
-    "n" : 1e-9L,
-    "p" : 1e-12L,
-    "f" : 1e-15L,
-    "a" : 1e-18L,
-    "z" : 1e-21L,
-    "y" : 1e-24L
-];
-
-static dchar[dchar] supintegerMap;
-static RTQuantity[string] SIUnitSymbols;
-static real[string] SIPrefixSymbols;
-
-shared static this()
-{   
-    supintegerMap = eSupintegerMap;
-    SIUnitSymbols = eSIUnitSymbols;
-    SIPrefixSymbols = eSIPrefixSymbols;
+    enum siRTUnits = [
+        "m" : meter.toRuntime,
+        "kg" : kilogram.toRuntime,
+        "s" : second.toRuntime,
+        "A" : ampere.toRuntime,
+        "K" : kelvin.toRuntime,
+        "mol" : mole.toRuntime,
+        "cd" : candela.toRuntime,
+        "rad" : radian.toRuntime,
+        "sr" : steradian.toRuntime,
+        "Hz" : hertz.toRuntime,
+        "N" : newton.toRuntime,
+        "Pa" : pascal.toRuntime,
+        "J" : joule.toRuntime,
+        "W" : watt.toRuntime,
+        "C" : coulomb.toRuntime,
+        "V" : volt.toRuntime,
+        "F" : farad.toRuntime,
+        "Ω" : ohm.toRuntime,
+        "S" : siemens.toRuntime,
+        "Wb" : weber.toRuntime,
+        "T" : tesla.toRuntime,
+        "H" : henry.toRuntime,
+        "lm" : lumen.toRuntime,
+        "lx" : lux.toRuntime,
+        "Bq" : becquerel.toRuntime,
+        "Gy" : gray.toRuntime,
+        "Sv" : sievert.toRuntime,
+        "kat" : katal.toRuntime,
+        "g" : gram.toRuntime,
+        "min" : minute.toRuntime,
+        "h" : hour.toRuntime,
+        "d" : day.toRuntime,
+        "l" : liter.toRuntime,
+        "L" : liter.toRuntime,
+        "t" : ton.toRuntime,
+        "eV" : electronVolt.toRuntime,
+        "Da" : dalton.toRuntime,
+    ];
+    
+    enum siRTPrefixes = [
+        "Y" : 1e24L,
+        "Z" : 1e21L,
+        "E" : 1e18L,
+        "P" : 1e15L,
+        "T" : 1e12L,
+        "G" : 1e9L,
+        "M" : 1e6L,
+        "k" : 1e3L,
+        "h" : 1e2L,
+        "da": 1e1L,
+        "d" : 1e-1L,
+        "c" : 1e-2L,
+        "m" : 1e-3L,
+        "µ" : 1e-6L,
+        "n" : 1e-9L,
+        "p" : 1e-12L,
+        "f" : 1e-15L,
+        "a" : 1e-18L,
+        "z" : 1e-21L,
+        "y" : 1e-24L
+    ];
 }
 
 /++
 Convert a quantity parsed from a string into target unit, also parsed from
 a string.
+
 Parameters:
   from = A string representing the quantity to convert
   target = A string representing the target unit
+
 Returns:
     The conversion factor (a scalar value)
 +/
@@ -593,26 +605,16 @@ unittest
     assert(distance == parseQuantity("42 km"));
 }
 
-/// Holds a value and a dimensions for parsing
-struct RTQuantity
-{
-    // The payload
-    real value;
-    
-    // The dimensions of the quantity
-    int[string] dimensions;
-}
-
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
 {
-    @safe pure nothrow 
+    @safe pure nothrow
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
         super(msg, file, line, next);
     }
-    
-    @safe pure nothrow 
+
+    @safe pure nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line, next);
@@ -641,6 +643,26 @@ struct Token
     int integer = int.max;
 }
 
+enum ctSupIntegerMap = [
+    '⁰':'0',
+    '¹':'1',
+    '²':'2',
+    '³':'3',
+    '⁴':'4',
+    '⁵':'5',
+    '⁶':'6',
+    '⁷':'7',
+    '⁸':'8',
+    '⁹':'9',
+    '⁺':'+',
+    '⁻':'-'
+];
+static __gshared dchar[dchar] supIntegerMap;
+shared static this()
+{
+    supIntegerMap = ctSupIntegerMap;
+}
+
 Token[] lex(string input)
 {
     enum State
@@ -650,15 +672,15 @@ Token[] lex(string input)
         integer,
         supinteger
     }
-    
-    Token[] tokapp;
+
+    Token[] tokens;
     auto original = input;
     size_t i, j;
     State state = State.none;
-    
+
     void pushToken(Tok type)
     {
-        tokapp ~= Token(type, original[i .. j]);
+        tokens ~= Token(type, original[i .. j]);
         i = j;
         state = State.none;
     }
@@ -669,17 +691,18 @@ Token[] lex(string input)
         if (type == Tok.supinteger)
         {
             if (__ctfe)
-                slice = translate(slice, eSupintegerMap);
+                slice = translate(slice, ctSupIntegerMap);
             else
-                slice = translate(slice, supintegerMap);
+                slice = translate(slice, supIntegerMap);
+
         }
         auto n = std.conv.parse!int(slice);
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
-        tokapp ~= Token(type, original[i .. j], n);
+        tokens ~= Token(type, original[i .. j], n);
         i = j;
         state = State.none;
     }
-    
+
     void push()
     {
         if (state == State.symbol)
@@ -689,7 +712,7 @@ Token[] lex(string input)
         else if (state == State.supinteger)
             pushInteger(Tok.supinteger);
     }
-    
+
     while (!input.empty)
     {
         auto cur = input.front;
@@ -702,19 +725,19 @@ Token[] lex(string input)
                 j += len;
                 i = j;
                 break;
-                
+
             case '(':
                 push();
                 j += len;
                 pushToken(Tok.lparen);
                 break;
-                
+
             case ')':
                 push();
                 j += len;
                 pushToken(Tok.rparen);
                 break;
-                
+
             case '*':
             case '.':
             case '⋅':
@@ -723,20 +746,20 @@ Token[] lex(string input)
                 j += len;
                 pushToken(Tok.mul);
                 break;
-                
+
             case '/':
             case '÷':
                 push();
                 j += len;
                 pushToken(Tok.div);
                 break;
-                
+
             case '^':
                 push();
                 j += len;
                 pushToken(Tok.exp);
                 break;
-                
+
             case '0': .. case '9':
             case '-':
             case '+':
@@ -745,7 +768,7 @@ Token[] lex(string input)
                 state = State.integer;
                 j += len;
                 break;
-                
+
             case '⁰':
             case '¹':
             case '²':
@@ -763,7 +786,7 @@ Token[] lex(string input)
                 state = State.supinteger;
                 j += len;
                 break;
-                
+
             default:
                 if (state == State.integer || state == State.supinteger)
                     push();
@@ -774,7 +797,7 @@ Token[] lex(string input)
         input.popFront();
     }
     push();
-    return tokapp;
+    return tokens;
 }
 
 void advance(Types...)(ref Token[] tokens, Types types)
@@ -789,7 +812,7 @@ void check(Types...)(Token[] tokens, Types types)
 {
     enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
     auto token = tokens.front;
-    
+
     bool ok = false;
     Tok[] valid = [types];
     foreach (type; types)
@@ -801,11 +824,11 @@ void check(Types...)(Token[] tokens, Types types)
         }
     }
     import std.string : format;
-    enforceEx!ParsingException(ok, valid.length > 1 
+    enforceEx!ParsingException(ok, valid.length > 1
                                ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
                                : format("Found '%s' while expecting %s", token.slice, valid.front)
                                );
-}    
+}
 
 // Mul or div two dimension arrays
 int[string] binop(string op)(int[string] dim1, int[string] dim2)
@@ -822,18 +845,18 @@ int[string] binop(string op)(int[string] dim1, int[string] dim2)
     }
     else
         result = dim1.dup;
-    
+
     // Merge the other dimensions
     foreach (sym, pow; dim2)
     {
         enum powop = op == "*" ? "+" : "-";
-        
+
         if (sym in dim1)
         {
             // A dimension is common between this one and the other:
             // add or sub them
             auto p = mixin("dim1[sym]" ~ powop ~ "pow");
-            
+
             // If the power becomes 0, remove the dimension from the list
             // otherwise, set the new power
             if (p == 0)
@@ -848,7 +871,7 @@ int[string] binop(string op)(int[string] dim1, int[string] dim2)
             result[sym] = mixin(powop ~ "pow");
         }
     }
-    
+
     return result;
 }
 
@@ -857,7 +880,7 @@ int[string] exp(int[string] dim, int value)
 {
     if (value == 0)
         return null;
-    
+
     int[string] result;
     foreach (sym, pow; dim)
         result[sym] = pow * value;
@@ -868,7 +891,7 @@ int[string] exp(int[string] dim, int value)
 int[string] expInv(int[string] dim, int value)
 {
     assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
-    
+
     int[string] result;
     foreach (sym, pow; dim)
     {
@@ -884,7 +907,7 @@ string dimstr(int[string] dim, bool complete = false)
     import std.algorithm : filter;
     import std.array : join;
     import std.conv : to;
-    
+
     static string stringize(string base, int power)
     {
         if (power == 0)
@@ -893,14 +916,14 @@ string dimstr(int[string] dim, bool complete = false)
             return base;
         return base ~ "^" ~ to!string(power);
     }
-    
+
     string[] dimstrs;
     foreach (sym, pow; dim)
         dimstrs ~= stringize(sym, pow);
-    
+
     string result = dimstrs.filter!"a !is null".join(" ");
     if (!result.length)
         return complete ? "scalar" : "";
-    
+
     return result;
 }

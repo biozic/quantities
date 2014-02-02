@@ -9,7 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
-import quantities.parsing : parseQuantity, RTQuantity, dimstr;
+import quantities.parsing : qty, parseQuantity, RTQuantity, dimstr;
 import std.exception;
 import std.string;
 import std.traits;
@@ -18,7 +18,6 @@ import std.typetuple;
 version (unittest)
 {
     import quantities.si;
-    import quantities.parsing : qty;
     import std.math : approxEqual;
 }
 
@@ -150,6 +149,11 @@ struct Quantity(N, Dim...)
     {
         return value(typeof(this)(target));
     }
+    /// ditto
+    N value(string target)() const
+    {
+        return value(qty!target);
+    }
     ///
     unittest
     {
@@ -157,7 +161,7 @@ struct Quantity(N, Dim...)
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
         assert(time.value(second) == 7200);
-        assert(time.value(qty!"h") == 2);
+        assert(time.value!"h" == 2);
     }
 
     /++

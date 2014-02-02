@@ -101,13 +101,14 @@ assertThrown!ParsingException(concentration = parseQuantity("10 qGz"));
 assertThrown!DimensionException(concentration = parseQuantity("2.5 mol⋅L⁻¹"));
 
 // User-defined symbols
-auto byte_ = unit!("B");
-SymbolList binSymbols;
-binSymbols.unitSymbols["B"] = byte_.toRuntime;
-binSymbols.prefixSymbols["Ki"] = 2^^10;
-binSymbols.prefixSymbols["Mi"] = 2^^20;
+auto byte_ = unit!"B";
+auto mySymbolList = SymbolList.defaultList;
+mySymbolList.addUnit("B", byte_);
+mySymbolList.addPrefix("Ki", 2^^10);
+mySymbolList.addPrefix("Mi", 2^^20);
 // ...
-QuantityType!byte_ fileLength = parseQuantity("1.0 MiB", binSymbols);
-writefln("Length: %.0f bytes", fileLength.value(byte_));
+assertThrown!ParsingException(parseQuantity("1.0 MiB"));
+QuantityType!byte_ fileLen = parseQuantity("1.0 MiB", mySymbolList);
+writefln("Length: %.0f bytes", fileLen.value(byte_));
 // prints: Length: 1048576 bytes
 ```
