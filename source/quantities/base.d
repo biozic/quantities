@@ -115,19 +115,13 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"target.dimensions");
         return _value / target._value;
     }
-    /// ditto
-    N value(string target)() const
-    {
-        return value(qty!target);
-    }
     ///
     unittest
     {
         auto time = 120 * minute;
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
-        assert(time.value(second) == 7200);
-        assert(time.value!"h" == 2);
+        assert(time.value(si!"s") == 7200);
     }
 
     N value(Q)(Q target) const
@@ -144,11 +138,6 @@ struct Quantity(N, Dim...)
     {
         return AreConsistent!(typeof(this), Q);
     }
-    /// ditto
-    bool isConsistentWith(string other)() const
-    {
-        return isConsistentWith(qty!other);
-    }
     ///
     unittest
     {
@@ -156,7 +145,7 @@ struct Quantity(N, Dim...)
         auto kWh = (4000 * kilo(watt)) * (1200 * hour);
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
-        assert(nm.isConsistentWith!"kW h");
+        assert(nm.isConsistentWith(si!"kW h"));
     }
 
     bool isConsistentWith(Q)(Q other) const
@@ -380,7 +369,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
-        enum inch = qty!"2.54 cm";
+        enum inch = si!"2.54 cm";
         assert(inch.toString == "0.0254 m");
     }
 
@@ -393,10 +382,9 @@ struct Quantity(N, Dim...)
 
     The unit present in the format is parsed each time the function is called, in
     order to calculate the value. If this quantity can be known at runtime,
-    the template version of this function is more efficient, with the counterpart
-    that it can only operate on SI units.
+    the template version of this function is more efficient.
     +/
-    string toString(string fmt, SymbolList symbolList = SymbolList.defaultList) const
+    string toString(string fmt, SymbolList symbolList = SymbolList.siList) const
     {
         import std.array, std.format;
         auto app = appender!string;
@@ -407,7 +395,7 @@ struct Quantity(N, Dim...)
         return app.data;
     }
     /// ditto
-    string toString(string fmt)() const
+    string toString(string fmt, alias ctParser = si)() const
     {
         static if (fmt.startsWith("%"))
             enum fmt2 = fmt;
@@ -425,12 +413,12 @@ struct Quantity(N, Dim...)
             return ret;
         }
 
-        return fmt2.format(value(qty!(extractUnit(fmt2))));
+        return fmt2.format(value(ctParser!(extractUnit(fmt2))));
     }
     ///
     unittest
     {
-        enum inch = qty!"2.54 cm";
+        enum inch = si!"2.54 cm";
 
         // Format parsed at runtime
         assert(inch.toString("%s cm") == "2.54 cm");
@@ -566,7 +554,7 @@ unittest // Quantity.toString
     import quantities.utils.locale;
     auto loc = ScopedLocale("fr_FR");
 
-    enum inch = qty!"2.54 cm";
+    enum inch = si!"2.54 cm";
     
     // Format parsed at runtime
     assert(inch.toString("%s cm") == "2,54 cm");

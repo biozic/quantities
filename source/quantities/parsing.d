@@ -100,46 +100,124 @@ version (unittest)
 
     private QuantityParser defaultParser()
     {
-        return QuantityParser(SymbolList.defaultList);
+        return QuantityParser(SymbolList.siList);
     }
 }
 
-/++
-Parses a string for a quantity/unit at compile time.
-
-Currently, only official SI units and prefixes can be parsed. These
-are the units and prefixes available from $(D_PSYMBOL SymbolList.defaultList).
-+/
-template qty(string str, N = real)
+private struct AddUnit(Q)
 {
-    private string dimTup(int[string] dims)
-    {
-        return dims.keys.map!(x => `"%s", %s`.format(x, dims[x])).join(", ");
-    }
+    string symbol;
+    Q unit;
+}
 
-    // This is for a nice compile-time error message
-    enum msg = { return collectExceptionMsg(parseRTQuantity(str)); }();
-    static if (msg)
+auto addUnit(Q)(string symbol, Q unit)
+    if (isQuantity!Q)
+{
+    return AddUnit!Q(symbol, unit);
+}
+
+private struct AddPrefix
+{
+    string symbol;
+    real factor;
+}
+
+auto addPrefix(string symbol, real factor)
+{
+    return AddPrefix(symbol, factor);
+}
+
+/++
+Creates a compile-time parser capable of working on user-defined units
+and prefixes.
+
+By default, the parser knows about SI units and prefixes. The user can add
+more units and prefix in the template parameters, using the global addUnit and addPrefix
+functions templates.
++/
+template ctQuantityParser(Sym...)
+{
+    enum symbolList = {
+        SymbolList ret;
+        foreach (symbol, unit; siRTUnits)
+            ret.units[symbol] = unit;
+        foreach (symbol, prefix; siRTPrefixes)
+            ret.prefixes[symbol] = prefix;
+        ret.maxPrefixLength = 2;
+
+        foreach (sym; Sym)
+        {
+            static if (is(typeof(sym) _ : AddUnit!Q, Q))
+            {
+                ret.units[sym.symbol] = sym.unit.toRuntime;
+            }
+            else static if (is(typeof(sym) == AddPrefix))
+            {
+                ret.prefixes[sym.symbol] = sym.factor;
+                if (sym.symbol.length > ret.maxPrefixLength)
+                    ret.maxPrefixLength = sym.symbol.length;
+            }
+            else
+                static assert(false, "Unexpected symbol: " ~ sym.stringof);
+        }
+
+        return ret;
+    }();
+
+    template ctQuantityParser(string str, N = real)
     {
-        static assert(false, msg);
-    }
-    else
-    {
-        enum q = parseRTQuantity(str);
-        enum dimStr = dimTup(q.dimensions);
-        mixin("alias dims = TypeTuple!(%s);".format(dimStr));
-        enum qty = Quantity!(N, Sort!dims)(q.value);
+        private string dimTup(int[string] dims)
+        {
+            return dims.keys.map!(x => `"%s", %s`.format(x, dims[x])).join(", ");
+        }
+        
+        // This is for a nice compile-time error message
+        enum msg = { return collectExceptionMsg(parseRTQuantity(str, symbolList)); }();
+        static if (msg)
+        {
+            static assert(false, msg);
+        }
+        else
+        {
+            enum q = parseRTQuantity(str, symbolList);
+            enum dimStr = dimTup(q.dimensions);
+            mixin("alias dims = TypeTuple!(%s);".format(dimStr));
+            enum ctQuantityParser = Quantity!(N, Sort!dims)(q.value);
+        }
     }
 }
 ///
 unittest
 {
-    enum min = qty!"min";
-    enum inch = qty!"2.54 cm";
+    enum bit = unit!"bit";
+    enum byte_ = 8 * bit;
 
-    auto conc = qty!"1 µmol/L";
-    auto speed = qty!"m s^-1";
-    auto value = qty!"0.5";
+    alias sz = ctQuantityParser!(
+        addUnit("bit", bit),
+        addUnit("B", byte_),
+        addPrefix("hob", 7)
+    );
+
+    enum size = sz!"1 MiB";
+    assert(size.toString!("%.0f bit", sz) == "8388608 bit");
+
+    enum height = sz!"1 hobbit";
+    assert(height.value(sz!"bit") == 7);
+}
+
+/++
+Parses a string for a a SI-compatible quantity.
++/
+alias si = ctQuantityParser!();
+///
+unittest
+{
+    enum min = si!"min";
+    enum inch = si!"2.54 cm";
+
+    auto conc = si!"1 µmol/L";
+    auto speed = si!"m s^-1";
+    auto value = si!"0.5";
 
     static assert(is(typeof(conc) == Concentration));
     static assert(is(typeof(speed) == Speed));
@@ -147,7 +225,7 @@ unittest
 }
 
 /// Parses text for a unit or a quantity at runtime.
-auto parseQuantity(Q, S)(S text, SymbolList symbolList = SymbolList.defaultList)
+auto parseQuantity(Q, S)(S text, SymbolList symbolList = SymbolList.siList)
     if (isQuantity!Q)
 {
     return Q(parseRTQuantity(text, symbolList));
@@ -166,13 +244,13 @@ unittest
     assert(t == 1 * hour);
 
     // Add a user-defined symbol (here a unit) to the default list
-    auto symbols = SymbolList.defaultList;
-    symbols.addUnit("in", 2.54 * centi(meter));
+    auto symbols = SymbolList.siList;
+    symbols.addUnit("in", si!"2.54 cm");
     auto len = parseQuantity!Length("17 in", symbols);
     assert(len.value(centi(meter)).approxEqual(17 * 2.54));
 }
 
-RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultList)
+RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.siList)
 {
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "text must be a forward range of a character type");
@@ -460,7 +538,7 @@ struct SymbolList
     }
 
     /// Returns the default list, consisting of the main SI units and prefixes.
-    static SymbolList defaultList()
+    static SymbolList siList()
     {
         if (__ctfe)
             return SymbolList(siRTUnits, siRTPrefixes, 2);
@@ -557,43 +635,15 @@ private
         "a" : 1e-18L,
         "z" : 1e-21L,
         "y" : 1e-24L,
-        "Yi": cast(real) (2^^10)^^8,
-        "Zi": cast(real) (2^^10)^^7,
-        "Ei": cast(real) (2^^10)^^6,
-        "Pi": cast(real) (2^^10)^^5,
-        "Ti": cast(real) (2^^10)^^4,
-        "Gi": cast(real) (2^^10)^^3,
-        "Mi": cast(real) (2^^10)^^2,
-        "Ki": cast(real) (2^^10),
+        "Yi": (cast(real) 2^^10)^^8,
+        "Zi": (cast(real) 2^^10)^^7,
+        "Ei": (cast(real) 2^^10)^^6,
+        "Pi": (cast(real) 2^^10)^^5,
+        "Ti": (cast(real) 2^^10)^^4,
+        "Gi": (cast(real) 2^^10)^^3,
+        "Mi": (cast(real) 2^^10)^^2,
+        "Ki": (cast(real) 2^^10),
     ];
-}
-
-/++
-Convert a quantity parsed from a string into target unit, also parsed from
-a string.
-
-Parameters:
-  from = A string representing the quantity to convert
-  target = A string representing the target unit
-
-Returns:
-    The conversion factor (a scalar value)
-+/
-real convert(S, U)(S from, U target)
-    if (isSomeString!S && isSomeString!U)
-{
-    RTQuantity base = parseRTQuantity(from);
-    RTQuantity unit = parseRTQuantity(target);
-    enforceEx!DimensionException(base.dimensions == unit.dimensions,
-                                 "Dimension error: %s is not compatible with %s"
-                                 .format(dimstr(base.dimensions, true), dimstr(unit.dimensions, true)));
-    return base.value / unit.value;
-}
-///
-unittest
-{
-    auto k = convert("3 min", "s");
-    assert(k == 3 * 60);
 }
 
 /// Exception thrown when parsing encounters an unexpected token.

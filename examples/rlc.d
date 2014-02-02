@@ -18,9 +18,9 @@ auto quality(Inductance L, Resistance R, Frequency F)
 
 unittest
 {
-    Inductance L = qty!"10 mH";
-    Capacity C = qty!"62.5 nF";
-    Resistance R = qty!"100 kΩ";
+    Inductance L = si!"10 mH";
+    Capacity C = si!"62.5 nF";
+    Resistance R = si!"100 kΩ";
     auto w0 = freq(L, C);
     auto q = cast(real) quality(L, R, w0);
     

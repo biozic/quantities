@@ -46,8 +46,8 @@ unittest
     alias A = Dimensionless;
     
     LinearCalibration!(C, A) cal;
-    cal.calibrate2Points(qty!"0 mmol/L", qty!"0", qty!"25 mmol/L", qty!"0.507");
+    cal.calibrate2Points(si!"0 mmol/L", si!"0", si!"25 mmol/L", si!"0.507");
     
-    auto unknown = cal.quantityFor(qty!"0.113");
-    writefln("Concentration: %.2f mmol/L", unknown.value(qty!"mmol/L"));
+    auto unknown = cal.quantityFor(si!"0.113");
+    writefln("Concentration: %.2f mmol/L", unknown.value(si!"mmol/L"));
 }

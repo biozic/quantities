@@ -47,33 +47,30 @@ occurs at compile-time.<br><br>
 
 </dd>
 <dt><big><a name="value"></a>const N <u>value</u>(Q)(Q <i>target</i>) if (isQuantity!Q);
-<br><a name="value"></a>const N <u>value</u>(string target)();
 </big></dt>
 <dd>Gets the scalar value of this quantity expressed in the given target unit.<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> time = 120 * minute;
 <font color=blue>assert</font>(time.<u>value</u>(hour) == 2);
 <font color=blue>assert</font>(time.<u>value</u>(minute) == 120);
-<font color=blue>assert</font>(time.<u>value</u>(second) == 7200);
-<font color=blue>assert</font>(time.<u>value</u>!<font color=red>"h"</font> == 2);
+<font color=blue>assert</font>(time.<u>value</u>(si!<font color=red>"s"</font>) == 7200);
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(Q)(Q <i>other</i>) if (isQuantity!Q);
-<br><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(string other)();
 </big></dt>
 <dd>Tests wheter this quantity has the same dimensions as another one.<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> nm = (1.4 * newton) * (0.5 * centi(meter));
 <font color=blue>auto</font> kWh = (4000 * kilo(watt)) * (1200 * hour);
 <font color=blue>assert</font>(nm.<u>isConsistentWith</u>(kWh)); <font color=green>// Energy in both cases
 </font><font color=blue>assert</font>(!nm.<u>isConsistentWith</u>(second));
-<font color=blue>assert</font>(nm.<u>isConsistentWith</u>!<font color=red>"kW h"</font>);
+<font color=blue>assert</font>(nm.<u>isConsistentWith</u>(si!<font color=red>"kW h"</font>));
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="store"></a>const auto <u>store</u>(T)() if (isNumeric!T);
 </big></dt>
 <dd>Returns a new quantity where the value is stored in a field of type T.<br><br>
@@ -140,13 +137,13 @@ occurs at compile-time.<br><br>
 <dd>Returns the default string representation of the quantity.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>enum</font> inch = qty!<font color=red>"2.54 cm"</font>;
+<font color=blue>enum</font> inch = si!<font color=red>"2.54 cm"</font>;
 <font color=blue>assert</font>(inch.<u>toString</u> == <font color=red>"0.0254 m"</font>);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="toString"></a>const string <u>toString</u>(string <i>fmt</i>, SymbolList <i>symbolList</i> = SymbolList.defaultList);
-<br><a name="toString"></a>const string <u>toString</u>(string fmt)();
+<dt><big><a name="toString"></a>const string <u>toString</u>(string <i>fmt</i>, SymbolList <i>symbolList</i> = SymbolList.siList);
+<br><a name="toString"></a>const string <u>toString</u>(string fmt, alias ctParser = si)();
 </big></dt>
 <dd>Returns a formatted string from the quantity.
 <br><br>
@@ -157,12 +154,11 @@ The format string must be formed of a format specifier for the numeric value
 
     The unit present in the format is parsed each time the function is called, in
     order to calculate the value. If this quantity can be known at runtime,
-    the template version of this function is more efficient, with the counterpart
-    that it can only operate on SI units.<br><br>
+    the template version of this function is more efficient.<br><br>
 
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>enum</font> inch = qty!<font color=red>"2.54 cm"</font>;
+<font color=blue>enum</font> inch = si!<font color=red>"2.54 cm"</font>;
 
 <font color=green>// Format parsed at runtime
 </font><font color=blue>assert</font>(inch.<u>toString</u>(<font color=red>"%s cm"</font>) == <font color=red>"2.54 cm"</font>);

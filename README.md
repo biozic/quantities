@@ -89,9 +89,9 @@ static assert(!__traits(compiles, concentration = 1 * euro/volume));
 // Parsing quantities/units at compile-time
 // ----------------------------------------
 
-enum ctConcentration = qty!"25 mmol⋅L⁻¹";
-enum ctVolume = qty!"100 mL";
-enum ctMass = ctConcentration * ctVolume * qty!"118.9 g/mol";
+enum ctConcentration = si!"25 mmol⋅L⁻¹";
+enum ctVolume = si!"100 mL";
+enum ctMass = ctConcentration * ctVolume * si!"118.9 g/mol";
 writefln("Weigh %s of substance", mass.toString!"%.1f mg");
 // prints: Weigh 297.3 mg of substance
 
@@ -107,26 +107,4 @@ concentration = parseQuantity!Concentration("2.5 mmol⋅l⁻¹");
 import std.exception;
 assertThrown!ParsingException(concentration = parseQuantity!Concentration("10 qGz"));
 assertThrown!DimensionException(concentration = parseQuantity!Concentration("2.5 g⋅L⁻¹"));
-
-
-// User-defined symbol lists
-
-auto bit = unit!"bit";
-auto byte_ = 8 * bit;
-alias FileSize = QuantityType!bit;
-
-auto mySymbolList = SymbolList.defaultList;
-mySymbolList.addUnit("bit", bit);
-mySymbolList.addUnit("B", byte_);
-
-auto fileSize = parseQuantity!FileSize("1234567 B", mySymbolList);
-
-writefln("Length: %.0f bits", fileSize.value(bit));
-// prints: Length: 9876536 bits
-writefln("Length: %.0f bytes", fileSize.value(byte_));
-// prints: Length: 1234567 B
-writefln("Length: %s", fileSize.toString("%.2f MB", mySymbolList));
-// prints: Length: 1.23 MB
-writefln("Length: %s", fileSize.toString("%.2f MiB", mySymbolList));
-// prints: Length: 1.18 MiB
 ```

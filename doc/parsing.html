@@ -87,19 +87,43 @@ Nicolas Sicard
 <b>Source:</b><br>
 <a href="https://github.com/biozic/quantities">https://github.com/biozic/quantities</a><br><br>
 
-<dl><dt><big><a name="qty"></a>template <u>qty</u>(string str, N = real)</big></dt>
-<dd>Parses a string for a quantity/unit at compile time.
+<dl><dt><big><a name="ctQuantityParser"></a>template <u>ctQuantityParser</u>(Sym...)</big></dt>
+<dd>Creates a compile-time parser capable of working on user-defined units
+and prefixes.
 <br><br>
-Currently, only official SI units and prefixes can be parsed. These
-are the units and prefixes available from <u>SymbolList.defaultList</u>.<br><br>
+By default, the parser knows about SI units and prefixes. The user can add
+more units and prefix in the template parameters, using the global addUnit and addPrefix
+functions templates.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>enum</font> min = <u>qty</u>!<font color=red>"min"</font>;
-<font color=blue>enum</font> inch = <u>qty</u>!<font color=red>"2.54 cm"</font>;
+<font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
+<font color=blue>enum</font> byte_ = 8 * bit;
 
-<font color=blue>auto</font> conc = <u>qty</u>!<font color=red>"1 µmol/L"</font>;
-<font color=blue>auto</font> speed = <u>qty</u>!<font color=red>"m s^-1"</font>;
-<font color=blue>auto</font> value = <u>qty</u>!<font color=red>"0.5"</font>;
+<font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(
+    addUnit(<font color=red>"bit"</font>, bit),
+    addUnit(<font color=red>"B"</font>, byte_),
+    addPrefix(<font color=red>"hob"</font>, 7)
+);
+
+<font color=blue>enum</font> size = sz!<font color=red>"1 MiB"</font>;
+<font color=blue>assert</font>(size.toString!(<font color=red>"%.0f bit"</font>, sz) == <font color=red>"8388608 bit"</font>);
+
+<font color=blue>enum</font> height = sz!<font color=red>"1 hobbit"</font>;
+<font color=blue>assert</font>(height.value(sz!<font color=red>"bit"</font>) == 7);
+</pre>
+<br><br>
+</dd>
+<dt><big><a name="si"></a>alias <u>si</u> = ctQuantityParser!().ctQuantityParser(string str, N = real);
+</big></dt>
+<dd>Parses a string for a a SI-compatible quantity.<br><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> min = <u>si</u>!<font color=red>"min"</font>;
+<font color=blue>enum</font> inch = <u>si</u>!<font color=red>"2.54 cm"</font>;
+
+<font color=blue>auto</font> conc = <u>si</u>!<font color=red>"1 µmol/L"</font>;
+<font color=blue>auto</font> speed = <u>si</u>!<font color=red>"m s^-1"</font>;
+<font color=blue>auto</font> value = <u>si</u>!<font color=red>"0.5"</font>;
 
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(conc) == Concentration));
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(speed) == Speed));
@@ -107,7 +131,7 @@ are the units and prefixes available from <u>SymbolList.defaultList</u>.<br><br>
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, S)(S <i>text</i>, SymbolList <i>symbolList</i> = SymbolList.defaultList) if (isQuantity!Q);
+<dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, S)(S <i>text</i>, SymbolList <i>symbolList</i> = SymbolList.siList) if (isQuantity!Q);
 </big></dt>
 <dd>Parses text for a unit or a quantity at runtime.<br><br>
 <b>Examples:</b><br>
@@ -123,8 +147,8 @@ t = <u>parseQuantity</u>!Time(<font color=red>"h"</font>);
 <font color=blue>assert</font>(t == 1 * hour);
 
 <font color=green>// Add a user-defined symbol (here a unit) to the default list
-</font><font color=blue>auto</font> symbols = SymbolList.defaultList;
-symbols.addUnit(<font color=red>"in"</font>, 2.54 * centi(meter));
+</font><font color=blue>auto</font> symbols = SymbolList.siList;
+symbols.addUnit(<font color=red>"in"</font>, si!<font color=red>"2.54 cm"</font>);
 <font color=blue>auto</font> len = <u>parseQuantity</u>!Length(<font color=red>"17 in"</font>, symbols);
 <font color=blue>assert</font>(len.value(centi(meter)).approxEqual(17 * 2.54));
 </pre>
@@ -135,7 +159,7 @@ symbols.addUnit(<font color=red>"in"</font>, 2.54 * centi(meter));
 <dd>This struct contains the symbols of the units and the prefixes that the
 parser can handle.<br><br>
 
-<dl><dt><big><a name="SymbolList.defaultList"></a>static SymbolList <u>defaultList</u>();
+<dl><dt><big><a name="SymbolList.siList"></a>static SymbolList <u>siList</u>();
 </big></dt>
 <dd>Returns the default list, consisting of the main SI units and prefixes.<br><br>
 
@@ -151,25 +175,6 @@ parser can handle.<br><br>
 
 </dd>
 </dl>
-</dd>
-<dt><big><a name="convert"></a>real <u>convert</u>(S, U)(S <i>from</i>, U <i>target</i>) if (isSomeString!S &amp;&amp; isSomeString!U);
-</big></dt>
-<dd>Convert a quantity parsed from a string into target unit, also parsed from
-a string.
-<br><br>
-<b>Parameters:</b><br>
-from = A string representing the quantity to <u>convert</u>
-  target = A string representing the target unit
-
-<br><br>
-<b>Returns:</b><br>
-The conversion factor (a scalar value)<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>auto</font> k = <u>convert</u>(<font color=red>"3 min"</font>, <font color=red>"s"</font>);
-<font color=blue>assert</font>(k == 3 * 60);
-</pre>
-<br><br>
 </dd>
 <dt><big><a name="ParsingException"></a>class <u>ParsingException</u>: object.Exception;
 </big></dt>
