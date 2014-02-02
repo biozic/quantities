@@ -39,80 +39,39 @@ occurs at compile-time.<br><br>
 <dt><big><a name="dimensions"></a>alias <u>dimensions</u> = Dim;
 </big></dt>
 <dd>The dimension tuple of the quantity.<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>static</font> <font color=blue>assert</font>(meter.<u>dimensions</u> == TypeTuple!(<font color=red>"m"</font>, 1,));
-<font color=blue>static</font> <font color=blue>assert</font>(katal.<u>dimensions</u> == TypeTuple!(<font color=red>"mol"</font>, 1, <font color=red>"s"</font>, -1));
-<font color=blue>static</font> <font color=blue>assert</font>(volt.<u>dimensions</u>  == TypeTuple!(<font color=red>"kg"</font>, 1, <font color=red>"m"</font>, 2, <font color=red>"s"</font>, -3, <font color=red>"A"</font>, -1));
-</pre>
-<br><br>
-</dd>
-<dt><big><a name="this"></a> this(Q)(Q <i>other</i>) if (isQuantity!Q);
-</big></dt>
-<dd>Creates a new quantity from another one with the same dimensions<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>auto</font> size = Length(42 * kilo(meter));
-</pre>
-<br><br>
-</dd>
-<dt><big><a name="this"></a> this(T)(T <i>other</i>) if (is(Unqual!T == RTQuantity));
-</big></dt>
-<dd>Creates a new quantity from a runtime-parsed one<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>auto</font> size = Length(parseQuantity(<font color=red>"42 km"</font>));
-</pre>
-<br><br>
-</dd>
-<dt><big><a name="this"></a> this(T)(T <i>value</i>) if (isNumeric!T &amp;&amp; Dim.length == 0);
-</big></dt>
-<dd>Creates a new dimensionless quantity from a scalar value<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>import</font> std.math : PI;
 
-Angle angle = PI / 2;
-<font color=blue>assert</font>(angle.value(degreeOfAngle) == 90);
-</pre>
-<br><br>
 </dd>
-<dt><big><a name="rawValue"></a>const N <u>rawValue</u>();
+<dt><big><a name="baseUnit"></a>Quantity <u>baseUnit</u>();
 </big></dt>
-<dd>Gets the internal scalar value of this quantity.
-<br><br>
-The returned number is the value of the quantity when it is
-    expressed in the corresponding base unit.<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>auto</font> time = 10 * minute;
-<font color=blue>assert</font>(time.<u>rawValue</u> == 600); <font color=green>// There are 600 s in 10 min
-</font></pre>
-<br><br>
+<dd>Gets the base unit of this quantity.<br><br>
+
 </dd>
 <dt><big><a name="value"></a>const N <u>value</u>(Q)(Q <i>target</i>) if (isQuantity!Q);
+<br><a name="value"></a>const N <u>value</u>(string target)();
 </big></dt>
 <dd>Gets the scalar value of this quantity expressed in the given target unit.<br><br>
+
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> time = 120 * minute;
 <font color=blue>assert</font>(time.<u>value</u>(hour) == 2);
 <font color=blue>assert</font>(time.<u>value</u>(minute) == 120);
 <font color=blue>assert</font>(time.<u>value</u>(second) == 7200);
+<font color=blue>assert</font>(time.<u>value</u>!<font color=red>"h"</font> == 2);
 </pre>
-<br><br>
-</dd>
+<br><br></dd>
 <dt><big><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(Q)(Q <i>other</i>) if (isQuantity!Q);
-<br><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(S)(S <i>str</i>) if (isSomeString!S);
+<br><a name="isConsistentWith"></a>const bool <u>isConsistentWith</u>(string other)();
 </big></dt>
-<dd>Tests wheter this quantity has the same dimensions<br><br>
+<dd>Tests wheter this quantity has the same dimensions as another one.<br><br>
 
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> nm = (1.4 * newton) * (0.5 * centi(meter));
-<font color=blue>auto</font> kwh = (4000 * kilo(watt)) * (1200 * hour);
-<font color=blue>assert</font>(nm.<u>isConsistentWith</u>(kwh)); <font color=green>// Energy in both cases
+<font color=blue>auto</font> kWh = (4000 * kilo(watt)) * (1200 * hour);
+<font color=blue>assert</font>(nm.<u>isConsistentWith</u>(kWh)); <font color=green>// Energy in both cases
 </font><font color=blue>assert</font>(!nm.<u>isConsistentWith</u>(second));
+<font color=blue>assert</font>(nm.<u>isConsistentWith</u>!<font color=red>"kW h"</font>);
 </pre>
 <br><br></dd>
 <dt><big><a name="store"></a>const auto <u>store</u>(T)() if (isNumeric!T);
@@ -176,11 +135,44 @@ The returned number is the value of the quantity when it is
  Only dimensionally correct operations will compile.<br><br>
 
 </dd>
-<dt><big><a name="toString"></a>const void <u>toString</u>(scope void delegate(const(char)[]) <i>sink</i>);
+<dt><big><a name="toString"></a>const string <u>toString</u>();
 </big></dt>
-<dd>Returns a default string representation of the quantity.<br><br>
-
+<dd>Returns the default string representation of the quantity.<br><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> inch = qty!<font color=red>"2.54 cm"</font>;
+<font color=blue>assert</font>(inch.<u>toString</u> == <font color=red>"0.0254 m"</font>);
+</pre>
+<br><br>
 </dd>
+<dt><big><a name="toString"></a>const string <u>toString</u>(string <i>fmt</i>, SymbolList <i>symbolList</i> = SymbolList.defaultList);
+<br><a name="toString"></a>const string <u>toString</u>(string fmt)();
+</big></dt>
+<dd>Returns a formatted string from the quantity.
+<br><br>
+The format string must be formed of a format specifier for the numeric value
+    (e.g %s, %g, %.2f, etc.), followed by a unit. The whitespace between the
+    format specifier and the unit is not significant.
+<br><br>
+
+    The unit present in the format is parsed each time the function is called, in
+    order to calculate the value. If this quantity can be known at runtime,
+    the template version of this function is more efficient, with the counterpart
+    that it can only operate on SI units.<br><br>
+
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> inch = qty!<font color=red>"2.54 cm"</font>;
+
+<font color=green>// Format parsed at runtime
+</font><font color=blue>assert</font>(inch.<u>toString</u>(<font color=red>"%s cm"</font>) == <font color=red>"2.54 cm"</font>);
+<font color=blue>assert</font>(inch.<u>toString</u>(<font color=red>"%.2f mm"</font>) == <font color=red>"25.40 mm"</font>);
+
+<font color=green>// Format parsed at compile-time
+</font><font color=blue>assert</font>(inch.<u>toString</u>!<font color=red>"%s cm"</font> == <font color=red>"2.54 cm"</font>);
+<font color=blue>assert</font>(inch.<u>toString</u>!<font color=red>"%.2f mm"</font> == <font color=red>"25.40 mm"</font>);
+</pre>
+<br><br></dd>
 </dl>
 </dd>
 <dt><big><a name="isQuantity"></a>template <u>isQuantity</u>(T)</big></dt>

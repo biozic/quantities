@@ -57,23 +57,18 @@ struct Quantity(N, Dim...)
                 .format(dimstr!(` ~ dim ~ `)(true), dimstr!(dimensions)(true)));`;
     }
     
-    /// Gets the base unit of this quantity
+    /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
         return Quantity(1);
     }
 
-    /// Creates a new quantity from another one with the same dimensions
+    // Creates a new quantity from another one with the same dimensions
     this(Q)(Q other)
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
         _value = other._value;
-    }
-    ///
-    unittest
-    {
-        auto size = Length(42 * kilo(meter));
     }
 
     // Creates a new quantity from a runtime-parsed one
@@ -87,19 +82,11 @@ struct Quantity(N, Dim...)
         _value = other.value;
     }
     
-    /// Creates a new dimensionless quantity from a scalar value
+    // Creates a new dimensionless quantity from a scalar value
     this(T)(T value)
         if (isNumeric!T && Dim.length == 0)
     {
         _value = value;
-    }
-    ///
-    unittest
-    {
-        import std.math : PI;
-
-        Angle angle = PI / 2;
-        assert(angle.value(degreeOfAngle) == 90);
     }
 
     // Creates a new quantity from a scalar value
@@ -109,21 +96,10 @@ struct Quantity(N, Dim...)
         _value = value;
     }    
     
-    /++
-    Gets the internal scalar value of this quantity.
-
-    The returned number is the value of the quantity when it is
-    expressed in the corresponding base unit.
-    +/
+    //Gets the internal scalar value of this quantity.
     @property N rawValue() const
     {
         return _value;
-    }
-    ///
-    unittest
-    {
-        auto time = 10 * minute;
-        assert(time.rawValue == 600); // There are 600 s in 10 min
     }
 
     // Implicitly convert a dimensionless value to the value type
@@ -140,12 +116,6 @@ struct Quantity(N, Dim...)
         return _value / target._value;
     }
     /// ditto
-    N value(Q)(Q target) const
-        if (is(Unqual!Q == RTQuantity))
-    {
-        return value(typeof(this)(target));
-    }
-    /// ditto
     N value(string target)() const
     {
         return value(qty!target);
@@ -160,8 +130,14 @@ struct Quantity(N, Dim...)
         assert(time.value!"h" == 2);
     }
 
+    N value(Q)(Q target) const
+        if (is(Unqual!Q == RTQuantity))
+    {
+        return value(typeof(this)(target));
+    }
+
     /++
-    Tests wheter this quantity has the same dimensions 
+    Tests wheter this quantity has the same dimensions as another one.
     +/
     bool isConsistentWith(Q)(Q other) const
         if (isQuantity!Q)
@@ -169,10 +145,9 @@ struct Quantity(N, Dim...)
         return AreConsistent!(typeof(this), Q);
     }
     /// ditto
-    bool isConsistentWith(Q)(Q other) const
-        if (is(Unqual!Q == RTQuantity))
+    bool isConsistentWith(string other)() const
     {
-        return toAA!Dim == other.dimensions;
+        return isConsistentWith(qty!other);
     }
     ///
     unittest
@@ -181,7 +156,13 @@ struct Quantity(N, Dim...)
         auto kWh = (4000 * kilo(watt)) * (1200 * hour);
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
-        assert(nm.isConsistentWith(qty!"kW h"));
+        assert(nm.isConsistentWith!"kW h");
+    }
+
+    bool isConsistentWith(Q)(Q other) const
+        if (is(Unqual!Q == RTQuantity))
+    {
+        return toAA!Dim == other.dimensions;
     }
 
     /++
@@ -412,15 +393,16 @@ struct Quantity(N, Dim...)
 
     The unit present in the format is parsed each time the function is called, in
     order to calculate the value. If this quantity can be known at runtime,
-    the template version of this function is more efficient.
+    the template version of this function is more efficient, with the counterpart
+    that it can only operate on SI units.
     +/
-    string toString(string fmt) const
+    string toString(string fmt, SymbolList symbolList = SymbolList.defaultList) const
     {
         import std.array, std.format;
         auto app = appender!string;
         auto spec = FormatSpec!char(fmt.startsWith("%") ? fmt : "%s " ~ fmt);
         spec.writeUpToNextSpec(app);
-        app.formatValue(value(parseRTQuantity(spec.trailing)), spec);
+        app.formatValue(value(parseRTQuantity(spec.trailing, symbolList)), spec);
         app.put(spec.trailing);
         return app.data;
     }

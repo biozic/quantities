@@ -108,16 +108,25 @@ import std.exception;
 assertThrown!ParsingException(concentration = parseQuantity!Concentration("10 qGz"));
 assertThrown!DimensionException(concentration = parseQuantity!Concentration("2.5 g⋅L⁻¹"));
 
-// User-defined symbols
-auto byte_ = unit!"B";
-alias FileSize = QuantityType!byte_;
+
+// User-defined symbol lists
+
+auto bit = unit!"bit";
+auto byte_ = 8 * bit;
+alias FileSize = QuantityType!bit;
+
 auto mySymbolList = SymbolList.defaultList;
+mySymbolList.addUnit("bit", bit);
 mySymbolList.addUnit("B", byte_);
-mySymbolList.addPrefix("Ki", 2^^10);
-mySymbolList.addPrefix("Mi", 2^^20);
-// ...
-assertThrown!ParsingException(parseQuantity!FileSize("1.0 MiB"));
-auto fileSize = parseQuantity!FileSize("1.0 MiB", mySymbolList);
+
+auto fileSize = parseQuantity!FileSize("1234567 B", mySymbolList);
+
+writefln("Length: %.0f bits", fileSize.value(bit));
+// prints: Length: 9876536 bits
 writefln("Length: %.0f bytes", fileSize.value(byte_));
-// prints: Length: 1048576 bytes
+// prints: Length: 1234567 B
+writefln("Length: %s", fileSize.toString("%.2f MB", mySymbolList));
+// prints: Length: 1.23 MB
+writefln("Length: %s", fileSize.toString("%.2f MiB", mySymbolList));
+// prints: Length: 1.18 MiB
 ```

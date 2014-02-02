@@ -44,25 +44,25 @@ Nicolas Sicard
 <br><a name="candela"></a>Quantity!(real, "cd", 1) <u>candela</u>;
 <br><a name="steradian"></a>Quantity!real <u>steradian</u>;
 <br><a name="hertz"></a>Quantity!(real, "s", -1) <u>hertz</u>;
-<br><a name="newton"></a>Quantity!(real, "kg", 1, "m", 1, "s", -2) <u>newton</u>;
-<br><a name="pascal"></a>Quantity!(real, "kg", 1, "m", -1, "s", -2) <u>pascal</u>;
-<br><a name="joule"></a>Quantity!(real, "kg", 1, "m", 2, "s", -2) <u>joule</u>;
-<br><a name="watt"></a>Quantity!(real, "kg", 1, "m", 2, "s", -3) <u>watt</u>;
+<br><a name="newton"></a>Quantity!(real, "m", 1, "kg", 1, "s", -2) <u>newton</u>;
+<br><a name="pascal"></a>Quantity!(real, "m", -1, "kg", 1, "s", -2) <u>pascal</u>;
+<br><a name="joule"></a>Quantity!(real, "m", 2, "kg", 1, "s", -2) <u>joule</u>;
+<br><a name="watt"></a>Quantity!(real, "m", 2, "kg", 1, "s", -3) <u>watt</u>;
 <br><a name="coulomb"></a>Quantity!(real, "s", 1, "A", 1) <u>coulomb</u>;
-<br><a name="volt"></a>Quantity!(real, "kg", 1, "m", 2, "s", -3, "A", -1) <u>volt</u>;
-<br><a name="farad"></a>Quantity!(real, "s", 4, "A", 2, "kg", -1, "m", -2) <u>farad</u>;
-<br><a name="ohm"></a>Quantity!(real, "kg", 1, "m", 2, "s", -3, "A", -2) <u>ohm</u>;
-<br><a name="siemens"></a>Quantity!(real, "A", 2, "kg", -1, "m", -2, "s", 3) <u>siemens</u>;
-<br><a name="weber"></a>Quantity!(real, "kg", 1, "m", 2, "s", -2, "A", -1) <u>weber</u>;
+<br><a name="volt"></a>Quantity!(real, "m", 2, "kg", 1, "s", -3, "A", -1) <u>volt</u>;
+<br><a name="farad"></a>Quantity!(real, "m", -2, "kg", -1, "s", 4, "A", 2) <u>farad</u>;
+<br><a name="ohm"></a>Quantity!(real, "m", 2, "kg", 1, "s", -3, "A", -2) <u>ohm</u>;
+<br><a name="siemens"></a>Quantity!(real, "m", -2, "kg", -1, "s", 3, "A", 2) <u>siemens</u>;
+<br><a name="weber"></a>Quantity!(real, "m", 2, "kg", 1, "s", -2, "A", -1) <u>weber</u>;
 <br><a name="tesla"></a>Quantity!(real, "kg", 1, "s", -2, "A", -1) <u>tesla</u>;
-<br><a name="henry"></a>Quantity!(real, "kg", 1, "m", 2, "s", -2, "A", -2) <u>henry</u>;
+<br><a name="henry"></a>Quantity!(real, "m", 2, "kg", 1, "s", -2, "A", -2) <u>henry</u>;
 <br><a name="celsius"></a>Quantity!(real, "K", 1) <u>celsius</u>;
 <br><a name="lumen"></a>Quantity!(real, "cd", 1) <u>lumen</u>;
-<br><a name="lux"></a>Quantity!(real, "cd", 1, "m", -2) <u>lux</u>;
+<br><a name="lux"></a>Quantity!(real, "m", -2, "cd", 1) <u>lux</u>;
 <br><a name="becquerel"></a>Quantity!(real, "s", -1) <u>becquerel</u>;
 <br><a name="gray"></a>Quantity!(real, "m", 2, "s", -2) <u>gray</u>;
 <br><a name="sievert"></a>Quantity!(real, "m", 2, "s", -2) <u>sievert</u>;
-<br><a name="katal"></a>Quantity!(real, "mol", 1, "s", -1) <u>katal</u>;
+<br><a name="katal"></a>Quantity!(real, "s", -1, "mol", 1) <u>katal</u>;
 <br><a name="gram"></a>Quantity!(real, "kg", 1) <u>gram</u>;
 <br><a name="minute"></a>Quantity!(real, "s", 1) <u>minute</u>;
 <br><a name="hour"></a>Quantity!(real, "s", 1) <u>hour</u>;
@@ -74,10 +74,10 @@ Nicolas Sicard
 <br><a name="liter"></a>Quantity!(real, "m", 3) <u>liter</u>;
 <br><a name="litre"></a>alias <u>litre</u> = liter;
 <br><a name="ton"></a>Quantity!(real, "kg", 1) <u>ton</u>;
-<br><a name="electronVolt"></a>Quantity!(real, "kg", 1, "m", 2, "s", -2) <u>electronVolt</u>;
+<br><a name="electronVolt"></a>Quantity!(real, "m", 2, "kg", 1, "s", -2) <u>electronVolt</u>;
 <br><a name="dalton"></a>Quantity!(real, "kg", 1) <u>dalton</u>;
 </big></dt>
-<dd>Predefined SI units<br><br>
+<dd>Predefined SI units.<br><br>
 
 </dd>
 <dt><big><a name="one"></a>Quantity!real <u>one</u>;
@@ -96,38 +96,38 @@ Nicolas Sicard
 <br><a name="Volume"></a>alias <u>Volume</u> = quantities.base.Quantity!(real, "m", 3).Quantity;
 <br><a name="Speed"></a>alias <u>Speed</u> = quantities.base.Quantity!(real, "m", 1, "s", -1).Quantity;
 <br><a name="Acceleration"></a>alias <u>Acceleration</u> = quantities.base.Quantity!(real, "m", 1, "s", -2).Quantity;
-<br><a name="MassDensity"></a>alias <u>MassDensity</u> = quantities.base.Quantity!(real, "kg", 1, "m", -3).Quantity;
-<br><a name="CurrentDensity"></a>alias <u>CurrentDensity</u> = quantities.base.Quantity!(real, "A", 1, "m", -2).Quantity;
-<br><a name="MagneticFieldStrength"></a>alias <u>MagneticFieldStrength</u> = quantities.base.Quantity!(real, "A", 1, "m", -1).Quantity;
-<br><a name="Concentration"></a>alias <u>Concentration</u> = quantities.base.Quantity!(real, "mol", 1, "m", -3).Quantity;
-<br><a name="MolarConcentration"></a>alias <u>MolarConcentration</u> = quantities.base.Quantity!(real, "mol", 1, "m", -3).Quantity;
-<br><a name="MassicConcentration"></a>alias <u>MassicConcentration</u> = quantities.base.Quantity!(real, "kg", 1, "m", -3).Quantity;
-<br><a name="Luminance"></a>alias <u>Luminance</u> = quantities.base.Quantity!(real, "cd", 1, "m", -2).Quantity;
+<br><a name="MassDensity"></a>alias <u>MassDensity</u> = quantities.base.Quantity!(real, "m", -3, "kg", 1).Quantity;
+<br><a name="CurrentDensity"></a>alias <u>CurrentDensity</u> = quantities.base.Quantity!(real, "m", -2, "A", 1).Quantity;
+<br><a name="MagneticFieldStrength"></a>alias <u>MagneticFieldStrength</u> = quantities.base.Quantity!(real, "m", -1, "A", 1).Quantity;
+<br><a name="Concentration"></a>alias <u>Concentration</u> = quantities.base.Quantity!(real, "m", -3, "mol", 1).Quantity;
+<br><a name="MolarConcentration"></a>alias <u>MolarConcentration</u> = quantities.base.Quantity!(real, "m", -3, "mol", 1).Quantity;
+<br><a name="MassicConcentration"></a>alias <u>MassicConcentration</u> = quantities.base.Quantity!(real, "m", -3, "kg", 1).Quantity;
+<br><a name="Luminance"></a>alias <u>Luminance</u> = quantities.base.Quantity!(real, "m", -2, "cd", 1).Quantity;
 <br><a name="RefractiveIndex"></a>alias <u>RefractiveIndex</u> = quantities.base.Quantity!(real, "kg", 1).Quantity;
 <br><a name="Angle"></a>alias <u>Angle</u> = quantities.base.Quantity!real.Quantity;
 <br><a name="SolidAngle"></a>alias <u>SolidAngle</u> = quantities.base.Quantity!real.Quantity;
 <br><a name="Frequency"></a>alias <u>Frequency</u> = quantities.base.Quantity!(real, "s", -1).Quantity;
-<br><a name="Force"></a>alias <u>Force</u> = quantities.base.Quantity!(real, "kg", 1, "m", 1, "s", -2).Quantity;
-<br><a name="Pressure"></a>alias <u>Pressure</u> = quantities.base.Quantity!(real, "kg", 1, "m", -1, "s", -2).Quantity;
-<br><a name="Energy"></a>alias <u>Energy</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -2).Quantity;
-<br><a name="Work"></a>alias <u>Work</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -2).Quantity;
-<br><a name="Heat"></a>alias <u>Heat</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -2).Quantity;
-<br><a name="Power"></a>alias <u>Power</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -3).Quantity;
+<br><a name="Force"></a>alias <u>Force</u> = quantities.base.Quantity!(real, "m", 1, "kg", 1, "s", -2).Quantity;
+<br><a name="Pressure"></a>alias <u>Pressure</u> = quantities.base.Quantity!(real, "m", -1, "kg", 1, "s", -2).Quantity;
+<br><a name="Energy"></a>alias <u>Energy</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -2).Quantity;
+<br><a name="Work"></a>alias <u>Work</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -2).Quantity;
+<br><a name="Heat"></a>alias <u>Heat</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -2).Quantity;
+<br><a name="Power"></a>alias <u>Power</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -3).Quantity;
 <br><a name="ElectricCharge"></a>alias <u>ElectricCharge</u> = quantities.base.Quantity!(real, "s", 1, "A", 1).Quantity;
-<br><a name="ElectricPotential"></a>alias <u>ElectricPotential</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -3, "A", -1).Quantity;
-<br><a name="Capacitance"></a>alias <u>Capacitance</u> = quantities.base.Quantity!(real, "s", 4, "A", 2, "kg", -1, "m", -2).Quantity;
-<br><a name="ElectricResistance"></a>alias <u>ElectricResistance</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -3, "A", -2).Quantity;
-<br><a name="ElectricConductance"></a>alias <u>ElectricConductance</u> = quantities.base.Quantity!(real, "A", 2, "kg", -1, "m", -2, "s", 3).Quantity;
-<br><a name="MagneticFlux"></a>alias <u>MagneticFlux</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -2, "A", -1).Quantity;
+<br><a name="ElectricPotential"></a>alias <u>ElectricPotential</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -3, "A", -1).Quantity;
+<br><a name="Capacitance"></a>alias <u>Capacitance</u> = quantities.base.Quantity!(real, "m", -2, "kg", -1, "s", 4, "A", 2).Quantity;
+<br><a name="ElectricResistance"></a>alias <u>ElectricResistance</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -3, "A", -2).Quantity;
+<br><a name="ElectricConductance"></a>alias <u>ElectricConductance</u> = quantities.base.Quantity!(real, "m", -2, "kg", -1, "s", 3, "A", 2).Quantity;
+<br><a name="MagneticFlux"></a>alias <u>MagneticFlux</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -2, "A", -1).Quantity;
 <br><a name="MagneticFluxDensity"></a>alias <u>MagneticFluxDensity</u> = quantities.base.Quantity!(real, "kg", 1, "s", -2, "A", -1).Quantity;
-<br><a name="Inductance"></a>alias <u>Inductance</u> = quantities.base.Quantity!(real, "kg", 1, "m", 2, "s", -2, "A", -2).Quantity;
+<br><a name="Inductance"></a>alias <u>Inductance</u> = quantities.base.Quantity!(real, "m", 2, "kg", 1, "s", -2, "A", -2).Quantity;
 <br><a name="LuminousFlux"></a>alias <u>LuminousFlux</u> = quantities.base.Quantity!(real, "cd", 1).Quantity;
-<br><a name="Illuminance"></a>alias <u>Illuminance</u> = quantities.base.Quantity!(real, "cd", 1, "m", -2).Quantity;
+<br><a name="Illuminance"></a>alias <u>Illuminance</u> = quantities.base.Quantity!(real, "m", -2, "cd", 1).Quantity;
 <br><a name="CelsiusTemperature"></a>alias <u>CelsiusTemperature</u> = quantities.base.Quantity!(real, "K", 1).Quantity;
 <br><a name="Radioactivity"></a>alias <u>Radioactivity</u> = quantities.base.Quantity!(real, "s", -1).Quantity;
 <br><a name="AbsorbedDose"></a>alias <u>AbsorbedDose</u> = quantities.base.Quantity!(real, "m", 2, "s", -2).Quantity;
 <br><a name="DoseEquivalent"></a>alias <u>DoseEquivalent</u> = quantities.base.Quantity!(real, "m", 2, "s", -2).Quantity;
-<br><a name="CatalyticActivity"></a>alias <u>CatalyticActivity</u> = quantities.base.Quantity!(real, "mol", 1, "s", -1).Quantity;
+<br><a name="CatalyticActivity"></a>alias <u>CatalyticActivity</u> = quantities.base.Quantity!(real, "s", -1, "mol", 1).Quantity;
 </big></dt>
 <dd>Predefined quantity type templates for SI quantities<br><br>
 
@@ -159,6 +159,18 @@ Nicolas Sicard
 <br><a name="yocto"></a>auto <u>yocto</u>(Q)(Q <i>base</i>);
 </big></dt>
 <dd>Functions that apply a SI prefix to a unit.<br><br>
+
+</dd>
+<dt><big><a name="yobi"></a>auto <u>yobi</u>(Q)(Q <i>base</i>);
+<br><a name="zebi"></a>auto <u>zebi</u>(Q)(Q <i>base</i>);
+<br><a name="exbi"></a>auto <u>exbi</u>(Q)(Q <i>base</i>);
+<br><a name="pebi"></a>auto <u>pebi</u>(Q)(Q <i>base</i>);
+<br><a name="tebi"></a>auto <u>tebi</u>(Q)(Q <i>base</i>);
+<br><a name="gibi"></a>auto <u>gibi</u>(Q)(Q <i>base</i>);
+<br><a name="mebi"></a>auto <u>mebi</u>(Q)(Q <i>base</i>);
+<br><a name="kibi"></a>auto <u>kibi</u>(Q)(Q <i>base</i>);
+</big></dt>
+<dd>Functions that apply a SI binary prefix to a unit.<br><br>
 
 </dd>
 </dl>

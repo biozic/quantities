@@ -165,21 +165,11 @@ unittest
     t = parseQuantity!Time("h");
     assert(t == 1 * hour);
 
-    // Add a user-defined unit to the default list
+    // Add a user-defined symbol (here a unit) to the default list
     auto symbols = SymbolList.defaultList;
     symbols.addUnit("in", 2.54 * centi(meter));
     auto len = parseQuantity!Length("17 in", symbols);
     assert(len.value(centi(meter)).approxEqual(17 * 2.54));
-    
-    // User-defined symbol list
-    auto byte_ = unit!"B";
-    alias FileSize = QuantityType!byte_;
-    auto mySymbolList = SymbolList.defaultList;
-    mySymbolList.addUnit("B", byte_);
-    mySymbolList.addPrefix("Mi", 2^^20);
-    assertThrown!ParsingException(parseQuantity!FileSize("1.0 MiB"));
-    auto fileSize = parseQuantity!FileSize("1.0 MiB", mySymbolList);
-    assert(fileSize.value(byte_).approxEqual(1048576));
 }
 
 RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.defaultList)
@@ -276,7 +266,7 @@ unittest // Test parsing
     assert(parseRTQuantity("6.3 L/mmol/cm").value.approxEqual(630));
 }
 
-/// Holds a value and a dimensions for parsing
+// Holds a value and a dimensions for parsing
 struct RTQuantity
 {
     // The payload
@@ -491,7 +481,7 @@ struct SymbolList
 
     /// Adds a new unit to the list
     void addUnit(Q)(string symbol, Q unit)
-        if (isQuantity!Q || is(Unqual!Q == RTQuantity))
+        if (isQuantity!Q)
     {
         // COW
         if (units is _defaultList.units)
@@ -566,7 +556,15 @@ private
         "f" : 1e-15L,
         "a" : 1e-18L,
         "z" : 1e-21L,
-        "y" : 1e-24L
+        "y" : 1e-24L,
+        "Yi": cast(real) (2^^10)^^8,
+        "Zi": cast(real) (2^^10)^^7,
+        "Ei": cast(real) (2^^10)^^6,
+        "Pi": cast(real) (2^^10)^^5,
+        "Ti": cast(real) (2^^10)^^4,
+        "Gi": cast(real) (2^^10)^^3,
+        "Mi": cast(real) (2^^10)^^2,
+        "Ki": cast(real) (2^^10),
     ];
 }
 
@@ -598,19 +596,6 @@ unittest
     assert(k == 3 * 60);
 }
 
-/// Convert a compile-time quantity to its runtime equivalent.
-RTQuantity toRuntime(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
-}
-///
-unittest
-{
-    auto distance = toRuntime(42 * kilo(meter));
-    assert(distance == parseRTQuantity("42 km"));
-}
-
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
 {
@@ -628,6 +613,13 @@ class ParsingException : Exception
 }
 
 package:
+
+// Convert a compile-time quantity to its runtime equivalent.
+RTQuantity toRuntime(Q)(Q quantity)
+    if (isQuantity!Q)
+{
+    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
+}
 
 enum Tok
 {

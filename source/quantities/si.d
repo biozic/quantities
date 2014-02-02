@@ -46,7 +46,7 @@ unittest // Durations
 }
 
 /++
-Predefined SI units
+Predefined SI units.
 +/
 enum meter = unit!("m");
 alias metre = meter; /// ditto
@@ -186,3 +186,20 @@ auto atto(Q)(Q base) { return base * 1e-18; }
 auto zepto(Q)(Q base) { return base * 1e-21; }
 /// ditto
 auto yocto(Q)(Q base) { return base * 1e-24; }
+
+/// Functions that apply a SI binary prefix to a unit.
+auto yobi(Q)(Q base) { return base * (2^^10)^^8; }
+/// ditto
+auto zebi(Q)(Q base) { return base * (2^^10)^^7; }
+/// ditto
+auto exbi(Q)(Q base) { return base * (2^^10)^^6; }
+/// ditto
+auto pebi(Q)(Q base) { return base * (2^^10)^^5; }
+/// ditto
+auto tebi(Q)(Q base) { return base * (2^^10)^^4; }
+/// ditto
+auto gibi(Q)(Q base) { return base * (2^^10)^^3; }
+/// ditto
+auto mebi(Q)(Q base) { return base * (2^^10)^^2; }
+/// ditto
+auto kibi(Q)(Q base) { return base * (2^^10); }
