@@ -408,16 +408,16 @@ struct Quantity(N, Dim...)
     }
 
     /++
-     + Returns a formatted string from the quantity.
-     + 
-     + The format string must be formed of a format specifier for the numeric value
-     + (e.g %s, %g, %.2f, etc.), followed by a unit. The whitespace between the
-     + format specifier and the unit is not significant.
-     + 
-     + The unit present in the format is parsed each time the function is called, in
-     + order to calculate the value. If this quantity can be known at runtime,
-     + the template version of this function should be more efficient.
-     +/
+    Returns a formatted string from the quantity.
+
+    The format string must be formed of a format specifier for the numeric value
+    (e.g %s, %g, %.2f, etc.), followed by a unit. The whitespace between the
+    format specifier and the unit is not significant.
+
+    The unit present in the format is parsed each time the function is called, in
+    order to calculate the value. If this quantity can be known at runtime,
+    the template version of this function is more efficient.
+    +/
     string toString(string fmt) const
     {
         import std.array, std.format;
@@ -428,7 +428,7 @@ struct Quantity(N, Dim...)
         app.put(spec.trailing);
         return app.data;
     }
-    ///
+    /// ditto
     string toString(string fmt)() const
     {
         static assert(fmt.startsWith("%"), "Expecting a format specifier starting with '%'");
