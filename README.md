@@ -59,23 +59,27 @@ Mass mass;
 // Define a new quantity type
 alias MolarMass = QuantityType!(kilogram/mole);
 
-// I have to make a new solution at the concentration of 25 mmol/L.
+// I have to make a new solution at the concentration of 25 mmol/L
 concentration = 25 * milli(mole)/liter;
 
 // The final volume is 100 ml.
 volume = 100 * milli(liter);
 
-// The molar mass of my compound is 118.9 g/mol.
+// The molar mass of my compound is 118.9 g/mol
 MolarMass mm = 118.9 * gram/mole;
 
 // What mass should I weigh?
 mass = concentration * volume * mm;
-writefln("Weigh %f kg of substance", mass.value(kilogram)); 
-// prints: Weigh 0.000297 kg of substance
+writefln("Weigh %s of substance", mass.toString); 
+// prints: Weigh 0.00029725 kg of substance
 
-// Wait! My scales graduations are in milligrams!
-writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
+// Wait! My scales graduations are in 1/10 milligrams!
+writefln("Weigh %s of substance", mass.toString!"%.1f mg");
 // prints: Weigh 297.3 mg of substance
+
+// Extract the value of the quantity expressed in mg
+auto val = mass.value(milli(gram)); 
+assert(val.approxEqual(297.25));
 
 // Type checking prevents incorrect assignments and operations
 static assert(!__traits(compiles, mass = 10 * milli(liter)));

@@ -418,7 +418,7 @@ struct Quantity(N, Dim...)
     {
         import std.array, std.format;
         auto app = appender!string;
-        auto spec = FormatSpec!char(fmt);
+        auto spec = FormatSpec!char(fmt.startsWith("%") ? fmt : "%s " ~ fmt);
         spec.writeUpToNextSpec(app);
         app.formatValue(value(parseRTQuantity(spec.trailing)), spec);
         app.put(spec.trailing);
@@ -427,20 +427,23 @@ struct Quantity(N, Dim...)
     /// ditto
     string toString(string fmt)() const
     {
-        static assert(fmt.startsWith("%"), "Expecting a format specifier starting with '%'");
+        static if (fmt.startsWith("%"))
+            enum fmt2 = fmt;
+        else
+            enum fmt2 = "%s " ~ fmt;
 
         // Get the unit at compile time
-        static string extractUnit(string fmt)
+        static string extractUnit(string fmt2)
         {
             import std.algorithm, std.array;
-            auto ret = fmt.findAmong([
+            auto ret = fmt2.findAmong([
                 's', 'c', 'b', 'd', 'o', 'x', 'X', 'e', 
                 'E', 'f', 'F', 'g', 'G', 'a', 'A']);
             ret.popFront();
             return ret;
         }
 
-        return fmt.format(value(qty!(extractUnit(fmt))));
+        return fmt2.format(value(qty!(extractUnit(fmt2))));
     }
     ///
     unittest
