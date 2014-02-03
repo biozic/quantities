@@ -1,6 +1,8 @@
 module absorbance;
 
-import quantities;
+import quantities.base;
+import quantities.parsing;
+import quantities.si;
 import std.math;
 import std.stdio;
 

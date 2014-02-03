@@ -182,7 +182,7 @@ template ctQuantityParser(Sym...)
             enum q = parseRTQuantity(str, symbolList);
             enum dimStr = dimTup(q.dimensions);
             mixin("alias dims = TypeTuple!(%s);".format(dimStr));
-            enum ctQuantityParser = Quantity!(N, Sort!dims)(q.value);
+            enum ctQuantityParser = Quantity!(N, Sort!dims).make(q.value);
         }
     }
 }

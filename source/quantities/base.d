@@ -60,7 +60,7 @@ struct Quantity(N, Dim...)
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
-        return Quantity(1);
+        return Quantity.make(1);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -72,7 +72,7 @@ struct Quantity(N, Dim...)
     }
 
     // Creates a new quantity from a runtime-parsed one
-    package this(T)(T other)
+    this(T)(T other)
         if (is(Unqual!T == RTQuantity))
     {
         enforceEx!DimensionException(
@@ -89,13 +89,28 @@ struct Quantity(N, Dim...)
         _value = value;
     }
 
-    // Creates a new quantity from a scalar value
-    package this(T)(T value)
-        if (isNumeric!T && Dim.length != 0)
+    version (none)
     {
-        _value = value;
-    }    
-    
+        // Creates a new quantity from a scalar value
+        package this(T)(T value)
+            if (isNumeric!T && Dim.length != 0)
+        {
+            _value = value;
+        }
+    }
+    else 
+    {
+        // Workaround for bug 5770
+        // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
+        // "Template constructor bypass access check"
+        package static auto make(T)(T value)
+        {
+            Quantity!(N, Dim) ret;
+            ret._value = value;
+            return ret;
+        }
+    }
+
     //Gets the internal scalar value of this quantity.
     @property N rawValue() const
     {
@@ -160,7 +175,7 @@ struct Quantity(N, Dim...)
     auto store(T)() const
         if (isNumeric!T)
     {
-        return Quantity!(T, dimensions)(_value);
+        return Quantity!(T, dimensions).make(_value);
     }
     ///
     unittest
@@ -235,7 +250,7 @@ struct Quantity(N, Dim...)
     auto opUnary(string op)() const /// ditto
         if (op == "+" || op == "-")
     {
-        return Quantity!(N, dimensions)(mixin(op ~ "_value"));
+        return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
     }
 
     // Add (or substract) two quantities if they share the same dimensions
@@ -243,7 +258,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
-        return Quantity!(CommonType!(N, T.valueType), dimensions)(mixin("_value" ~ op ~ "other._value"));
+        return Quantity!(CommonType!(N, T.valueType), dimensions).make(mixin("_value" ~ op ~ "other._value"));
     }
 
     // Add (or substract) a dimensionless quantity and a scalar
@@ -251,7 +266,7 @@ struct Quantity(N, Dim...)
         if (isNumeric!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"");
-        return Quantity!(CommonType!(N, T), dimensions)(mixin("_value" ~ op ~ "other"));
+        return Quantity!(CommonType!(N, T), dimensions).make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -266,14 +281,14 @@ struct Quantity(N, Dim...)
         if (isQuantity!T && (op == "*" || op == "/"))
     {
         return Quantity!(CommonType!(N, T.valueType), OpBinary!(dimensions, op, other.dimensions))
-            (mixin("(_value" ~ op ~ "other._value)"));
+            .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
     // Multiply or divide a quantity by a scalar factor
     auto opBinary(string op, T)(T other) const /// ditto
         if (isNumeric!T && (op == "*" || op == "/"))
     {
-        return Quantity!(CommonType!(N, T), dimensions)(mixin("_value" ~ op ~ "other"));
+        return Quantity!(CommonType!(N, T), dimensions).make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -287,7 +302,7 @@ struct Quantity(N, Dim...)
     auto opBinaryRight(string op, T)(T other) const /// ditto
         if (isNumeric!T && op == "/")
     {
-        return Quantity!(CommonType!(N, T), Invert!dimensions)(other / _value);
+        return Quantity!(CommonType!(N, T), Invert!dimensions).make(other / _value);
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
@@ -622,7 +637,7 @@ unittest
 /// Creates a new monodimensional unit.
 template unit(string symbol, N = real)
 {
-    enum unit = Quantity!(N, symbol, 1)(1);
+    enum unit = Quantity!(N, symbol, 1).make(1);
 }
 ///
 unittest
@@ -652,7 +667,7 @@ auto cubic(U)(U unit)
 auto pow(int n, U)(U unit)
     if (isQuantity!U)
 {
-    return Quantity!(U.valueType, Pow!(n, U.dimensions))(unit.rawValue ^^ n);
+    return Quantity!(U.valueType, Pow!(n, U.dimensions)).make(unit.rawValue ^^ n);
 }
 
 /// ditto
@@ -660,7 +675,7 @@ auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions))(std.math.sqrt(quantity.rawValue));
+    return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
@@ -668,7 +683,7 @@ auto cbrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions))(std.math.cbrt(quantity.rawValue));
+    return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
@@ -676,7 +691,7 @@ auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions))(std.math.pow(quantity.rawValue, 1.0 / n));
+    return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 ///
@@ -696,7 +711,7 @@ Q abs(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Q(std.math.fabs(quantity.rawValue));
+    return Q.make(std.math.fabs(quantity.rawValue));
 }
 ///
 unittest // abs
