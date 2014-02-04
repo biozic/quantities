@@ -74,7 +74,7 @@ $(DT SupInteger:)
     $(DD $(I Superscript version of Integer))
 )
 
-Copyright: Copyright 2013, Nicolas Sicard
+Copyright: Copyright 2013-2014, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)

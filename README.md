@@ -9,8 +9,7 @@ are actually done on quantities. For example, `meter` is both the unit _meter_
 and the quantity _1 m_. New quantities can be derived from other ones using
 operators or dedicated functions.
 
-Quantities can be parsed from strings at runtime and compile-time (with
-limitations).
+Quantities can be parsed from strings at runtime and compile-time.
 
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.

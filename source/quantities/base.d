@@ -70,7 +70,7 @@ assert(is(Currency == Quantity!(real, "C", 1)));
 ---
 This means that all currencies will be defined with respect to euro.
 
-Copyright: Copyright 2013, Nicolas Sicard
+Copyright: Copyright 2013-2014, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)

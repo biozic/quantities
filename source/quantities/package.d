@@ -1,22 +1,16 @@
 // Written in the D programming language
 /++
-The purpose of this small D package is to perform automatic compile-time or
-runtime dimensional checking when dealing with quantities and units.
+The purpose  of this  package is  to perform  automatic compile-time  or runtime
+dimensional checking when dealing with quantities and units.
 
-In order to remain simple, there is no actual distinction between units and
-quantities, so there are no distinct quantity and unit types. All operations
-are actually done on quantities. For example, `meter` is both the unit _meter_
-and the quantity _1 m_. New quantities can be derived from other ones using
-operators or dedicated functions.
-
-Quantities can be parsed from strings at runtime and compile-time (with
-limitations).
-
-The main SI units and prefixes are predefined. Units with other dimensions can
-be defined by the user.
+The  base   functionality  (creating  quantities  and   units,  performing  math
+operations on  them) is defined  in the module quantities.base.  General parsing
+functions and  templates are defined  in quantities.parsing, so  that quantities
+can be parsed  from strings at runtime  and compile-time. The main  SI units and
+prefixes are predefined in quantites.si.
 
 Requires: DMD 2.065+
-Copyright: Copyright 2013, Nicolas Sicard
+Copyright: Copyright 2013-2014, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
