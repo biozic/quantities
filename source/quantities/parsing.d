@@ -189,7 +189,7 @@ template ctQuantityParser(Sym...)
 ///
 unittest
 {
-    enum bit = unit!"bit";
+    enum bit = unit!("bit", ulong);
     enum byte_ = 8 * bit;
 
     alias sz = ctQuantityParser!(
@@ -198,10 +198,10 @@ unittest
         addPrefix("hob", 7)
     );
 
-    enum size = sz!"1 MiB";
-    assert(size.toString!("%.0f bit", sz) == "8388608 bit");
+	auto size = sz!("1 MiB", ulong);
+    assert(size.toString!("%d bit", sz) == "8388608 bit");
 
-    enum height = sz!"1 hobbit";
+	auto height = sz!("1 hobbit", ulong);
     assert(height.value(sz!"bit") == 7);
 }
 
@@ -228,7 +228,12 @@ unittest
 auto parseQuantity(Q, S)(S text, SymbolList symbolList = SymbolList.siList)
     if (isQuantity!Q)
 {
-    return Q(parseRTQuantity(text, symbolList));
+	auto rtQuant = parseRTQuantity(text, symbolList);
+	enforceEx!DimensionException(
+		toAA!(Q.dimensions) == rtQuant.dimensions,
+		"Dimension error: %s is not compatible with %s"
+		.format(quantities.base.dimstr!(Q.dimensions)(true), dimstr(rtQuant.dimensions, true)));
+    return Q.make(cast(Q.valueType) rtQuant.value);
 }
 ///
 unittest
@@ -280,7 +285,7 @@ RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.siList)
 
 unittest // Parsing a range of characters that is not a string
 {
-    Concentration c = parseRTQuantity(
+	auto c = parseQuantity!Concentration(
         ["11.2", "<- value", "µmol/L", "<-unit"]
         .filter!(x => !x.startsWith("<"))
         .joiner(" ")

@@ -33,7 +33,7 @@ occurs at compile-time.
 +/
 struct Quantity(N, Dim...)
 {
-    static assert(isNumeric!N);
+    static assert(isNumeric!N, "Unexpected numeric type: " ~ N.stringof);
 
     /// The type of the underlying numeric value.
     alias valueType = N;
@@ -68,18 +68,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
-        _value = other._value;
-    }
-
-    // Creates a new quantity from a runtime-parsed one
-    this(T)(T other)
-        if (is(Unqual!T == RTQuantity))
-    {
-        enforceEx!DimensionException(
-            toAA!dimensions == other.dimensions,
-            "Dimension error: %s is not compatible with %s"
-            .format(dimstr!dimensions(true), quantities.parsing.dimstr(other.dimensions, true)));
-        _value = other.value;
+        _value = cast(N) other._value;
     }
     
     // Creates a new dimensionless quantity from a scalar value
@@ -106,7 +95,7 @@ struct Quantity(N, Dim...)
         package static auto make(T)(T value)
         {
             Quantity!(N, Dim) ret;
-            ret._value = value;
+            ret._value = cast(N) value;
             return ret;
         }
     }
@@ -128,7 +117,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"target.dimensions");
-        return _value / target._value;
+        return cast(N) (_value / target._value);
     }
     ///
     unittest
@@ -139,19 +128,13 @@ struct Quantity(N, Dim...)
         assert(time.value(si!"s") == 7200);
     }
 
-    N value(Q)(Q target) const
-        if (is(Unqual!Q == RTQuantity))
-    {
-        return value(typeof(this)(target));
-    }
-
     /++
     Tests wheter this quantity has the same dimensions as another one.
     +/
     bool isConsistentWith(Q)(Q other) const
         if (isQuantity!Q)
     {
-        return AreConsistent!(typeof(this), Q);
+        return AreConsistent!(Quantity, Q);
     }
     ///
     unittest
@@ -161,12 +144,6 @@ struct Quantity(N, Dim...)
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
         assert(nm.isConsistentWith(si!"kW h"));
-    }
-
-    bool isConsistentWith(Q)(Q other) const
-        if (is(Unqual!Q == RTQuantity))
-    {
-        return toAA!Dim == other.dimensions;
     }
 
     /++
@@ -228,14 +205,6 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"other.dimensions");
         _value = other._value;
-    }
-
-    // Assign from a runtime quantity
-    void opAssign(T)(T other) /// ditto
-        if (is(Unqual!T == RTQuantity))
-    {
-        enforceEx!DimensionException(toAA!dimensions == other.dimensions);
-        _value = other.value;
     }
 
     // Assign from a numeric value if this quantity is dimensionless
@@ -399,36 +368,46 @@ struct Quantity(N, Dim...)
     order to calculate the value. If this quantity can be known at runtime,
     the template version of this function is more efficient.
     +/
-    string toString(string fmt, SymbolList symbolList = SymbolList.siList) const
+    string toString(T = void)(string fmt, SymbolList symbolList = SymbolList.siList) const
     {
-        import std.array, std.format;
-        auto app = appender!string;
-        auto spec = FormatSpec!char(fmt.startsWith("%") ? fmt : "%s " ~ fmt);
-        spec.writeUpToNextSpec(app);
-        app.formatValue(value(parseRTQuantity(spec.trailing, symbolList)), spec);
-        app.put(spec.trailing);
-        return app.data;
+		static if (isNumeric!N)
+		{
+			import std.array, std.format;
+			auto app = appender!string;
+			auto spec = FormatSpec!char(fmt.startsWith("%") ? fmt : "%s " ~ fmt);
+			spec.writeUpToNextSpec(app);
+			app.formatValue(value(parseQuantity!Quantity(spec.trailing, symbolList)), spec);
+			app.put(spec.trailing);
+			return app.data;
+		}
+		else
+			static assert(false, "This function is available only for builtin numeric types.");
     }
     /// ditto
     string toString(string fmt, alias ctParser = si)() const
     {
-        static if (fmt.startsWith("%"))
-            enum fmt2 = fmt;
-        else
-            enum fmt2 = "%s " ~ fmt;
-
-        // Get the unit at compile time
-        static string extractUnit(string fmt2)
-        {
-            import std.algorithm, std.array;
-            auto ret = fmt2.findAmong([
-                's', 'c', 'b', 'd', 'o', 'x', 'X', 'e', 
-                'E', 'f', 'F', 'g', 'G', 'a', 'A']);
-            ret.popFront();
-            return ret;
-        }
-
-        return fmt2.format(value(ctParser!(extractUnit(fmt2))));
+		static if (isNumeric!N)
+		{
+			static if (fmt.startsWith("%"))
+				enum fmt2 = fmt;
+			else
+				enum fmt2 = "%s " ~ fmt;
+			
+			// Get the unit at compile time
+			static string extractUnit(string fmt2)
+			{
+				import std.algorithm, std.array;
+				auto ret = fmt2.findAmong([
+					's', 'c', 'b', 'd', 'o', 'x', 'X', 'e', 
+					'E', 'f', 'F', 'g', 'G', 'a', 'A']);
+				ret.popFront();
+				return ret;
+			}
+			
+			return fmt2.format(value(ctParser!(extractUnit(fmt2), N)));
+		}
+		else
+			static assert(false, "This function is available only for builtin numeric types.");
     }
     ///
     unittest
@@ -613,6 +592,21 @@ unittest // immutable Quantity
     immutable speedOfLight = length / time;
     assert(speedOfLight == 3e5 * kilo(meter) / second);
     assert(speedOfLight > 1 * meter / minute);
+}
+
+unittest // integral quantities
+{
+	alias Time = Store!(QuantityType!second, ulong);
+	enum sec = second.store!ulong;
+	enum min = minute.store!ulong;
+	enum hr = hour.store!ulong;
+
+	Time time = si!"1.5 h";
+	assert(time.value(hr) == 1);
+	assert(time.value(min) == 90);
+
+	time += 30 * min;
+	assert(time.value(sec) == 7200);
 }
 
 
@@ -809,6 +803,26 @@ unittest
     static assert(is(Square!Length == Area));
     static assert(is(Cubic!Length == Volume));
     static assert(AreConsistent!(Product!(Inverse!Time, Length), Speed));
+}
+
+
+/++
+Creates a new prefix function that mutlpy a Quantity by _factor factor.
++/
+template prefix(alias factor)
+{
+	static assert(isNumeric!(typeof(factor)));
+
+	auto prefix(Q)(Q base)
+	{
+		return base * factor;
+	}
+}
+///
+unittest
+{
+	alias milli = prefix!1e-3;
+	assert(milli(meter).value(meter).approxEqual(1e-3));
 }
 
 

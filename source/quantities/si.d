@@ -19,32 +19,6 @@ version (unittest)
     import std.math : approxEqual;
 }
 
-/// Converts a quantity of time to or from a core.time.Duration
-auto fromDuration(Duration d)
-{
-    return d.total!"hnsecs" * hecto(nano(second));
-}
-
-/// ditto
-Duration toDuration(Q)(Q quantity)
-{
-    import std.conv;
-    auto hns = quantity.value(hecto(nano(second)));
-    return dur!"hnsecs"(roundTo!long(hns));
-}
-
-///
-unittest // Durations
-{
-    auto d = 4.dur!"msecs";
-    auto t = fromDuration(d);
-    assert(t.value(milli(second)).approxEqual(4));
-    
-    auto t2 = 3.5 * minute;
-    auto d2 = t2.toDuration;
-    assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
-}
-
 /++
 Predefined SI units.
 +/
@@ -146,60 +120,63 @@ alias CatalyticActivity = QuantityType!(katal); /// ditto
 alias Dimensionless = QuantityType!(meter/meter); /// The type of dimensionless quantities
 
 
-/// Functions that apply a SI prefix to a unit.
-auto yotta(Q)(Q base) { return base * 1e24; }
-/// ditto
-auto zetta(Q)(Q base) { return base * 1e21; }
-/// ditto
-auto exa(Q)(Q base) { return base * 1e18; }
-/// ditto
-auto peta(Q)(Q base) { return base * 1e15; }
-/// ditto
-auto tera(Q)(Q base) { return base * 1e12; }
-/// ditto
-auto giga(Q)(Q base) { return base * 1e9; }
-/// ditto
-auto mega(Q)(Q base) { return base * 1e6; }
-/// ditto
-auto kilo(Q)(Q base) { return base * 1e3; }
-/// ditto
-auto hecto(Q)(Q base) { return base * 1e2; }
-/// ditto
-auto deca(Q)(Q base) { return base * 1e1; }
-/// ditto
-auto deci(Q)(Q base) { return base * 1e-1; }
-/// ditto
-auto centi(Q)(Q base) { return base * 1e-2; }
-/// ditto
-auto milli(Q)(Q base) { return base * 1e-3; }
-/// ditto
-auto micro(Q)(Q base) { return base * 1e-6; }
-/// ditto
-auto nano(Q)(Q base) { return base * 1e-9; }
-/// ditto
-auto pico(Q)(Q base) { return base * 1e-12; }
-/// ditto
-auto femto(Q)(Q base) { return base * 1e-15; }
-/// ditto
-auto atto(Q)(Q base) { return base * 1e-18; }
-/// ditto
-auto zepto(Q)(Q base) { return base * 1e-21; }
-/// ditto
-auto yocto(Q)(Q base) { return base * 1e-24; }
+/// SI prefixes.
+alias yotta = prefix!1e24;
+alias zetta = prefix!1e21; /// ditto
+alias exa = prefix!1e18; /// ditto
+alias peta = prefix!1e15; /// ditto
+alias tera = prefix!1e12; /// ditto
+alias giga = prefix!1e9; /// ditto
+alias mega = prefix!1e6; /// ditto
+alias kilo = prefix!1e3; /// ditto
+alias hecto = prefix!1e2; /// ditto
+alias deca = prefix!1e1; /// ditto
+alias deci = prefix!1e-1; /// ditto
+alias centi = prefix!1e-2; /// ditto
+alias milli = prefix!1e-3; /// ditto
+alias micro = prefix!1e-6; /// ditto
+alias nano = prefix!1e-9; /// ditto
+alias pico = prefix!1e-12; /// ditto
+alias femto = prefix!1e-15; /// ditto
+alias atto = prefix!1e-18; /// ditto
+alias zepto = prefix!1e-21; /// ditto
+alias yocto = prefix!1e-24; /// ditto
 
 /// Functions that apply a SI binary prefix to a unit.
-auto yobi(Q)(Q base) { return base * (2.0^^10)^^8; }
+alias yobi = prefix!(1024.0L^^8);
+alias zebi = prefix!(1024.0L^^7); /// ditto
+alias exbi = prefix!(1024.0L^^6); /// ditto
+alias pebi = prefix!(1024.0L^^5); /// ditto
+alias tebi = prefix!(1024.0L^^4); /// ditto
+alias gibi = prefix!(1024.0L^^3); /// ditto
+alias mebi = prefix!(1024.0L^^2); /// ditto
+alias kibi = prefix!(1024.0L); /// ditto
+
+
+/// Converts a quantity of time to or from a core.time.Duration
+Time fromDuration(Duration d)
+{
+	return d.total!"hnsecs" * hecto(nano(second));
+}
+
 /// ditto
-auto zebi(Q)(Q base) { return base * (2.0^^10)^^7; }
-/// ditto
-auto exbi(Q)(Q base) { return base * (2.0^^10)^^6; }
-/// ditto
-auto pebi(Q)(Q base) { return base * (2.0^^10)^^5; }
-/// ditto
-auto tebi(Q)(Q base) { return base * (2.0^^10)^^4; }
-/// ditto
-auto gibi(Q)(Q base) { return base * (2.0^^10)^^3; }
-/// ditto
-auto mebi(Q)(Q base) { return base * (2.0^^10)^^2; }
-/// ditto
-auto kibi(Q)(Q base) { return base * (2.0^^10); }
+Duration toDuration(Q)(Q quantity)
+	if (isQuantity!Q)
+{
+	import std.conv;
+	auto hns = quantity.value(hecto(nano(second)));
+	return dur!"hnsecs"(roundTo!long(hns));
+}
+
+///
+unittest // Durations
+{
+	auto d = 4.dur!"msecs";
+	auto t = fromDuration(d);
+	assert(t.value(milli(second)).approxEqual(4));
+	
+	auto t2 = 3.5 * minute;
+	auto d2 = t2.toDuration;
+	assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
+}
+

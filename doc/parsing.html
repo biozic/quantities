@@ -96,7 +96,7 @@ more units and prefix in the template parameters, using the global addUnit and a
 functions templates.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
+<font color=blue>enum</font> bit = unit!(<font color=red>"bit"</font>, <font color=blue>ulong</font>);
 <font color=blue>enum</font> byte_ = 8 * bit;
 
 <font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(
@@ -105,10 +105,10 @@ functions templates.<br><br>
     addPrefix(<font color=red>"hob"</font>, 7)
 );
 
-<font color=blue>enum</font> size = sz!<font color=red>"1 MiB"</font>;
-<font color=blue>assert</font>(size.toString!(<font color=red>"%.0f bit"</font>, sz) == <font color=red>"8388608 bit"</font>);
+<font color=blue>auto</font> size = sz!(<font color=red>"1 MiB"</font>, <font color=blue>ulong</font>);
+<font color=blue>assert</font>(size.toString!(<font color=red>"%d bit"</font>, sz) == <font color=red>"8388608 bit"</font>);
 
-<font color=blue>enum</font> height = sz!<font color=red>"1 hobbit"</font>;
+<font color=blue>auto</font> height = sz!(<font color=red>"1 hobbit"</font>, <font color=blue>ulong</font>);
 <font color=blue>assert</font>(height.value(sz!<font color=red>"bit"</font>) == 7);
 </pre>
 <br><br>

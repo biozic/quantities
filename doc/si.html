@@ -18,23 +18,7 @@ Nicolas Sicard
 <b>Source:</b><br>
 <a href="https://github.com/biozic/quantities">https://github.com/biozic/quantities</a><br><br>
 
-<dl><dt><big><a name="fromDuration"></a>auto <u>fromDuration</u>(Duration <i>d</i>);
-<br><a name="toDuration"></a>Duration <u>toDuration</u>(Q)(Q <i>quantity</i>);
-</big></dt>
-<dd>Converts a quantity of time to or from a core.time.Duration<br><br>
-
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>auto</font> d = 4.dur!<font color=red>"msecs"</font>;
-<font color=blue>auto</font> t = fromDuration(d);
-<font color=blue>assert</font>(t.value(milli(second)).approxEqual(4));
-
-<font color=blue>auto</font> t2 = 3.5 * minute;
-<font color=blue>auto</font> d2 = t2.<u>toDuration</u>;
-<font color=blue>assert</font>(d2.get!<font color=red>"minutes"</font> == 3 &amp;&amp; d2.get!<font color=red>"seconds"</font> == 30);
-</pre>
-<br><br></dd>
-<dt><big><a name="meter"></a>Quantity!(real, "m", 1) <u>meter</u>;
+<dl><dt><big><a name="meter"></a>Quantity!(real, "m", 1) <u>meter</u>;
 <br><a name="metre"></a>alias <u>metre</u> = meter;
 <br><a name="kilogram"></a>Quantity!(real, "kg", 1) <u>kilogram</u>;
 <br><a name="second"></a>Quantity!(real, "s", 1) <u>second</u>;
@@ -137,42 +121,58 @@ Nicolas Sicard
 <dd>The type of dimensionless quantities<br><br>
 
 </dd>
-<dt><big><a name="yotta"></a>auto <u>yotta</u>(Q)(Q <i>base</i>);
-<br><a name="zetta"></a>auto <u>zetta</u>(Q)(Q <i>base</i>);
-<br><a name="exa"></a>auto <u>exa</u>(Q)(Q <i>base</i>);
-<br><a name="peta"></a>auto <u>peta</u>(Q)(Q <i>base</i>);
-<br><a name="tera"></a>auto <u>tera</u>(Q)(Q <i>base</i>);
-<br><a name="giga"></a>auto <u>giga</u>(Q)(Q <i>base</i>);
-<br><a name="mega"></a>auto <u>mega</u>(Q)(Q <i>base</i>);
-<br><a name="kilo"></a>auto <u>kilo</u>(Q)(Q <i>base</i>);
-<br><a name="hecto"></a>auto <u>hecto</u>(Q)(Q <i>base</i>);
-<br><a name="deca"></a>auto <u>deca</u>(Q)(Q <i>base</i>);
-<br><a name="deci"></a>auto <u>deci</u>(Q)(Q <i>base</i>);
-<br><a name="centi"></a>auto <u>centi</u>(Q)(Q <i>base</i>);
-<br><a name="milli"></a>auto <u>milli</u>(Q)(Q <i>base</i>);
-<br><a name="micro"></a>auto <u>micro</u>(Q)(Q <i>base</i>);
-<br><a name="nano"></a>auto <u>nano</u>(Q)(Q <i>base</i>);
-<br><a name="pico"></a>auto <u>pico</u>(Q)(Q <i>base</i>);
-<br><a name="femto"></a>auto <u>femto</u>(Q)(Q <i>base</i>);
-<br><a name="atto"></a>auto <u>atto</u>(Q)(Q <i>base</i>);
-<br><a name="zepto"></a>auto <u>zepto</u>(Q)(Q <i>base</i>);
-<br><a name="yocto"></a>auto <u>yocto</u>(Q)(Q <i>base</i>);
+<dt><big><a name="yotta"></a>alias <u>yotta</u> = quantities.base.prefix!1e+24.prefix(Q)(Q base);
+<br><a name="zetta"></a>alias <u>zetta</u> = quantities.base.prefix!1e+21.prefix(Q)(Q base);
+<br><a name="exa"></a>alias <u>exa</u> = quantities.base.prefix!1.00000e+18.prefix(Q)(Q base);
+<br><a name="peta"></a>alias <u>peta</u> = quantities.base.prefix!1.00000e+15.prefix(Q)(Q base);
+<br><a name="tera"></a>alias <u>tera</u> = quantities.base.prefix!1.00000e+12.prefix(Q)(Q base);
+<br><a name="giga"></a>alias <u>giga</u> = quantities.base.prefix!1.00000e+09.prefix(Q)(Q base);
+<br><a name="mega"></a>alias <u>mega</u> = quantities.base.prefix!1.00000e+06.prefix(Q)(Q base);
+<br><a name="kilo"></a>alias <u>kilo</u> = quantities.base.prefix!1000.00.prefix(Q)(Q base);
+<br><a name="hecto"></a>alias <u>hecto</u> = quantities.base.prefix!100.000.prefix(Q)(Q base);
+<br><a name="deca"></a>alias <u>deca</u> = quantities.base.prefix!10.0000.prefix(Q)(Q base);
+<br><a name="deci"></a>alias <u>deci</u> = quantities.base.prefix!0.1.prefix(Q)(Q base);
+<br><a name="centi"></a>alias <u>centi</u> = quantities.base.prefix!0.01.prefix(Q)(Q base);
+<br><a name="milli"></a>alias <u>milli</u> = quantities.base.prefix!0.001.prefix(Q)(Q base);
+<br><a name="micro"></a>alias <u>micro</u> = quantities.base.prefix!1e-06.prefix(Q)(Q base);
+<br><a name="nano"></a>alias <u>nano</u> = quantities.base.prefix!1e-09.prefix(Q)(Q base);
+<br><a name="pico"></a>alias <u>pico</u> = quantities.base.prefix!1e-12.prefix(Q)(Q base);
+<br><a name="femto"></a>alias <u>femto</u> = quantities.base.prefix!1e-15.prefix(Q)(Q base);
+<br><a name="atto"></a>alias <u>atto</u> = quantities.base.prefix!1e-18.prefix(Q)(Q base);
+<br><a name="zepto"></a>alias <u>zepto</u> = quantities.base.prefix!1e-21.prefix(Q)(Q base);
+<br><a name="yocto"></a>alias <u>yocto</u> = quantities.base.prefix!1e-24.prefix(Q)(Q base);
 </big></dt>
-<dd>Functions that apply a SI prefix to a unit.<br><br>
+<dd>SI prefixes.<br><br>
 
 </dd>
-<dt><big><a name="yobi"></a>auto <u>yobi</u>(Q)(Q <i>base</i>);
-<br><a name="zebi"></a>auto <u>zebi</u>(Q)(Q <i>base</i>);
-<br><a name="exbi"></a>auto <u>exbi</u>(Q)(Q <i>base</i>);
-<br><a name="pebi"></a>auto <u>pebi</u>(Q)(Q <i>base</i>);
-<br><a name="tebi"></a>auto <u>tebi</u>(Q)(Q <i>base</i>);
-<br><a name="gibi"></a>auto <u>gibi</u>(Q)(Q <i>base</i>);
-<br><a name="mebi"></a>auto <u>mebi</u>(Q)(Q <i>base</i>);
-<br><a name="kibi"></a>auto <u>kibi</u>(Q)(Q <i>base</i>);
+<dt><big><a name="yobi"></a>alias <u>yobi</u> = quantities.base.prefix!1.20893e+24.prefix(Q)(Q base);
+<br><a name="zebi"></a>alias <u>zebi</u> = quantities.base.prefix!1.18059e+21.prefix(Q)(Q base);
+<br><a name="exbi"></a>alias <u>exbi</u> = quantities.base.prefix!1.15292e+18.prefix(Q)(Q base);
+<br><a name="pebi"></a>alias <u>pebi</u> = quantities.base.prefix!1.12590e+15.prefix(Q)(Q base);
+<br><a name="tebi"></a>alias <u>tebi</u> = quantities.base.prefix!1.09951e+12.prefix(Q)(Q base);
+<br><a name="gibi"></a>alias <u>gibi</u> = quantities.base.prefix!1.07374e+09.prefix(Q)(Q base);
+<br><a name="mebi"></a>alias <u>mebi</u> = quantities.base.prefix!1.04858e+06.prefix(Q)(Q base);
+<br><a name="kibi"></a>alias <u>kibi</u> = quantities.base.prefix!1024.00.prefix(Q)(Q base);
 </big></dt>
 <dd>Functions that apply a SI binary prefix to a unit.<br><br>
 
 </dd>
+<dt><big><a name="fromDuration"></a>Time <u>fromDuration</u>(Duration <i>d</i>);
+<br><a name="toDuration"></a>Duration <u>toDuration</u>(Q)(Q <i>quantity</i>) if (isQuantity!Q);
+</big></dt>
+<dd>Converts a quantity of time to or from a core.time.Duration<br><br>
+
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>auto</font> d = 4.dur!<font color=red>"msecs"</font>;
+<font color=blue>auto</font> t = fromDuration(d);
+<font color=blue>assert</font>(t.value(milli(second)).approxEqual(4));
+
+<font color=blue>auto</font> t2 = 3.5 * minute;
+<font color=blue>auto</font> d2 = t2.<u>toDuration</u>;
+<font color=blue>assert</font>(d2.get!<font color=red>"minutes"</font> == 3 &amp;&amp; d2.get!<font color=red>"seconds"</font> == 30);
+</pre>
+<br><br></dd>
 </dl>
 
         <hr><small>Page generated by <a href="http://dlang.org/ddoc.html">Ddoc</a>. Copyright 2013, Nicolas Sicard
