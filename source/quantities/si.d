@@ -11,6 +11,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.si;
 
 import quantities.base;
+import quantities.parsing;
 import std.math : PI;
 import core.time : Duration, dur;
 
@@ -22,14 +23,14 @@ version (unittest)
 /++
 Predefined SI units.
 +/
-enum meter = unit!("m");
+enum meter = unit!"L";
 alias metre = meter; /// ditto
-enum kilogram = unit!("kg"); /// ditto
-enum second = unit!("s"); /// ditto
-enum ampere = unit!("A"); /// ditto
-enum kelvin = unit!("K"); /// ditto
-enum mole = unit!("mol"); /// ditto
-enum candela = unit!("cd"); /// ditto
+enum kilogram = unit!"M"; /// ditto
+enum second = unit!"T"; /// ditto
+enum ampere = unit!"I"; /// ditto
+enum kelvin = unit!"Θ"; /// ditto
+enum mole = unit!"N"; /// ditto
+enum candela = unit!"J"; /// ditto
 
 enum radian = meter / meter; // ditto
 enum steradian = square(meter) / square(meter); /// ditto
@@ -153,30 +154,153 @@ alias mebi = prefix!(1024.0L^^2); /// ditto
 alias kibi = prefix!(1024.0L); /// ditto
 
 
+/// Parses text for a SI unit or quantity at runtime or compile-time.
+auto parseSI(Q, S)(S text)
+    if (isQuantity!Q)
+{
+    return parseQuantity!Q(text, siSymbolList);
+}
+///
+unittest
+{
+    auto t = parseSI!Time("90 min");
+    assert(t == 90 * minute);
+    t = parseSI!Time("h");
+    assert(t == 1 * hour);
+}
+
+static __gshared SymbolList _siSymbolList;
+static this()
+{
+    _siSymbolList = SymbolList(siRTUnits, siRTPrefixes, 2);
+}
+
+/// Returns a SymbolList consisting of the main SI units and prefixes.
+SymbolList siSymbolList()
+{
+    if (__ctfe)
+        return SymbolList(siRTUnits, siRTPrefixes, 2);
+    return _siSymbolList;
+}
+
+package
+{
+    enum siRTUnits = [
+        "m" : meter.toRuntime,
+        "kg" : kilogram.toRuntime,
+        "s" : second.toRuntime,
+        "A" : ampere.toRuntime,
+        "K" : kelvin.toRuntime,
+        "mol" : mole.toRuntime,
+        "cd" : candela.toRuntime,
+        "rad" : radian.toRuntime,
+        "sr" : steradian.toRuntime,
+        "Hz" : hertz.toRuntime,
+        "N" : newton.toRuntime,
+        "Pa" : pascal.toRuntime,
+        "J" : joule.toRuntime,
+        "W" : watt.toRuntime,
+        "C" : coulomb.toRuntime,
+        "V" : volt.toRuntime,
+        "F" : farad.toRuntime,
+        "Ω" : ohm.toRuntime,
+        "S" : siemens.toRuntime,
+        "Wb" : weber.toRuntime,
+        "T" : tesla.toRuntime,
+        "H" : henry.toRuntime,
+        "lm" : lumen.toRuntime,
+        "lx" : lux.toRuntime,
+        "Bq" : becquerel.toRuntime,
+        "Gy" : gray.toRuntime,
+        "Sv" : sievert.toRuntime,
+        "kat" : katal.toRuntime,
+        "g" : gram.toRuntime,
+        "min" : minute.toRuntime,
+        "h" : hour.toRuntime,
+        "d" : day.toRuntime,
+        "l" : liter.toRuntime,
+        "L" : liter.toRuntime,
+        "t" : ton.toRuntime,
+        "eV" : electronVolt.toRuntime,
+        "Da" : dalton.toRuntime,
+    ];
+
+    enum siRTPrefixes = [
+        "Y" : 1e24L,
+        "Z" : 1e21L,
+        "E" : 1e18L,
+        "P" : 1e15L,
+        "T" : 1e12L,
+        "G" : 1e9L,
+        "M" : 1e6L,
+        "k" : 1e3L,
+        "h" : 1e2L,
+        "da": 1e1L,
+        "d" : 1e-1L,
+        "c" : 1e-2L,
+        "m" : 1e-3L,
+        "µ" : 1e-6L,
+        "n" : 1e-9L,
+        "p" : 1e-12L,
+        "f" : 1e-15L,
+        "a" : 1e-18L,
+        "z" : 1e-21L,
+        "y" : 1e-24L,
+        "Yi": (2.0^^10)^^8,
+        "Zi": (2.0^^10)^^7,
+        "Ei": (2.0^^10)^^6,
+        "Pi": (2.0^^10)^^5,
+        "Ti": (2.0^^10)^^4,
+        "Gi": (2.0^^10)^^3,
+        "Mi": (2.0^^10)^^2,
+        "Ki": (2.0^^10),
+    ];
+}
+
+/++
+Parses a string for a a SI-compatible quantity.
++/
+alias si = ctQuantityParser!();
+///
+unittest
+{
+    enum min = si!"min";
+    enum inch = si!"2.54 cm";
+
+    auto conc = si!"1 µmol/L";
+    auto speed = si!"m s^-1";
+    auto value = si!"0.5";
+
+    static assert(is(typeof(conc) == Concentration));
+    static assert(is(typeof(speed) == Speed));
+    static assert(is(typeof(value) == Dimensionless));
+}
+
+
 /// Converts a quantity of time to or from a core.time.Duration
 Time fromDuration(Duration d)
 {
-	return d.total!"hnsecs" * hecto(nano(second));
+    return d.total!"hnsecs" * hecto(nano(second));
 }
 
 /// ditto
 Duration toDuration(Q)(Q quantity)
-	if (isQuantity!Q)
+    if (isQuantity!Q)
 {
-	import std.conv;
-	auto hns = quantity.value(hecto(nano(second)));
-	return dur!"hnsecs"(roundTo!long(hns));
+    import std.conv;
+    auto hns = quantity.value(hecto(nano(second)));
+    return dur!"hnsecs"(roundTo!long(hns));
 }
 
 ///
 unittest // Durations
 {
-	auto d = 4.dur!"msecs";
-	auto t = fromDuration(d);
-	assert(t.value(milli(second)).approxEqual(4));
-	
-	auto t2 = 3.5 * minute;
-	auto d2 = t2.toDuration;
-	assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
+    auto d = 4.dur!"msecs";
+    auto t = fromDuration(d);
+    assert(t.value(milli(second)).approxEqual(4));
+
+    auto t2 = 3.5 * minute;
+    auto d2 = t2.toDuration;
+    assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
 }
 

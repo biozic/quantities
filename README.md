@@ -38,14 +38,8 @@ enum inch = 2.54 * centi(meter);
 enum mile = 1609 * meter;
 
 // Define new units with non-SI dimensions
-enum euro = unit!("€");
+enum euro = unit!("C");
 enum dollar = euro / 1.35;
-
-// Default string representations
-writeln(meter);  // prints: 1 m
-writeln(inch);   // prints: 0.0254 m
-writeln(dollar); // prints: 0.740741 €
-writeln(volt);   // prints: 1 m^2 kg s^-3 A^-1
 
 // -----------------------
 // Working with quantities
@@ -71,9 +65,9 @@ MolarMass mm = 118.9 * gram/mole;
 // What mass should I weigh?
 mass = concentration * volume * mm;
 writefln("Weigh %s of substance", mass.toString); 
-// prints: Weigh 0.00029725 kg of substance
-
-// Wait! My scales graduations are in 1/10 milligrams!
+// prints: Weigh 0.00029725 [M] of substance
+// Wait! That's not really useful!
+// My scales graduations are in 1/10 milligrams!
 writefln("Weigh %s of substance", mass.toString!"%.1f mg");
 // prints: Weigh 297.3 mg of substance
 
@@ -99,12 +93,12 @@ writefln("Weigh %s of substance", mass.toString!"%.1f mg");
 // Parsing quantities/units at runtime
 // -----------------------------------
 
-mass = parseQuantity!Mass("297.3 mg");
-volume = parseQuantity!Volume("100 ml");
-mm = parseQuantity!MolarMass("118.9 g/mol");
-concentration = parseQuantity!Concentration("2.5 mmol⋅l⁻¹");
+mass = parseSI!Mass("297.3 mg");
+volume = parseSI!Volume("100 ml");
+mm = parseSI!MolarMass("118.9 g/mol");
+concentration = parseSI!Concentration("2.5 mmol⋅l⁻¹");
 
 import std.exception;
-assertThrown!ParsingException(concentration = parseQuantity!Concentration("10 qGz"));
-assertThrown!DimensionException(concentration = parseQuantity!Concentration("2.5 g⋅L⁻¹"));
+assertThrown!ParsingException(concentration = parseSI!Concentration("10 qGz"));
+assertThrown!DimensionException(concentration = parseSI!Concentration("2.5 g⋅L⁻¹"));
 ```

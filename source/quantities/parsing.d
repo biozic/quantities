@@ -100,7 +100,7 @@ version (unittest)
 
     private QuantityParser defaultParser()
     {
-        return QuantityParser(SymbolList.siList);
+        return QuantityParser(siSymbolList);
     }
 }
 
@@ -170,7 +170,7 @@ template ctQuantityParser(Sym...)
         {
             return dims.keys.map!(x => `"%s", %s`.format(x, dims[x])).join(", ");
         }
-        
+
         // This is for a nice compile-time error message
         enum msg = { return collectExceptionMsg(parseRTQuantity(str, symbolList)); }();
         static if (msg)
@@ -189,7 +189,7 @@ template ctQuantityParser(Sym...)
 ///
 unittest
 {
-    enum bit = unit!("bit", ulong);
+    enum bit = unit!"bit";
     enum byte_ = 8 * bit;
 
     alias sz = ctQuantityParser!(
@@ -198,61 +198,35 @@ unittest
         addPrefix("hob", 7)
     );
 
-	auto size = sz!("1 MiB", ulong);
-    assert(size.toString!("%d bit", sz) == "8388608 bit");
-
-	auto height = sz!("1 hobbit", ulong);
+    auto height = sz!"1 hobbit";
     assert(height.value(sz!"bit") == 7);
 }
 
-/++
-Parses a string for a a SI-compatible quantity.
-+/
-alias si = ctQuantityParser!();
-///
-unittest
-{
-    enum min = si!"min";
-    enum inch = si!"2.54 cm";
-
-    auto conc = si!"1 µmol/L";
-    auto speed = si!"m s^-1";
-    auto value = si!"0.5";
-
-    static assert(is(typeof(conc) == Concentration));
-    static assert(is(typeof(speed) == Speed));
-    static assert(is(typeof(value) == Dimensionless));
-}
-
-/// Parses text for a unit or a quantity at runtime.
-auto parseQuantity(Q, S)(S text, SymbolList symbolList = SymbolList.siList)
+/// Parses text for a unit or a quantity at runtime or compile-time.
+auto parseQuantity(Q, S)(S text, SymbolList symbolList)
     if (isQuantity!Q)
 {
-	auto rtQuant = parseRTQuantity(text, symbolList);
-	enforceEx!DimensionException(
-		toAA!(Q.dimensions) == rtQuant.dimensions,
-		"Dimension error: %s is not compatible with %s"
-		.format(quantities.base.dimstr!(Q.dimensions)(true), dimstr(rtQuant.dimensions, true)));
+    auto rtQuant = parseRTQuantity(text, symbolList);
+    enforceEx!DimensionException(
+        toAA!(Q.dimensions) == rtQuant.dimensions,
+        "Dimension error: %s is not compatible with %s"
+        .format(quantities.base.dimstr!(Q.dimensions)(true), dimstr(rtQuant.dimensions, true)));
     return Q.make(cast(Q.valueType) rtQuant.value);
 }
 ///
 unittest
 {
-    alias Time = QuantityType!second;
-    alias Length = QuantityType!meter;
-    // Note: these are also predefined in quantities.si
+    enum bit = unit!("bit", ulong);
+    alias BinarySize = QuantityType!bit;
+    enum byte_ = 8 * bit;
 
-    // Parse times
-    auto t = parseQuantity!Time("90 min");
-    assert(t == 90 * minute);
-    t = parseQuantity!Time("h");
-    assert(t == 1 * hour);
+    SymbolList symbols;
+    symbols.addUnit("bit", bit);
+    symbols.addUnit("B", byte_);
+    symbols.addPrefix("hob", 7);
 
-    // Add a user-defined symbol (here a unit) to the default list
-    auto symbols = SymbolList.siList;
-    symbols.addUnit("in", si!"2.54 cm");
-    auto len = parseQuantity!Length("17 in", symbols);
-    assert(len.value(centi(meter)).approxEqual(17 * 2.54));
+    auto height = parseQuantity!BinarySize("1 hobbit", symbols);
+    assert(height.value(bit) == 7);
 }
 
 
@@ -267,28 +241,14 @@ struct SymbolList
         RTQuantity[string] units;
         real[string] prefixes;
         size_t maxPrefixLength;
-
-        static SymbolList _defaultList;
-        static this()
-        {
-            _defaultList = SymbolList(siRTUnits, siRTPrefixes, 2);
-        }
-    }
-
-    /// Returns the default list, consisting of the main SI units and prefixes.
-    static SymbolList siList()
-    {
-        if (__ctfe)
-            return SymbolList(siRTUnits, siRTPrefixes, 2);
-        return _defaultList;
     }
 
     /// Adds a new prefix to the list
     void addPrefix(string symbol, real factor)
     {
         // COW
-        if (prefixes is _defaultList.prefixes)
-            prefixes = _defaultList.prefixes.dup;
+        if (prefixes is siSymbolList.prefixes)
+            prefixes = siSymbolList.prefixes.dup;
 
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)
@@ -300,88 +260,14 @@ struct SymbolList
         if (isQuantity!Q)
     {
         // COW
-        if (units is _defaultList.units)
-            units = _defaultList.units.dup;
+        if (units is siSymbolList.units)
+            units = siSymbolList.units.dup;
 
         static if (isQuantity!Q)
             units[symbol] = unit.toRuntime;
         else
             units[symbol] = unit;
     }
-}
-
-private
-{
-    enum siRTUnits = [
-        "m" : meter.toRuntime,
-        "kg" : kilogram.toRuntime,
-        "s" : second.toRuntime,
-        "A" : ampere.toRuntime,
-        "K" : kelvin.toRuntime,
-        "mol" : mole.toRuntime,
-        "cd" : candela.toRuntime,
-        "rad" : radian.toRuntime,
-        "sr" : steradian.toRuntime,
-        "Hz" : hertz.toRuntime,
-        "N" : newton.toRuntime,
-        "Pa" : pascal.toRuntime,
-        "J" : joule.toRuntime,
-        "W" : watt.toRuntime,
-        "C" : coulomb.toRuntime,
-        "V" : volt.toRuntime,
-        "F" : farad.toRuntime,
-        "Ω" : ohm.toRuntime,
-        "S" : siemens.toRuntime,
-        "Wb" : weber.toRuntime,
-        "T" : tesla.toRuntime,
-        "H" : henry.toRuntime,
-        "lm" : lumen.toRuntime,
-        "lx" : lux.toRuntime,
-        "Bq" : becquerel.toRuntime,
-        "Gy" : gray.toRuntime,
-        "Sv" : sievert.toRuntime,
-        "kat" : katal.toRuntime,
-        "g" : gram.toRuntime,
-        "min" : minute.toRuntime,
-        "h" : hour.toRuntime,
-        "d" : day.toRuntime,
-        "l" : liter.toRuntime,
-        "L" : liter.toRuntime,
-        "t" : ton.toRuntime,
-        "eV" : electronVolt.toRuntime,
-        "Da" : dalton.toRuntime,
-    ];
-    
-    enum siRTPrefixes = [
-        "Y" : 1e24L,
-        "Z" : 1e21L,
-        "E" : 1e18L,
-        "P" : 1e15L,
-        "T" : 1e12L,
-        "G" : 1e9L,
-        "M" : 1e6L,
-        "k" : 1e3L,
-        "h" : 1e2L,
-        "da": 1e1L,
-        "d" : 1e-1L,
-        "c" : 1e-2L,
-        "m" : 1e-3L,
-        "µ" : 1e-6L,
-        "n" : 1e-9L,
-        "p" : 1e-12L,
-        "f" : 1e-15L,
-        "a" : 1e-18L,
-        "z" : 1e-21L,
-        "y" : 1e-24L,
-        "Yi": (2.0^^10)^^8,
-        "Zi": (2.0^^10)^^7,
-        "Ei": (2.0^^10)^^6,
-        "Pi": (2.0^^10)^^5,
-        "Ti": (2.0^^10)^^4,
-        "Gi": (2.0^^10)^^3,
-        "Mi": (2.0^^10)^^2,
-        "Ki": (2.0^^10),
-    ];
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -402,272 +288,273 @@ class ParsingException : Exception
 
 package:
 
-RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList = SymbolList.siList)
+RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList)
 {
-	static assert(isForwardRange!S && isSomeChar!(ElementType!S),
-	              "text must be a forward range of a character type");
-	
-	real value; // nan
-	try
-	{
-		// This throws if there is no value ("no digits seen")
-		value = std.conv.parse!real(text);
-	}
-	catch
-	{
-		value = 1;
-	}
-	
-	if (text.empty)
-		return RTQuantity(value, null);
-	
-	auto input = text.to!string;
-	auto tokens = lex(input);
-	auto parser = QuantityParser(symbolList);
-	
-	RTQuantity result = parser.parseCompoundUnit(tokens);
-	result.value *= value;
-	return result;
+    static assert(isForwardRange!S && isSomeChar!(ElementType!S),
+                  "text must be a forward range of a character type");
+
+    real value; // nan
+    try
+    {
+        // This throws if there is no value ("no digits seen")
+        value = std.conv.parse!real(text);
+    }
+    catch
+    {
+        value = 1;
+    }
+
+    if (text.empty)
+        return RTQuantity(value, null);
+
+    auto input = text.to!string;
+    auto tokens = lex(input);
+    auto parser = QuantityParser(symbolList);
+
+    RTQuantity result = parser.parseCompoundUnit(tokens);
+    result.value *= value;
+    return result;
 }
 
 unittest // Parsing a range of characters that is not a string
 {
-	auto c = parseQuantity!Concentration(
-		["11.2", "<- value", "µmol/L", "<-unit"]
-		.filter!(x => !x.startsWith("<"))
-		.joiner(" ")
-	);
-	assert(c.value(nano(mole)/liter).approxEqual(11200));
+    auto c = parseQuantity!Concentration(
+        ["11.2", "<- value", "µmol/L", "<-unit"]
+        .filter!(x => !x.startsWith("<"))
+        .joiner(" "),
+        siSymbolList
+    );
+    assert(c.value(nano(mole)/liter).approxEqual(11200));
 }
 
 unittest // Examples from the header
 {
-	auto J = toRuntime(joule);
-	assert(parseRTQuantity("1 N m") == J);
-	assert(parseRTQuantity("1 N.m") == J);
-	assert(parseRTQuantity("1 N⋅m") == J);
-	assert(parseRTQuantity("1 N * m") == J);
-	assert(parseRTQuantity("1 N × m") == J);
-	
-	auto kat = toRuntime(katal);
-	assert(parseRTQuantity("1 mol s^-1") == kat);
-	assert(parseRTQuantity("1 mol s⁻¹") == kat);
-	assert(parseRTQuantity("1 mol/s") == kat);
-	
-	auto Pa = toRuntime(pascal);
-	assert(parseRTQuantity("1 kg m^-1 s^-2") == Pa);
-	assert(parseRTQuantity("1 kg/(m s^2)") == Pa);
+    auto J = toRuntime(joule);
+    assert(parseRTQuantity("1 N m", siSymbolList) == J);
+    assert(parseRTQuantity("1 N.m", siSymbolList) == J);
+    assert(parseRTQuantity("1 N⋅m", siSymbolList) == J);
+    assert(parseRTQuantity("1 N * m", siSymbolList) == J);
+    assert(parseRTQuantity("1 N × m", siSymbolList) == J);
+
+    auto kat = toRuntime(katal);
+    assert(parseRTQuantity("1 mol s^-1", siSymbolList) == kat);
+    assert(parseRTQuantity("1 mol s⁻¹", siSymbolList) == kat);
+    assert(parseRTQuantity("1 mol/s", siSymbolList) == kat);
+
+    auto Pa = toRuntime(pascal);
+    assert(parseRTQuantity("1 kg m^-1 s^-2", siSymbolList) == Pa);
+    assert(parseRTQuantity("1 kg/(m s^2)", siSymbolList) == Pa);
 }
 
 unittest // Test parsing
 {
-	import std.math : approxEqual;
-	
-	assertThrown!ParsingException(parseRTQuantity("1 µ m"));
-	assertThrown!ParsingException(parseRTQuantity("1 µ"));
-	assertThrown!ParsingException(parseRTQuantity("1 g/"));
-	assertThrown!ParsingException(parseRTQuantity("1 g^"));
-	
-	string test = "1    m    ";
-	assert(parseRTQuantity(test) == meter.toRuntime);
-	assert(parseRTQuantity("1 µm").value.approxEqual(micro(meter).rawValue));
-	
-	assert(parseRTQuantity("1 m^-1") == toRuntime(1 / meter));
-	assert(parseRTQuantity("1 m²") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m⁻¹") == toRuntime(1 / meter));
-	assert(parseRTQuantity("1 (m)") == meter.toRuntime);
-	assert(parseRTQuantity("1 (m^-1)") == toRuntime(1 / meter));
-	assert(parseRTQuantity("1 ((m)^-1)^-1") == meter.toRuntime);
-	
-	assert(parseRTQuantity("1 m * m") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m m") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m . m") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m ⋅ m") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m × m") == square(meter).toRuntime);
-	assert(parseRTQuantity("1 m / m") == toRuntime(meter / meter));
-	assert(parseRTQuantity("1 m ÷ m") == toRuntime(meter / meter));
-	
-	assert(parseRTQuantity("1 N.m") == toRuntime(newton * meter));
-	assert(parseRTQuantity("1 N m") == toRuntime(newton * meter));
-	
-	assert(parseRTQuantity("6.3 L.mmol^-1.cm^-1").value.approxEqual(630));
-	assert(parseRTQuantity("6.3 L/(mmol*cm)").value.approxEqual(630));
-	assert(parseRTQuantity("6.3 L*(mmol*cm)^-1").value.approxEqual(630));
-	assert(parseRTQuantity("6.3 L/mmol/cm").value.approxEqual(630));
+    import std.math : approxEqual;
+
+    assertThrown!ParsingException(parseRTQuantity("1 µ g", siSymbolList));
+    assertThrown!ParsingException(parseRTQuantity("1 µ", siSymbolList));
+    assertThrown!ParsingException(parseRTQuantity("1 g/", siSymbolList));
+    assertThrown!ParsingException(parseRTQuantity("1 g^", siSymbolList));
+
+    string test = "1    m    ";
+    assert(parseRTQuantity(test, siSymbolList) == meter.toRuntime);
+    assert(parseRTQuantity("1 µm", siSymbolList).value.approxEqual(micro(meter).rawValue));
+
+    assert(parseRTQuantity("1 m^-1", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 m²", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m⁻¹", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 (m)", siSymbolList) == meter.toRuntime);
+    assert(parseRTQuantity("1 (m^-1)", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQuantity("1 ((m)^-1)^-1", siSymbolList) == meter.toRuntime);
+
+    assert(parseRTQuantity("1 m*m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m.m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m⋅m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m×m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQuantity("1 m/m", siSymbolList) == toRuntime(meter / meter));
+    assert(parseRTQuantity("1 m÷m", siSymbolList) == toRuntime(meter / meter));
+
+    assert(parseRTQuantity("1 N.m", siSymbolList) == toRuntime(newton * meter));
+    assert(parseRTQuantity("1 N m", siSymbolList) == toRuntime(newton * meter));
+
+    assert(parseRTQuantity("6.3 L.mmol^-1.cm^-1", siSymbolList).value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L/(mmol*cm)", siSymbolList).value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L*(mmol*cm)^-1", siSymbolList).value.approxEqual(630));
+    assert(parseRTQuantity("6.3 L/mmol/cm", siSymbolList).value.approxEqual(630));
 }
 
 // Holds a value and a dimensions for parsing
 struct RTQuantity
 {
-	// The payload
-	real value;
-	
-	// The dimensions of the quantity
-	int[string] dimensions;
+    // The payload
+    real value;
+
+    // The dimensions of the quantity
+    int[string] dimensions;
 }
 
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser
 {
-	private SymbolList symbolList;
-	
-	RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
-		if (is(T : Token))
-	{
-		RTQuantity ret = parseExponentUnit(tokens);
-		if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
-			return ret;
-		
-		do {
-			tokens.check();
-			auto cur = tokens.front;
-			
-			bool multiply = true;
-			if (cur.type == Tok.div)
-				multiply = false;
-			
-			if (cur.type == Tok.mul || cur.type == Tok.div)
-			{
-				tokens.advance();
-				tokens.check();
-				cur = tokens.front;
-			}
-			
-			RTQuantity rhs = parseExponentUnit(tokens);
-			if (multiply)
-			{
-				ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
-				ret.value = ret.value * rhs.value;
-			}
-			else
-			{
-				ret.dimensions = ret.dimensions.binop!"/"(rhs.dimensions);
-				ret.value = ret.value / rhs.value;
-			}
-			
-			if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
-				break;
-			
-			cur = tokens.front;
-		}
-		while (!tokens.empty);
-		
-		return ret;
-	}
-	unittest
-	{
-		assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(meter).toRuntime);
-		assert(defaultParser.parseCompoundUnit(lex("m m")) == square(meter).toRuntime);
-		assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == meter.toRuntime);
-		assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m ) m")));
-		assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
-	}
-	
-	RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
-		if (is(T : Token))
-	{
-		RTQuantity ret = parseUnit(tokens);
-		
-		if (tokens.empty)
-			return ret;
-		
-		auto next = tokens.front;
-		if (next.type != Tok.exp && next.type != Tok.supinteger)
-			return ret;
-		
-		if (next.type == Tok.exp)
-			tokens.advance(Tok.integer);
-		
-		int n = parseInteger(tokens);
-		
-		return RTQuantity(std.math.pow(ret.value, n), ret.dimensions.exp(n));
-	}
-	unittest
-	{
-		assert(defaultParser.parseExponentUnit(lex("m²")) == square(meter).toRuntime);
-		assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).toRuntime);
-		assertThrown!ParsingException(defaultParser.parseExponentUnit(lex("m^²")));
-	}
-	
-	int parseInteger(T)(auto ref T[] tokens)
-		if (is(T : Token))
-	{
-		tokens.check(Tok.integer, Tok.supinteger);
-		int n = tokens.front.integer;
-		if (tokens.length)
-			tokens.advance();
-		return n;
-	}
-	unittest
-	{
-		assert(defaultParser.parseInteger(lex("-123")) == -123);
-		assert(defaultParser.parseInteger(lex("⁻¹²³")) == -123);
-		assertThrown!ParsingException(defaultParser.parseInteger(lex("1-⁺⁵")));
-	}
-	
-	RTQuantity parseUnit(T)(auto ref T[] tokens)
-		if (is(T : Token))
-	{
-		RTQuantity ret;
-		
-		if (tokens.front.type == Tok.lparen)
-		{
-			tokens.advance();
-			ret = parseCompoundUnit(tokens, true);
-			tokens.check(Tok.rparen);
-			tokens.advance();
-		}
-		else
-			ret = parsePrefixUnit(tokens);
-		
-		return ret;
-	}
-	unittest
-	{
-		assert(defaultParser.parseUnit(lex("(m)")) == meter.toRuntime);
-		assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
-	}
-	
-	RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
-		if (is(T : Token))
-	{
-		tokens.check(Tok.symbol);
-		auto str = tokens.front.slice;
-		if (tokens.length)
-			tokens.advance();
-		
-		// Try a standalone unit symbol (no prefix)
-		auto uptr = str in symbolList.units;
-		if (uptr)
-			return *uptr;
-		
-		// Try with prefixes, the longest prefix first
-		real* factor;
-		for (size_t i = symbolList.maxPrefixLength; i > 0; i--)
-		{
-			if (str.length >= i)
-			{
-				string prefix = str[0 .. i].to!string;
-				factor = prefix in symbolList.prefixes;
-				if (factor)
-				{
-					string unit = str[i .. $].to!string;
-					enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
-					uptr = unit in symbolList.units;
-					if (uptr)
-						return RTQuantity(*factor * uptr.value, uptr.dimensions);
-				}
-			}
-		}
-		
-		throw new ParsingException("Unknown unit symbol: '%s'".format(str));
-	}
-	unittest
-	{
-		assert(defaultParser.parsePrefixUnit(lex("mm")).value.approxEqual(milli(meter).rawValue));
-		assert(defaultParser.parsePrefixUnit(lex("cd")).value.approxEqual(candela.rawValue));
-		assertThrown!ParsingException(defaultParser.parsePrefixUnit(lex("Lm")));
-	}
+    private SymbolList symbolList;
+
+    RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
+        if (is(T : Token))
+    {
+        RTQuantity ret = parseExponentUnit(tokens);
+        if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
+            return ret;
+
+        do {
+            tokens.check();
+            auto cur = tokens.front;
+
+            bool multiply = true;
+            if (cur.type == Tok.div)
+                multiply = false;
+
+            if (cur.type == Tok.mul || cur.type == Tok.div)
+            {
+                tokens.advance();
+                tokens.check();
+                cur = tokens.front;
+            }
+
+            RTQuantity rhs = parseExponentUnit(tokens);
+            if (multiply)
+            {
+                ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
+                ret.value = ret.value * rhs.value;
+            }
+            else
+            {
+                ret.dimensions = ret.dimensions.binop!"/"(rhs.dimensions);
+                ret.value = ret.value / rhs.value;
+            }
+
+            if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
+                break;
+
+            cur = tokens.front;
+        }
+        while (!tokens.empty);
+
+        return ret;
+    }
+    unittest
+    {
+        assert(defaultParser.parseCompoundUnit(lex("m * m")) == square(meter).toRuntime);
+        assert(defaultParser.parseCompoundUnit(lex("m m")) == square(meter).toRuntime);
+        assert(defaultParser.parseCompoundUnit(lex("m * m / m")) == meter.toRuntime);
+        assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m ) m")));
+        assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
+    }
+
+    RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
+        if (is(T : Token))
+    {
+        RTQuantity ret = parseUnit(tokens);
+
+        if (tokens.empty)
+            return ret;
+
+        auto next = tokens.front;
+        if (next.type != Tok.exp && next.type != Tok.supinteger)
+            return ret;
+
+        if (next.type == Tok.exp)
+            tokens.advance(Tok.integer);
+
+        int n = parseInteger(tokens);
+
+        return RTQuantity(std.math.pow(ret.value, n), ret.dimensions.exp(n));
+    }
+    unittest
+    {
+        assert(defaultParser.parseExponentUnit(lex("m²")) == square(meter).toRuntime);
+        assert(defaultParser.parseExponentUnit(lex("m^2")) == square(meter).toRuntime);
+        assertThrown!ParsingException(defaultParser.parseExponentUnit(lex("m^²")));
+    }
+
+    int parseInteger(T)(auto ref T[] tokens)
+        if (is(T : Token))
+    {
+        tokens.check(Tok.integer, Tok.supinteger);
+        int n = tokens.front.integer;
+        if (tokens.length)
+            tokens.advance();
+        return n;
+    }
+    unittest
+    {
+        assert(defaultParser.parseInteger(lex("-123")) == -123);
+        assert(defaultParser.parseInteger(lex("⁻¹²³")) == -123);
+        assertThrown!ParsingException(defaultParser.parseInteger(lex("1-⁺⁵")));
+    }
+
+    RTQuantity parseUnit(T)(auto ref T[] tokens)
+        if (is(T : Token))
+    {
+        RTQuantity ret;
+
+        if (tokens.front.type == Tok.lparen)
+        {
+            tokens.advance();
+            ret = parseCompoundUnit(tokens, true);
+            tokens.check(Tok.rparen);
+            tokens.advance();
+        }
+        else
+            ret = parsePrefixUnit(tokens);
+
+        return ret;
+    }
+    unittest
+    {
+        assert(defaultParser.parseUnit(lex("(m)")) == meter.toRuntime);
+        assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
+    }
+
+    RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
+        if (is(T : Token))
+    {
+        tokens.check(Tok.symbol);
+        auto str = tokens.front.slice;
+        if (tokens.length)
+            tokens.advance();
+
+        // Try a standalone unit symbol (no prefix)
+        auto uptr = str in symbolList.units;
+        if (uptr)
+            return *uptr;
+
+        // Try with prefixes, the longest prefix first
+        real* factor;
+        for (size_t i = symbolList.maxPrefixLength; i > 0; i--)
+        {
+            if (str.length >= i)
+            {
+                string prefix = str[0 .. i].to!string;
+                factor = prefix in symbolList.prefixes;
+                if (factor)
+                {
+                    string unit = str[i .. $].to!string;
+                    enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
+                    uptr = unit in symbolList.units;
+                    if (uptr)
+                        return RTQuantity(*factor * uptr.value, uptr.dimensions);
+                }
+            }
+        }
+
+        throw new ParsingException("Unknown unit symbol: '%s'".format(str));
+    }
+    unittest
+    {
+        assert(defaultParser.parsePrefixUnit(lex("mm")).value.approxEqual(milli(meter).rawValue));
+        assert(defaultParser.parsePrefixUnit(lex("cd")).value.approxEqual(candela.rawValue));
+        assertThrown!ParsingException(defaultParser.parsePrefixUnit(lex("Lm")));
+    }
 }
 
 // Convert a compile-time quantity to its runtime equivalent.

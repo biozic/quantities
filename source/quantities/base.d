@@ -2,6 +2,74 @@
 /++
 This module defines the base types for unit and quantity handling.
 
+Each  quantity can  be represented  as the  product  of a  number and  a set  of
+dimensions,  and  the struct  Quantity  has  this  role.  The number  is  stored
+internally as  a member of type  N, which is  enforced to be a  built-in numeric
+type  (isNumeric!N is  true). The  dimensions are  stored as  template parameter
+list (Dim)  in the  form of a  sequence of string  symbols and  integral powers.
+Dimensionless  quantities have  an  empty  Dim. For  instance  length and  speed
+quantities can be stored as:
+---
+alias Length = Quantity!(real, "L", 1);
+alias Speed  = Quantity!(real, "L", 1, "T", -1);
+---
+where "L" is the symbol for the length  dimension, "T" is the symbol of the time
+dimensions,  and  1   and  -1  are  the  powers  of   those  dimensions  in  the
+representation of the quantity.
+
+The main  quantities compliant with the  international system of units  (SI) are
+predefined  in  the module  quantities.si.  In  the  same  way, units  are  just
+instances of  a Quantity struct  where the number is  1 and the  dimensions only
+contain  one  symbol,  with  the  power  1. For  instance,  the  meter  unit  is
+predefined as something equivalent to:
+---
+enum meter = Quantity!(real, "L", 1)(1.0);
+---
+(note that  the constructor  used here  has the  package access  protection: new
+units should be defined with the unit template of this module).
+
+Any quantity can be expressed as the product  of a number ($(I n)) and a unit of
+the right dimensions ($(I U)). For instance:
+---
+auto size = 9.5 * meter;
+auto time = 120 * milli(second);
+---
+The unit  $(I U)  is not  actually stored along  with the  number in  a Quantity
+struct,  only the  dimensions are.  This  is because  the same  quantity can  be
+expressed in an  infinity of different units.  The value of $(I n)  is stored as
+if the quantity was  expressed in the base units of the  same dimemsions. In the
+example above,  $(I n) = 9.5  for the variable size  and $(I n) =  0.120 for the
+variable time.
+
+The  value method  can  be used  to  extract the  number  $(I n)  as  if it  was
+expressed in  any possible  unit. The user  must pass this  unit to  the method.
+This way, the user makes it clear in which unit the value was expressed.
+---
+auto size = 9.5 * meter;
+auto valueMeter      = size.value(meter);        // valueMeter == 9.5
+auto valueCentimeter = size.value(centi(meter)); // valueCentimeter == 950
+---
+Arithmetic operators (+ - * /),  as well as assignment and comparison operators,
+are  defined when  the  operations are  dimensionally  consistent, otherwise  an
+error occurs at compile-time:
+---
+auto time = 2 * hour + 17 * minute;
+auto frequency = time / second;
+time = time + 2 * meter; // Compilation error
+---
+Any kind  of quantities  and units  can be  defined with  this module,  not just
+those  from the  SI. The  SI quantities  and units  are in  fact defined  in the
+module quantities.si.  When a quantity  that is not  predefined has to  be used,
+instead of instantiating the Quantity template  first, it is preferable to start
+defining a new base unit (with only  one dimension) using the unit template, and
+then the quantity type with the QuantityType template:
+---
+enum euro = unit!"C"; // C for currency
+alias Currency = QuantityType!euro;
+assert(is(Currency == Quantity!(real, "C", 1)));
+---
+This means that all currencies will be defined with respect to euro.
+
 Copyright: Copyright 2013, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
@@ -10,6 +78,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import quantities.parsing;
+import quantities.si : siSymbolList;
 import std.exception;
 import std.string;
 import std.traits;
@@ -22,14 +91,7 @@ version (unittest)
 }
 
 /++
-A quantity which holds a value and some dimensions.
-
-The value is stored internally as a field of type N.
-A dimensionless quantity can be cast to a builtin numeric type.
-
-Arithmetic operators (+ - * /), as well as assignment and comparison operators,
-are defined when the operations are dimensionally correct, otherwise an error
-occurs at compile-time.
+A quantity that can be expressed as the product of a number and a set of dimensions.
 +/
 struct Quantity(N, Dim...)
 {
@@ -51,12 +113,12 @@ struct Quantity(N, Dim...)
 
     template checkDim(string dim)
     {
-        enum checkDim = 
+        enum checkDim =
             `static assert(Is!(` ~ dim ~ `).equivalentTo!dimensions,
                 "Dimension error: %s is not compatible with %s"
                 .format(dimstr!(` ~ dim ~ `)(true), dimstr!(dimensions)(true)));`;
     }
-    
+
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
@@ -70,7 +132,7 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"other.dimensions");
         _value = cast(N) other._value;
     }
-    
+
     // Creates a new dimensionless quantity from a scalar value
     this(T)(T value)
         if (isNumeric!T && Dim.length == 0)
@@ -87,9 +149,9 @@ struct Quantity(N, Dim...)
             _value = value;
         }
     }
-    else 
+    else
     {
-        // Workaround for bug 5770
+        // Workaround for @@BUG 5770@@
         // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
         // "Template constructor bypass access check"
         package static auto make(T)(T value)
@@ -100,12 +162,11 @@ struct Quantity(N, Dim...)
         }
     }
 
-    //Gets the internal scalar value of this quantity.
+    // Gets the internal scalar value of this quantity.
     @property N rawValue() const
     {
         return _value;
     }
-
     // Implicitly convert a dimensionless value to the value type
     static if (!Dim.length)
         alias rawValue this;
@@ -125,7 +186,6 @@ struct Quantity(N, Dim...)
         auto time = 120 * minute;
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
-        assert(time.value(si!"s") == 7200);
     }
 
     /++
@@ -143,7 +203,6 @@ struct Quantity(N, Dim...)
         auto kWh = (4000 * kilo(watt)) * (1200 * hour);
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
         assert(!nm.isConsistentWith(second));
-        assert(nm.isConsistentWith(si!"kW h"));
     }
 
     /++
@@ -289,7 +348,7 @@ struct Quantity(N, Dim...)
         mixin(checkDim!"");
         mixin("_value " ~ op ~ "= other;");
     }
-    
+
     // Mul/div assign with a dimensionless quantity
     void opOpAssign(string op, T)(T other) /// ditto
         if (isQuantity!T && (op == "*" || op == "/"))
@@ -345,16 +404,21 @@ struct Quantity(N, Dim...)
         return 1;
     }
 
-    /// Returns the default string representation of the quantity.
+    /++
+    Returns the default string representation of the quantity.
+
+    By default, a quantity is represented as a string by a number
+    followed by the set of dimensions between brackets.
+    +/
     string toString() const
     {
-        return "%s %s".format(_value, dimstr!dimensions);
+        return "%s [%s]".format(_value, dimstr!dimensions);
     }
     ///
     unittest
     {
-        enum inch = si!"2.54 cm";
-        assert(inch.toString == "0.0254 m");
+        enum inch = 2.54 * centi(meter);
+        assert(inch.toString == "0.0254 [L]");
     }
 
     /++
@@ -368,51 +432,53 @@ struct Quantity(N, Dim...)
     order to calculate the value. If this quantity can be known at runtime,
     the template version of this function is more efficient.
     +/
-    string toString(T = void)(string fmt, SymbolList symbolList = SymbolList.siList) const
+    string toString(string formatString, SymbolList symbolList = siSymbolList) const
     {
-		static if (isNumeric!N)
-		{
-			import std.array, std.format;
-			auto app = appender!string;
-			auto spec = FormatSpec!char(fmt.startsWith("%") ? fmt : "%s " ~ fmt);
-			spec.writeUpToNextSpec(app);
-			app.formatValue(value(parseQuantity!Quantity(spec.trailing, symbolList)), spec);
-			app.put(spec.trailing);
-			return app.data;
-		}
-		else
-			static assert(false, "This function is available only for builtin numeric types.");
+        static if (isNumeric!N)
+        {
+            import std.array, std.format;
+            auto app = appender!string;
+            auto spec = FormatSpec!char(formatString.startsWith("%")
+                                        ? formatString
+                                        : "%s " ~ formatString);
+            spec.writeUpToNextSpec(app);
+            app.formatValue(value(parseQuantity!Quantity(spec.trailing, symbolList)), spec);
+            app.put(spec.trailing);
+            return app.data;
+        }
+        else
+            static assert(false, "This function is available only for builtin numeric types.");
     }
     /// ditto
-    string toString(string fmt, alias ctParser = si)() const
+    string toString(string formatString, alias ctParser = si)() const
     {
-		static if (isNumeric!N)
-		{
-			static if (fmt.startsWith("%"))
-				enum fmt2 = fmt;
-			else
-				enum fmt2 = "%s " ~ fmt;
-			
-			// Get the unit at compile time
-			static string extractUnit(string fmt2)
-			{
-				import std.algorithm, std.array;
-				auto ret = fmt2.findAmong([
-					's', 'c', 'b', 'd', 'o', 'x', 'X', 'e', 
-					'E', 'f', 'F', 'g', 'G', 'a', 'A']);
-				ret.popFront();
-				return ret;
-			}
-			
-			return fmt2.format(value(ctParser!(extractUnit(fmt2), N)));
-		}
-		else
-			static assert(false, "This function is available only for builtin numeric types.");
+        static if (isNumeric!N)
+        {
+            static if (formatString.startsWith("%"))
+                enum fmt = formatString;
+            else
+                enum fmt = "%s " ~ formatString;
+
+            // Get the unit at compile time
+            static string extractUnit(string fmt)
+            {
+                import std.algorithm, std.array;
+                auto ret = fmt.findAmong([
+                    's', 'c', 'b', 'd', 'o', 'x', 'X', 'e',
+                    'E', 'f', 'F', 'g', 'G', 'a', 'A']);
+                ret.popFront();
+                return ret;
+            }
+
+            return fmt.format(value(ctParser!(extractUnit(fmt), N)));
+        }
+        else
+            static assert(false, "This function is available only for builtin numeric types.");
     }
     ///
     unittest
     {
-        enum inch = si!"2.54 cm";
+        enum inch = 2.54 * centi(meter);
 
         // Format parsed at runtime
         assert(inch.toString("%s cm") == "2.54 cm");
@@ -549,11 +615,11 @@ unittest // Quantity.toString
     auto loc = ScopedLocale("fr_FR");
 
     enum inch = si!"2.54 cm";
-    
+
     // Format parsed at runtime
     assert(inch.toString("%s cm") == "2,54 cm");
     assert(inch.toString("%.2f mm") == "25,40 mm");
-    
+
     // Format parsed at compile-time
     assert(inch.toString!"%s cm" == "2,54 cm");
     assert(inch.toString!"%.2f mm" == "25,40 mm");
@@ -596,17 +662,17 @@ unittest // immutable Quantity
 
 unittest // integral quantities
 {
-	alias Time = Store!(QuantityType!second, ulong);
-	enum sec = second.store!ulong;
-	enum min = minute.store!ulong;
-	enum hr = hour.store!ulong;
+    alias Time = Store!(QuantityType!second, ulong);
+    enum sec = second.store!ulong;
+    enum min = minute.store!ulong;
+    enum hr = hour.store!ulong;
 
-	Time time = si!"1.5 h";
-	assert(time.value(hr) == 1);
-	assert(time.value(min) == 90);
+    Time time = si!"1.5 h";
+    assert(time.value(hr) == 1);
+    assert(time.value(min) == 90);
 
-	time += 30 * min;
-	assert(time.value(sec) == 7200);
+    time += 30 * min;
+    assert(time.value(sec) == 7200);
 }
 
 
@@ -614,7 +680,7 @@ unittest // integral quantities
 template isQuantity(T)
 {
     alias U = Unqual!T;
-    static if (is(U _ : Quantity!X, X...))
+    static if (is(U == Quantity!X, X...))
         enum isQuantity = true;
     else
         enum isQuantity = false;
@@ -636,7 +702,7 @@ template unit(string symbol, N = real)
 ///
 unittest
 {
-    enum euro = unit!"€";
+    enum euro = unit!"C"; // C for Currency
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
     assert((1.35 * dollar).value(euro).approxEqual(1));
@@ -726,13 +792,13 @@ unittest // QuantityType example
 {
     alias Mass = QuantityType!kilogram;
     Mass mass = 15 * ton;
-    
+
     alias Surface = QuantityType!(square(meter), float);
     assert(is(Surface.valueType == float));
     Surface s = 4 * square(meter);
 }
 
-/// The type of a quantity where the payload is stored as another numeric type.
+/// Creates a new quantity type where the payload is stored as another numeric type.
 template Store(Q, N)
     if (isQuantity!Q)
 {
@@ -744,7 +810,7 @@ unittest
     alias TimeF = Store!(Time, float);
 }
 
-/// Check that two quantity types are dimensionally consistent
+/// Check that two quantity types are dimensionally consistent.
 template AreConsistent(Q1, Q2)
     if (isQuantity!Q1 && isQuantity!Q2)
 {
@@ -759,7 +825,7 @@ unittest
 }
 
 
-/// Utility templates to manipulate quantity types
+/// Utility templates to manipulate quantity types.
 template Inverse(Q, N = real)
     if (isQuantity!Q)
 {
@@ -799,7 +865,7 @@ unittest
 {
     static assert(is(Inverse!Time == Frequency));
     static assert(is(Product!(Power, Time) == Energy));
-    static assert(is(Quotient!(Length, Time) == Speed)); 
+    static assert(is(Quotient!(Length, Time) == Speed));
     static assert(is(Square!Length == Area));
     static assert(is(Cubic!Length == Volume));
     static assert(AreConsistent!(Product!(Inverse!Time, Length), Speed));
@@ -811,18 +877,18 @@ Creates a new prefix function that mutlpy a Quantity by _factor factor.
 +/
 template prefix(alias factor)
 {
-	static assert(isNumeric!(typeof(factor)));
+    static assert(isNumeric!(typeof(factor)));
 
-	auto prefix(Q)(Q base)
-	{
-		return base * factor;
-	}
+    auto prefix(Q)(Q base)
+    {
+        return base * factor;
+    }
 }
 ///
 unittest
 {
-	alias milli = prefix!1e-3;
-	assert(milli(meter).value(meter).approxEqual(1e-3));
+    alias milli = prefix!1e-3;
+    assert(milli(meter).value(meter).approxEqual(1e-3));
 }
 
 
@@ -834,7 +900,7 @@ class DimensionException : Exception
     {
         super(msg, file, line, next);
     }
-    
+
     @safe pure nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
@@ -856,7 +922,7 @@ template Is(T...)
             static if (T.length == 0)
                 enum equalTo = true;
             else
-                enum equalTo = IsDim!(T[0..2]).equalTo!(U[0..2]) && Is!(T[2..$]).equalTo!(U[2..$]); 
+                enum equalTo = IsDim!(T[0..2]).equalTo!(U[0..2]) && Is!(T[2..$]).equalTo!(U[2..$]);
         }
         else
             enum equalTo = false;
@@ -891,7 +957,7 @@ template IsDim(string d1, int p1)
 
     template dimLessOrEqual(string d2, int p2)
     {
-        alias siInOrder = TypeTuple!("m", "kg", "s", "A", "K", "mol", "cd");
+        alias siInOrder = TypeTuple!("L", "M", "T", "I", "Θ", "N", "J");
         enum id1 = staticIndexOf!(d1, siInOrder);
         enum id2 = staticIndexOf!(d2, siInOrder);
 
@@ -923,17 +989,17 @@ unittest
     static assert(IsDim!("a", 0).powEqualTo!("b", 0));
     static assert(!IsDim!("a", 0).powEqualTo!("b", 1));
 
-    static assert(IsDim!("m", 0).dimLessOrEqual!("kg", 0));
-    static assert(!IsDim!("kg", 0).dimLessOrEqual!("m", 1));
-    static assert(IsDim!("m", 0).dimLessOrEqual!("U", 0));
-    static assert(!IsDim!("U", 0).dimLessOrEqual!("kg", 0));
+    static assert(IsDim!("L", 0).dimLessOrEqual!("M", 0));
+    static assert(!IsDim!("M", 0).dimLessOrEqual!("L", 1));
+    static assert(IsDim!("L", 0).dimLessOrEqual!("U", 0));
+    static assert(!IsDim!("U", 0).dimLessOrEqual!("M", 0));
     static assert(IsDim!("U", 0).dimLessOrEqual!("V", 0));
 }
 
 template FilterPred(alias pred, Dim...)
 {
     static assert(Dim.length % 2 == 0);
-    
+
     static if (Dim.length == 0)
         alias FilterPred = Dim;
     else static if (pred!(Dim[0], Dim[1]))
@@ -976,7 +1042,7 @@ template Reduce(int seed, Dim...)
 {
     static assert(Dim.length >= 2);
     static assert(Dim.length % 2 == 0);
-    
+
     static if (Dim.length == 2)
         alias Reduce = TypeTuple!(Dim[0], seed + Dim[1]);
     else
@@ -1064,7 +1130,7 @@ unittest
 template Invert(Dim...)
 {
     static assert(Dim.length % 2 == 0);
-    
+
     static if (Dim.length == 0)
         alias Invert = Dim;
     else
@@ -1094,7 +1160,7 @@ unittest
 template PowInverse(int n, Dim...)
 {
     static assert(Dim.length % 2 == 0);
-    
+
     static if (Dim.length == 0)
         alias PowInverse = Dim;
     else
@@ -1140,7 +1206,7 @@ string dimstr(Dim...)(bool complete = false)
     import std.algorithm : filter;
     import std.array : join;
     import std.conv : to;
-    
+
     static string stringize(string base, int power)
     {
         if (power == 0)
@@ -1153,16 +1219,16 @@ string dimstr(Dim...)(bool complete = false)
     static if (Dim.length == 0)
         return complete ? "scalar" : "";
     else
-   	{
-	    string[] dimstrs;
-	    string sym;
-	    foreach (i, d; Dim)
-	    {
-	        static if (i % 2 == 0)
-	            sym = d;
-	        else
-	            dimstrs ~= stringize(sym, d);
-	    }
-	    return dimstrs.join(" ");
-	}
+    {
+        string[] dimstrs;
+        string sym;
+        foreach (i, d; Dim)
+        {
+            static if (i % 2 == 0)
+                sym = d;
+            else
+                dimstrs ~= stringize(sym, d);
+        }
+        return dimstrs.join(" ");
+    }
 }
