@@ -105,7 +105,7 @@ struct Quantity(N, Dim...)
         static assert(is(meter.valueType == real));
     }
 
-    /// The payload
+    // The payload
     private N _value;
 
     /// The dimension tuple of the quantity.
