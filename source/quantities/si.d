@@ -169,10 +169,35 @@ unittest
     assert(t == 1 * hour);
 }
 
+unittest
+{
+    auto v = parseSI!Dimensionless("2");
+    assert(v == (2 * meter) / meter);
+}
+
 static __gshared SymbolList _siSymbolList;
 static this()
 {
     _siSymbolList = SymbolList(siRTUnits, siRTPrefixes, 2);
+}
+
+/++
+Parses a string for a a SI-compatible quantity.
++/
+alias si = ctQuantityParser!();
+///
+unittest
+{
+    enum min = si!"min";
+    enum inch = si!"2.54 cm";
+    
+    auto conc = si!"1 µmol/L";
+    auto speed = si!"m s^-1";
+    auto value = si!"0.5";
+    
+    static assert(is(typeof(conc) == Concentration));
+    static assert(is(typeof(speed) == Speed));
+    static assert(is(typeof(value) == Dimensionless));
 }
 
 /// Returns a SymbolList consisting of the main SI units and prefixes.
@@ -255,25 +280,6 @@ package
         "Mi": (2.0^^10)^^2,
         "Ki": (2.0^^10),
     ];
-}
-
-/++
-Parses a string for a a SI-compatible quantity.
-+/
-alias si = ctQuantityParser!();
-///
-unittest
-{
-    enum min = si!"min";
-    enum inch = si!"2.54 cm";
-
-    auto conc = si!"1 µmol/L";
-    auto speed = si!"m s^-1";
-    auto value = si!"0.5";
-
-    static assert(is(typeof(conc) == Concentration));
-    static assert(is(typeof(speed) == Speed));
-    static assert(is(typeof(value) == Dimensionless));
 }
 
 

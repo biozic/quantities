@@ -12,7 +12,7 @@ unittest
     // Working with units
     // ------------------
 
-    // Define new units from the predefined ones (in module quantity.si)
+    // Define new units from the predefined ones (in module quantities.si)
     enum inch = 2.54 * centi(meter);
     enum mile = 1609 * meter;
 
@@ -24,7 +24,7 @@ unittest
     // Working with quantities
     // -----------------------
 
-    // Use the predefined quantity types (in module quantity.si)
+    // Use the predefined quantity types (in module quantities.si)
     Volume volume;
     Concentration concentration;
     Mass mass;

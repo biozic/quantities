@@ -381,6 +381,8 @@ unittest // Test parsing
     assert(parseRTQuantity("6.3 L/(mmol*cm)", siSymbolList).value.approxEqual(630));
     assert(parseRTQuantity("6.3 L*(mmol*cm)^-1", siSymbolList).value.approxEqual(630));
     assert(parseRTQuantity("6.3 L/mmol/cm", siSymbolList).value.approxEqual(630));
+
+    assert(parseRTQuantity("0.8", siSymbolList).value.approxEqual(0.8));
 }
 
 // Holds a value and a dimensions for parsing
