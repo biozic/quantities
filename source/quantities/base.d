@@ -78,7 +78,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import quantities.parsing;
-import quantities.si : siSymbolList;
+import quantities.si : si, siSymbolList;
 import std.exception;
 import std.string;
 import std.traits;
@@ -432,48 +432,38 @@ struct Quantity(N, Dim...)
     order to calculate the value. If this quantity can be known at runtime,
     the template version of this function is more efficient.
     +/
-    string toString(string formatString, SymbolList symbolList = siSymbolList) const
+    string toString(alias symbolList = siSymbolList)(string formatString) const
     {
-        static if (isNumeric!N)
-        {
-            import std.array, std.format;
-            auto app = appender!string;
-            auto spec = FormatSpec!char(formatString.startsWith("%")
-                                        ? formatString
-                                        : "%s " ~ formatString);
-            spec.writeUpToNextSpec(app);
-            app.formatValue(value(parseQuantity!Quantity(spec.trailing, symbolList)), spec);
-            app.put(spec.trailing);
-            return app.data;
-        }
-        else
-            static assert(false, "This function is available only for builtin numeric types.");
+        import std.array, std.format;
+        auto app = appender!string;
+        auto spec = FormatSpec!char(formatString.startsWith("%")
+                                    ? formatString
+                                    : "%s " ~ formatString);
+        spec.writeUpToNextSpec(app);
+        app.formatValue(value(parseQuantity!Quantity(spec.trailing, symbolList)), spec);
+        app.put(spec.trailing);
+        return app.data;
     }
     /// ditto
     string toString(string formatString, alias ctParser = si)() const
     {
-        static if (isNumeric!N)
-        {
-            static if (formatString.startsWith("%"))
-                enum fmt = formatString;
-            else
-                enum fmt = "%s " ~ formatString;
-
-            // Get the unit at compile time
-            static string extractUnit(string fmt)
-            {
-                import std.algorithm, std.array;
-                auto ret = fmt.findAmong([
-                    's', 'c', 'b', 'd', 'o', 'x', 'X', 'e',
-                    'E', 'f', 'F', 'g', 'G', 'a', 'A']);
-                ret.popFront();
-                return ret;
-            }
-
-            return fmt.format(value(ctParser!(extractUnit(fmt), N)));
-        }
+        static if (formatString.startsWith("%"))
+            enum fmt = formatString;
         else
-            static assert(false, "This function is available only for builtin numeric types.");
+            enum fmt = "%s " ~ formatString;
+
+        // Get the unit at compile time
+        static string extractUnit(string fmt)
+        {
+            import std.algorithm, std.array;
+            auto ret = fmt.findAmong([
+                's', 'c', 'b', 'd', 'o', 'x', 'X', 'e',
+                'E', 'f', 'F', 'g', 'G', 'a', 'A']);
+            ret.popFront();
+            return ret;
+        }
+
+        return fmt.format(value(ctParser!(extractUnit(fmt), N)));
     }
     ///
     unittest
