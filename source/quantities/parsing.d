@@ -82,11 +82,9 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.parsing;
 
 import quantities.base;
-import quantities.si;
 
 import std.array;
 import std.algorithm;
-import std.conv;
 import std.exception;
 import std.math;
 import std.range;
@@ -96,11 +94,13 @@ import std.utf;
 
 version (unittest)
 {
+    import quantities.si;
+    import std.conv;
     import std.math : approxEqual;
 
-    private QuantityParser defaultParser()
+    private QuantityParser!real defaultParser()
     {
-        return QuantityParser(siSymbolList);
+        return QuantityParser!real(siSymbolList);
     }
 }
 
@@ -116,42 +116,33 @@ auto addUnit(Q)(string symbol, Q unit)
     return AddUnit!Q(symbol, unit);
 }
 
-private struct AddPrefix
+private struct AddPrefix(N)
 {
     string symbol;
-    real factor;
+    N factor;
 }
 
-auto addPrefix(string symbol, real factor)
+auto addPrefix(N)(string symbol, N factor)
+    if (hasCommonOperators!N)
 {
-    return AddPrefix(symbol, factor);
+    return AddPrefix!N(symbol, factor);
 }
 
 /++
 Creates a compile-time parser capable of working on user-defined units
 and prefixes.
-
-By default, the parser knows about SI units and prefixes. The user can add
-more units and prefix in the template parameters, using the global addUnit and addPrefix
-functions templates.
 +/
-template ctQuantityParser(Sym...)
+template ctQuantityParser(N, alias parseFun, Sym...)
 {
     enum symbolList = {
-        SymbolList ret;
-        foreach (symbol, unit; siRTUnits)
-            ret.units[symbol] = unit;
-        foreach (symbol, prefix; siRTPrefixes)
-            ret.prefixes[symbol] = prefix;
-        ret.maxPrefixLength = 2;
-
+        SymbolList!N ret;
         foreach (sym; Sym)
         {
-            static if (is(typeof(sym) _ : AddUnit!Q, Q))
+            static if (is(typeof(sym) == AddUnit!Q, Q))
             {
                 ret.units[sym.symbol] = sym.unit.toRuntime;
             }
-            else static if (is(typeof(sym) == AddPrefix))
+            else static if (is(typeof(sym) == AddPrefix!N, N))
             {
                 ret.prefixes[sym.symbol] = sym.factor;
                 if (sym.symbol.length > ret.maxPrefixLength)
@@ -160,11 +151,10 @@ template ctQuantityParser(Sym...)
             else
                 static assert(false, "Unexpected symbol: " ~ sym.stringof);
         }
-
         return ret;
     }();
 
-    template ctQuantityParser(string str, N = real)
+    template ctQuantityParser(string str)
     {
         private string dimTup(int[string] dims)
         {
@@ -172,14 +162,14 @@ template ctQuantityParser(Sym...)
         }
 
         // This is for a nice compile-time error message
-        enum msg = { return collectExceptionMsg(parseRTQuantity(str, symbolList)); }();
+        enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList)); }();
         static if (msg)
         {
             static assert(false, msg);
         }
         else
         {
-            enum q = parseRTQuantity(str, symbolList);
+            enum q = parseRTQuantity!(N, parseFun)(str, symbolList);
             enum dimStr = dimTup(q.dimensions);
             mixin("alias dims = TypeTuple!(%s);".format(dimStr));
             enum ctQuantityParser = Quantity!(N, Sort!dims).make(q.value);
@@ -193,6 +183,8 @@ unittest
     enum byte_ = 8 * bit;
 
     alias sz = ctQuantityParser!(
+        real,
+        std.conv.parse!(real, string),
         addUnit("bit", bit),
         addUnit("B", byte_),
         addPrefix("hob", 7)
@@ -203,10 +195,10 @@ unittest
 }
 
 /// Parses text for a unit or a quantity at runtime or compile-time.
-auto parseQuantity(Q, S)(S text, SymbolList symbolList)
+auto parseQuantity(Q, alias parseFun, S, SL)(S text, SL symbolList)
     if (isQuantity!Q)
 {
-    auto rtQuant = parseRTQuantity(text, symbolList);
+    auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(text, symbolList);
     enforceEx!DimensionException(
         toAA!(Q.dimensions) == rtQuant.dimensions,
         "Dimension error: %s is not compatible with %s"
@@ -220,12 +212,12 @@ unittest
     alias BinarySize = QuantityType!bit;
     enum byte_ = 8 * bit;
 
-    SymbolList symbols;
+    SymbolList!ulong symbols;
     symbols.addUnit("bit", bit);
     symbols.addUnit("B", byte_);
     symbols.addPrefix("hob", 7);
 
-    auto height = parseQuantity!BinarySize("1 hobbit", symbols);
+    auto height = parseQuantity!(BinarySize, (ref string s) => parse!ulong(s))("1 hobbit", symbols);
     assert(height.value(bit) == 7);
 }
 
@@ -234,22 +226,20 @@ unittest
 This struct contains the symbols of the units and the prefixes that the
 parser can handle.
 */
-struct SymbolList
+struct SymbolList(N)
 {
+    static assert(hasCommonOperators!N, "Incompatible type: " ~ N.stringof);
+
     private
     {
-        RTQuantity[string] units;
-        real[string] prefixes;
+        RTQuantity!N[string] units;
+        N[string] prefixes;
         size_t maxPrefixLength;
     }
 
     /// Adds a new prefix to the list
-    void addPrefix(string symbol, real factor)
+    void addPrefix(string symbol, N factor)
     {
-        // COW
-        if (prefixes is siSymbolList.prefixes)
-            prefixes = siSymbolList.prefixes.dup;
-
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)
             maxPrefixLength = symbol.length;
@@ -259,10 +249,6 @@ struct SymbolList
     void addUnit(Q)(string symbol, Q unit)
         if (isQuantity!Q)
     {
-        // COW
-        if (units is siSymbolList.units)
-            units = siSymbolList.units.dup;
-
         static if (isQuantity!Q)
             units[symbol] = unit.toRuntime;
         else
@@ -288,16 +274,16 @@ class ParsingException : Exception
 
 package:
 
-RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList)
+RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S text, SL symbolList)
 {
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "text must be a forward range of a character type");
 
-    real value; // nan
+    N value = N.init; // nan
     try
     {
         // This throws if there is no value ("no digits seen")
-        value = std.conv.parse!real(text);
+        value = parseFun(text);
     }
     catch
     {
@@ -305,105 +291,100 @@ RTQuantity parseRTQuantity(S)(S text, SymbolList symbolList)
     }
 
     if (text.empty)
-        return RTQuantity(value, null);
+        return RTQuantity!N(value, null);
 
     auto input = text.to!string;
     auto tokens = lex(input);
-    auto parser = QuantityParser(symbolList);
+    auto parser = QuantityParser!N(symbolList);
 
-    RTQuantity result = parser.parseCompoundUnit(tokens);
+    RTQuantity!N result = parser.parseCompoundUnit(tokens);
     result.value *= value;
     return result;
 }
 
-unittest // Parsing a range of characters that is not a string
-{
-    auto c = parseQuantity!Concentration(
-        ["11.2", "<- value", "µmol/L", "<-unit"]
-        .filter!(x => !x.startsWith("<"))
-        .joiner(" "),
-        siSymbolList
-    );
-    assert(c.value(nano(mole)/liter).approxEqual(11200));
-}
-
 unittest // Examples from the header
 {
+    alias parseRTQ = parseRTQuantity!(real, std.conv.parse!(real, string), string, SymbolList!real);
+
     auto J = toRuntime(joule);
-    assert(parseRTQuantity("1 N m", siSymbolList) == J);
-    assert(parseRTQuantity("1 N.m", siSymbolList) == J);
-    assert(parseRTQuantity("1 N⋅m", siSymbolList) == J);
-    assert(parseRTQuantity("1 N * m", siSymbolList) == J);
-    assert(parseRTQuantity("1 N × m", siSymbolList) == J);
+    assert(parseRTQ("1 N m", siSymbolList) == J);
+    assert(parseRTQ("1 N.m", siSymbolList) == J);
+    assert(parseRTQ("1 N⋅m", siSymbolList) == J);
+    assert(parseRTQ("1 N * m", siSymbolList) == J);
+    assert(parseRTQ("1 N × m", siSymbolList) == J);
 
     auto kat = toRuntime(katal);
-    assert(parseRTQuantity("1 mol s^-1", siSymbolList) == kat);
-    assert(parseRTQuantity("1 mol s⁻¹", siSymbolList) == kat);
-    assert(parseRTQuantity("1 mol/s", siSymbolList) == kat);
+    assert(parseRTQ("1 mol s^-1", siSymbolList) == kat);
+    assert(parseRTQ("1 mol s⁻¹", siSymbolList) == kat);
+    assert(parseRTQ("1 mol/s", siSymbolList) == kat);
 
     auto Pa = toRuntime(pascal);
-    assert(parseRTQuantity("1 kg m^-1 s^-2", siSymbolList) == Pa);
-    assert(parseRTQuantity("1 kg/(m s^2)", siSymbolList) == Pa);
+    assert(parseRTQ("1 kg m^-1 s^-2", siSymbolList) == Pa);
+    assert(parseRTQ("1 kg/(m s^2)", siSymbolList) == Pa);
 }
 
 unittest // Test parsing
 {
     import std.math : approxEqual;
 
-    assertThrown!ParsingException(parseRTQuantity("1 µ g", siSymbolList));
-    assertThrown!ParsingException(parseRTQuantity("1 µ", siSymbolList));
-    assertThrown!ParsingException(parseRTQuantity("1 g/", siSymbolList));
-    assertThrown!ParsingException(parseRTQuantity("1 g^", siSymbolList));
+    alias parseRTQ = parseRTQuantity!(real, std.conv.parse!(real, string), string, SymbolList!real);
+
+    assertThrown!ParsingException(parseRTQ("1 µ g", siSymbolList));
+    assertThrown!ParsingException(parseRTQ("1 µ", siSymbolList));
+    assertThrown!ParsingException(parseRTQ("1 g/", siSymbolList));
+    assertThrown!ParsingException(parseRTQ("1 g^", siSymbolList));
 
     string test = "1    m    ";
-    assert(parseRTQuantity(test, siSymbolList) == meter.toRuntime);
-    assert(parseRTQuantity("1 µm", siSymbolList).value.approxEqual(micro(meter).rawValue));
+    assert(parseRTQ(test, siSymbolList) == meter.toRuntime);
+    assert(parseRTQ("1 µm", siSymbolList).value.approxEqual(micro(meter).rawValue));
 
-    assert(parseRTQuantity("1 m^-1", siSymbolList) == toRuntime(1 / meter));
-    assert(parseRTQuantity("1 m²", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m⁻¹", siSymbolList) == toRuntime(1 / meter));
-    assert(parseRTQuantity("1 (m)", siSymbolList) == meter.toRuntime);
-    assert(parseRTQuantity("1 (m^-1)", siSymbolList) == toRuntime(1 / meter));
-    assert(parseRTQuantity("1 ((m)^-1)^-1", siSymbolList) == meter.toRuntime);
+    assert(parseRTQ("1 m^-1", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQ("1 m²", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m⁻¹", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQ("1 (m)", siSymbolList) == meter.toRuntime);
+    assert(parseRTQ("1 (m^-1)", siSymbolList) == toRuntime(1 / meter));
+    assert(parseRTQ("1 ((m)^-1)^-1", siSymbolList) == meter.toRuntime);
 
-    assert(parseRTQuantity("1 m*m", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m m", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m.m", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m⋅m", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m×m", siSymbolList) == square(meter).toRuntime);
-    assert(parseRTQuantity("1 m/m", siSymbolList) == toRuntime(meter / meter));
-    assert(parseRTQuantity("1 m÷m", siSymbolList) == toRuntime(meter / meter));
+    assert(parseRTQ("1 m*m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m.m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m⋅m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m×m", siSymbolList) == square(meter).toRuntime);
+    assert(parseRTQ("1 m/m", siSymbolList) == toRuntime(meter / meter));
+    assert(parseRTQ("1 m÷m", siSymbolList) == toRuntime(meter / meter));
 
-    assert(parseRTQuantity("1 N.m", siSymbolList) == toRuntime(newton * meter));
-    assert(parseRTQuantity("1 N m", siSymbolList) == toRuntime(newton * meter));
+    assert(parseRTQ("1 N.m", siSymbolList) == toRuntime(newton * meter));
+    assert(parseRTQ("1 N m", siSymbolList) == toRuntime(newton * meter));
 
-    assert(parseRTQuantity("6.3 L.mmol^-1.cm^-1", siSymbolList).value.approxEqual(630));
-    assert(parseRTQuantity("6.3 L/(mmol*cm)", siSymbolList).value.approxEqual(630));
-    assert(parseRTQuantity("6.3 L*(mmol*cm)^-1", siSymbolList).value.approxEqual(630));
-    assert(parseRTQuantity("6.3 L/mmol/cm", siSymbolList).value.approxEqual(630));
+    assert(parseRTQ("6.3 L.mmol^-1.cm^-1", siSymbolList).value.approxEqual(630));
+    assert(parseRTQ("6.3 L/(mmol*cm)", siSymbolList).value.approxEqual(630));
+    assert(parseRTQ("6.3 L*(mmol*cm)^-1", siSymbolList).value.approxEqual(630));
+    assert(parseRTQ("6.3 L/mmol/cm", siSymbolList).value.approxEqual(630));
 
-    assert(parseRTQuantity("0.8", siSymbolList).value.approxEqual(0.8));
+    assert(parseRTQ("0.8", siSymbolList).value.approxEqual(0.8));
 }
 
 // Holds a value and a dimensions for parsing
-struct RTQuantity
+struct RTQuantity(N)
 {
     // The payload
-    real value;
+    N value;
 
     // The dimensions of the quantity
     int[string] dimensions;
 }
 
 // A parser that can parse a text for a unit or a quantity
-struct QuantityParser
+struct QuantityParser(N)
 {
-    private SymbolList symbolList;
+    alias RTQ = RTQuantity!N;
 
-    RTQuantity parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
+    private SymbolList!N symbolList;
+
+    RTQ parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
         if (is(T : Token))
     {
-        RTQuantity ret = parseExponentUnit(tokens);
+        RTQ ret = parseExponentUnit(tokens);
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             return ret;
 
@@ -422,7 +403,7 @@ struct QuantityParser
                 cur = tokens.front;
             }
 
-            RTQuantity rhs = parseExponentUnit(tokens);
+            RTQ rhs = parseExponentUnit(tokens);
             if (multiply)
             {
                 ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
@@ -452,10 +433,10 @@ struct QuantityParser
         assertThrown!ParsingException(defaultParser.parseCompoundUnit(lex("m * m) m")));
     }
 
-    RTQuantity parseExponentUnit(T)(auto ref T[] tokens)
+    RTQ parseExponentUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
-        RTQuantity ret = parseUnit(tokens);
+        RTQ ret = parseUnit(tokens);
 
         if (tokens.empty)
             return ret;
@@ -469,7 +450,7 @@ struct QuantityParser
 
         int n = parseInteger(tokens);
 
-        return RTQuantity(std.math.pow(ret.value, n), ret.dimensions.exp(n));
+        return RTQ(std.math.pow(ret.value, n), ret.dimensions.exp(n));
     }
     unittest
     {
@@ -494,10 +475,10 @@ struct QuantityParser
         assertThrown!ParsingException(defaultParser.parseInteger(lex("1-⁺⁵")));
     }
 
-    RTQuantity parseUnit(T)(auto ref T[] tokens)
+    RTQ parseUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
-        RTQuantity ret;
+        RTQ ret;
 
         if (tokens.front.type == Tok.lparen)
         {
@@ -517,7 +498,7 @@ struct QuantityParser
         assertThrown!ParsingException(defaultParser.parseUnit(lex("(m")));
     }
 
-    RTQuantity parsePrefixUnit(T)(auto ref T[] tokens)
+    RTQ parsePrefixUnit(T)(auto ref T[] tokens)
         if (is(T : Token))
     {
         tokens.check(Tok.symbol);
@@ -531,7 +512,7 @@ struct QuantityParser
             return *uptr;
 
         // Try with prefixes, the longest prefix first
-        real* factor;
+        N* factor;
         for (size_t i = symbolList.maxPrefixLength; i > 0; i--)
         {
             if (str.length >= i)
@@ -544,7 +525,7 @@ struct QuantityParser
                     enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
                     uptr = unit in symbolList.units;
                     if (uptr)
-                        return RTQuantity(*factor * uptr.value, uptr.dimensions);
+                        return RTQ(*factor * uptr.value, uptr.dimensions);
                 }
             }
         }
@@ -560,10 +541,10 @@ struct QuantityParser
 }
 
 // Convert a compile-time quantity to its runtime equivalent.
-RTQuantity toRuntime(Q)(Q quantity)
+auto toRuntime(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return RTQuantity(quantity.rawValue, toAA!(Q.dimensions));
+    return RTQuantity!(Q.valueType)(quantity.rawValue, toAA!(Q.dimensions));
 }
 
 enum Tok
