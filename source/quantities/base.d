@@ -77,8 +77,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
-import quantities.parsing;
-import quantities.si : si, siSymbolList;
 import std.exception;
 import std.string;
 import std.traits;
