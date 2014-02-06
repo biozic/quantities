@@ -11,14 +11,14 @@ enum byte_ = 8 * bit;
 alias tera = prefix!(BigInt(1000)^^4); 
 alias tebi = prefix!(BigInt(1024)^^4);
 
-alias bin = ctQuantityParser!(
-    BigInt,
-    (ref string s) => parse!long(s),
+enum symbolList = makeSymbolList!BigInt(
     addUnit("bit", bit),
     addUnit("B", byte_),
     addPrefix("T", BigInt(1000)^^4),
     addPrefix("Ti", BigInt(1024)^^4)
 );
+
+alias bin = ctQuantityParser!(BigInt, (ref string s) => parse!long(s), SymbolList);
 
 unittest
 {

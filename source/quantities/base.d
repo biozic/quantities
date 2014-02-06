@@ -88,7 +88,7 @@ version (unittest)
     import std.math : approxEqual;
 }
 
-template hasCommonOperators(N)
+template hasNumericBehavior(N)
 {
     N n1;
     N n2;
@@ -97,28 +97,23 @@ template hasCommonOperators(N)
         && __traits(compiles, (n1 - n2))
         && __traits(compiles, (n1 * n2))
         && __traits(compiles, (n1 / n2))
+        && __traits(compiles, (n1 = 1))
     )
-        enum hasCommonOperators = true;
+        enum hasNumericBehavior = true;
     else
-        enum hasCommonOperators = false;
+        enum hasNumericBehavior = false;
 }
 unittest
 {
-    static assert(hasCommonOperators!real);
-    static assert(hasCommonOperators!int);
+    static assert(hasNumericBehavior!real);
+    static assert(hasNumericBehavior!int);
 
     import std.bigint, std.numeric;
-    static assert(hasCommonOperators!BigInt);
-    static assert(hasCommonOperators!(CustomFloat!16));
+    static assert(hasNumericBehavior!BigInt);
+    static assert(hasNumericBehavior!(CustomFloat!16));
 }
 
-template isScalarOperand(T)
-{
-    static if (hasCommonOperators!T && !isQuantity!T)
-        enum isScalarOperand = true;
-    else
-        enum isScalarOperand = false;
-}
+enum isValue(T) = hasNumericBehavior!T && !isQuantity!T;
 
 template OperatorResultType(T, string op, U)
 {
@@ -137,7 +132,7 @@ A quantity that can be expressed as the product of a number and a set of dimensi
 +/
 struct Quantity(N, Dim...)
 {
-    static assert(hasCommonOperators!N, "Incompatible type: " ~ N.stringof);
+    static assert(hasNumericBehavior!N, "Incompatible type: " ~ N.stringof);
 
     /// The type of the underlying numeric value.
     alias valueType = N;
@@ -177,7 +172,7 @@ struct Quantity(N, Dim...)
 
     // Creates a new dimensionless quantity from a scalar value
     this(T)(T value)
-        if (isScalarOperand!T && Dim.length == 0)
+        if (isValue!T && Dim.length == 0)
     {
         _value = value;
     }
@@ -186,7 +181,7 @@ struct Quantity(N, Dim...)
     {
         // Creates a new quantity from a scalar value
         package this(T)(T value)
-            if (isScalarOperand!T && Dim.length != 0)
+            if (isValue!T && Dim.length != 0)
         {
             _value = value;
         }
@@ -251,7 +246,7 @@ struct Quantity(N, Dim...)
     Returns a new quantity where the value is stored in a field of type T.
     +/
     auto store(T, alias convertFun = null)() const
-        if (isScalarOperand!T)
+        if (isValue!T)
     {
         static if (is(typeof(convertFun) == typeof(null)))
             return Quantity!(T, dimensions).make(_value);
@@ -275,7 +270,7 @@ struct Quantity(N, Dim...)
 
     /// Cast a dimensionless quantity to a scalar numeric type
     T opCast(T)() const
-        if (isScalarOperand!T)
+        if (isValue!T)
     {
         mixin(checkDim!"");
         return _value;
@@ -303,7 +298,7 @@ struct Quantity(N, Dim...)
 
     // Assign from a numeric value if this quantity is dimensionless
     void opAssign(T)(T other) /// ditto
-        if (isScalarOperand!T)
+        if (isValue!T)
     {
         mixin(checkDim!"");
         _value = other;
@@ -327,7 +322,7 @@ struct Quantity(N, Dim...)
 
     // Add (or substract) a dimensionless quantity and a scalar
     auto opBinary(string op, T)(T other) const /// ditto
-        if (isScalarOperand!T && (op == "+" || op == "-"))
+        if (isValue!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"");
         return Quantity!(OperatorResultType(N, "+", T), dimensions)
@@ -336,7 +331,7 @@ struct Quantity(N, Dim...)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const /// ditto
-        if (isScalarOperand!T && (op == "+" || op == "-"))
+        if (isValue!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
@@ -352,7 +347,7 @@ struct Quantity(N, Dim...)
 
     // Multiply or divide a quantity by a scalar factor
     auto opBinary(string op, T)(T other) const /// ditto
-        if (isScalarOperand!T && (op == "*" || op == "/"))
+        if (isValue!T && (op == "*" || op == "/"))
     {
         return Quantity!(OperatorResultType!(N, "*", T), dimensions)
             .make(mixin("_value" ~ op ~ "other"));
@@ -360,14 +355,14 @@ struct Quantity(N, Dim...)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const /// ditto
-        if (isScalarOperand!T && op == "*")
+        if (isValue!T && op == "*")
     {
         return this * other;
     }
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const /// ditto
-        if (isScalarOperand!T && op == "/")
+        if (isValue!T && op == "/")
     {
         return Quantity!(OperatorResultType!(T, "/", N), Invert!dimensions)
             .make(other / _value);
@@ -383,7 +378,7 @@ struct Quantity(N, Dim...)
 
     // Add/sub assign a scalar to a dimensionless quantity
     void opOpAssign(string op, T)(T other) /// ditto
-        if (isScalarOperand!T && (op == "+" || op == "-"))
+        if (isValue!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"");
         mixin("_value " ~ op ~ "= other;");
@@ -399,7 +394,7 @@ struct Quantity(N, Dim...)
 
     // Mul/div assign with a scalar factor
     void opOpAssign(string op, T)(T other) /// ditto
-        if (isScalarOperand!T && (op == "*" || op == "/"))
+        if (isValue!T && (op == "*" || op == "/"))
     {
         mixin("_value" ~ op ~ "= other;");
     }
@@ -414,7 +409,7 @@ struct Quantity(N, Dim...)
 
     // Exact equality between a dimensionless quantity and a scalar
     bool opEquals(T)(T other) const /// ditto
-        if (isScalarOperand!T)
+        if (isValue!T)
     {
         mixin(checkDim!"");
         return _value == other;
@@ -434,7 +429,7 @@ struct Quantity(N, Dim...)
 
     // Comparision between a dimensionless quantity and a scalar
     int opCmp(T)(T other) const /// ditto
-        if (isScalarOperand!T)
+        if (isValue!T)
     {
         mixin(checkDim!"");
         if (_value == other)
@@ -734,7 +729,7 @@ unittest
 /// Creates a new monodimensional unit.
 template unit(string symbol, N = real)
 {
-    static assert(isScalarOperand!N, "Incompatible type: " ~ N.stringof);
+    static assert(isValue!N, "Incompatible type: " ~ N.stringof);
     enum unit = Quantity!(N, symbol, 1).make(1);
 }
 ///
@@ -834,7 +829,7 @@ unittest // QuantityType example
 
 /// Creates a new quantity type where the payload is stored as another numeric type.
 template Store(Q, N)
-    if (isQuantity!Q && isScalarOperand!N)
+    if (isQuantity!Q && isValue!N)
 {
     alias Store = Quantity!(N, Q.dimensions);
 }
@@ -912,7 +907,7 @@ Creates a new prefix function that mutlpy a Quantity by _factor factor.
 template prefix(alias factor)
 {
     alias N = typeof(factor);
-    static assert(isScalarOperand!N, "Incompatible type: " ~ N.stringof);
+    static assert(isValue!N, "Incompatible type: " ~ N.stringof);
 
     auto prefix(Q)(Q base)
         if (isQuantity!Q)
