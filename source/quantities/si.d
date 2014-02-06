@@ -240,7 +240,7 @@ unittest
 /++
 Parses a string for a a SI-compatible quantity.
 +/
-alias si = ctQuantityParser!(real, std.conv.parse!(real, string), siSymbolList);
+alias si = ctQuantityParser!(real, siSymbolList, std.conv.parse!(real, string));
 ///
 unittest
 {

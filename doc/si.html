@@ -121,40 +121,28 @@ Nicolas Sicard
 <dd>The type of dimensionless quantities<br><br>
 
 </dd>
-<dt><big><a name="yotta"></a>alias <u>yotta</u> = quantities.base.prefix!1e+24.prefix(Q)(Q base);
-<br><a name="zetta"></a>alias <u>zetta</u> = quantities.base.prefix!1e+21.prefix(Q)(Q base);
-<br><a name="exa"></a>alias <u>exa</u> = quantities.base.prefix!1.00000e+18.prefix(Q)(Q base);
-<br><a name="peta"></a>alias <u>peta</u> = quantities.base.prefix!1.00000e+15.prefix(Q)(Q base);
-<br><a name="tera"></a>alias <u>tera</u> = quantities.base.prefix!1.00000e+12.prefix(Q)(Q base);
-<br><a name="giga"></a>alias <u>giga</u> = quantities.base.prefix!1.00000e+09.prefix(Q)(Q base);
-<br><a name="mega"></a>alias <u>mega</u> = quantities.base.prefix!1.00000e+06.prefix(Q)(Q base);
-<br><a name="kilo"></a>alias <u>kilo</u> = quantities.base.prefix!1000.00.prefix(Q)(Q base);
-<br><a name="hecto"></a>alias <u>hecto</u> = quantities.base.prefix!100.000.prefix(Q)(Q base);
-<br><a name="deca"></a>alias <u>deca</u> = quantities.base.prefix!10.0000.prefix(Q)(Q base);
-<br><a name="deci"></a>alias <u>deci</u> = quantities.base.prefix!0.1.prefix(Q)(Q base);
-<br><a name="centi"></a>alias <u>centi</u> = quantities.base.prefix!0.01.prefix(Q)(Q base);
-<br><a name="milli"></a>alias <u>milli</u> = quantities.base.prefix!0.001.prefix(Q)(Q base);
-<br><a name="micro"></a>alias <u>micro</u> = quantities.base.prefix!1e-06.prefix(Q)(Q base);
-<br><a name="nano"></a>alias <u>nano</u> = quantities.base.prefix!1e-09.prefix(Q)(Q base);
-<br><a name="pico"></a>alias <u>pico</u> = quantities.base.prefix!1e-12.prefix(Q)(Q base);
-<br><a name="femto"></a>alias <u>femto</u> = quantities.base.prefix!1e-15.prefix(Q)(Q base);
-<br><a name="atto"></a>alias <u>atto</u> = quantities.base.prefix!1e-18.prefix(Q)(Q base);
-<br><a name="zepto"></a>alias <u>zepto</u> = quantities.base.prefix!1e-21.prefix(Q)(Q base);
-<br><a name="yocto"></a>alias <u>yocto</u> = quantities.base.prefix!1e-24.prefix(Q)(Q base);
+<dt><big><a name="yotta"></a>alias <u>yotta</u> = quantities.base.prefix!1e+24.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="zetta"></a>alias <u>zetta</u> = quantities.base.prefix!1e+21.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="exa"></a>alias <u>exa</u> = quantities.base.prefix!1.00000e+18.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="peta"></a>alias <u>peta</u> = quantities.base.prefix!1.00000e+15.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="tera"></a>alias <u>tera</u> = quantities.base.prefix!1.00000e+12.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="giga"></a>alias <u>giga</u> = quantities.base.prefix!1.00000e+09.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="mega"></a>alias <u>mega</u> = quantities.base.prefix!1.00000e+06.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="kilo"></a>alias <u>kilo</u> = quantities.base.prefix!1000.00.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="hecto"></a>alias <u>hecto</u> = quantities.base.prefix!100.000.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="deca"></a>alias <u>deca</u> = quantities.base.prefix!10.0000.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="deci"></a>alias <u>deci</u> = quantities.base.prefix!0.1.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="centi"></a>alias <u>centi</u> = quantities.base.prefix!0.01.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="milli"></a>alias <u>milli</u> = quantities.base.prefix!0.001.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="micro"></a>alias <u>micro</u> = quantities.base.prefix!1e-06.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="nano"></a>alias <u>nano</u> = quantities.base.prefix!1e-09.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="pico"></a>alias <u>pico</u> = quantities.base.prefix!1e-12.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="femto"></a>alias <u>femto</u> = quantities.base.prefix!1e-15.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="atto"></a>alias <u>atto</u> = quantities.base.prefix!1e-18.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="zepto"></a>alias <u>zepto</u> = quantities.base.prefix!1e-21.prefix(Q)(Q base) if (isQuantity!Q);
+<br><a name="yocto"></a>alias <u>yocto</u> = quantities.base.prefix!1e-24.prefix(Q)(Q base) if (isQuantity!Q);
 </big></dt>
 <dd>SI prefixes.<br><br>
-
-</dd>
-<dt><big><a name="yobi"></a>alias <u>yobi</u> = quantities.base.prefix!1.20893e+24.prefix(Q)(Q base);
-<br><a name="zebi"></a>alias <u>zebi</u> = quantities.base.prefix!1.18059e+21.prefix(Q)(Q base);
-<br><a name="exbi"></a>alias <u>exbi</u> = quantities.base.prefix!1.15292e+18.prefix(Q)(Q base);
-<br><a name="pebi"></a>alias <u>pebi</u> = quantities.base.prefix!1.12590e+15.prefix(Q)(Q base);
-<br><a name="tebi"></a>alias <u>tebi</u> = quantities.base.prefix!1.09951e+12.prefix(Q)(Q base);
-<br><a name="gibi"></a>alias <u>gibi</u> = quantities.base.prefix!1.07374e+09.prefix(Q)(Q base);
-<br><a name="mebi"></a>alias <u>mebi</u> = quantities.base.prefix!1.04858e+06.prefix(Q)(Q base);
-<br><a name="kibi"></a>alias <u>kibi</u> = quantities.base.prefix!1024.00.prefix(Q)(Q base);
-</big></dt>
-<dd>Functions that apply a SI binary prefix to a unit.<br><br>
 
 </dd>
 <dt><big><a name="parseSI"></a>auto <u>parseSI</u>(Q, S)(S <i>text</i>) if (isQuantity!Q);
@@ -169,12 +157,7 @@ t = <u>parseSI</u>!Time(<font color=red>"h"</font>);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="siSymbolList"></a>SymbolList <u>siSymbolList</u>();
-</big></dt>
-<dd>Returns a SymbolList consisting of the main SI units and prefixes.<br><br>
-
-</dd>
-<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.ctQuantityParser!().ctQuantityParser(string str, N = real);
+<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.ctQuantityParser!(real, SymbolList(["m":RTQuantity(1.00000L, ["L":1]), "kg":RTQuantity(1.00000L, ["M":1]), "s":RTQuantity(1.00000L, ["T":1]), "A":RTQuantity(1.00000L, ["I":1]), "K":RTQuantity(1.00000L, ["\xce\x98":1]), "mol":RTQuantity(1.00000L, ["N":1]), "cd":RTQuantity(1.00000L, ["J":1]), "rad":RTQuantity(1.00000L, null), "sr":RTQuantity(1.00000L, null), "Hz":RTQuantity(1.00000L, ["T":-1]), "N":RTQuantity(1.00000L, ["L":1, "M":1, "T":-2]), "Pa":RTQuantity(1.00000L, ["L":-1, "M":1, "T":-2]), "J":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2]), "W":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3]), "C":RTQuantity(1.00000L, ["T":1, "I":1]), "V":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-1]), "F":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":4, "I":2]), "\xce\xa9":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-2]), "S":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":3, "I":2]), "Wb":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-1]), "T":RTQuantity(1.00000L, ["M":1, "T":-2, "I":-1]), "H":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-2]), "lm":RTQuantity(1.00000L, ["J":1]), "lx":RTQuantity(1.00000L, ["L":-2, "J":1]), "Bq":RTQuantity(1.00000L, ["T":-1]), "Gy":RTQuantity(1.00000L, ["L":2, "T":-2]), "Sv":RTQuantity(1.00000L, ["L":2, "T":-2]), "kat":RTQuantity(1.00000L, ["T":-1, "N":1]), "g":RTQuantity(0.001L, ["M":1]), "min":RTQuantity(60.0000L, ["T":1]), "h":RTQuantity(3600.00L, ["T":1]), "d":RTQuantity(86400.0L, ["T":1]), "l":RTQuantity(0.001L, ["L":3]), "L":RTQuantity(0.001L, ["L":3]), "t":RTQuantity(1000.00L, ["M":1]), "eV":RTQuantity(0xb.d26d07a626ec67ep-66L, ["L":2, "M":1, "T":-2]), "Da":RTQuantity(0x8.38fbab4ccff329fp-92L, ["M":1])], ["Y":1e+24L, "Z":1e+21L, "E":1.00000e+18L, "P":1.00000e+15L, "T":1.00000e+12L, "G":1.00000e+09L, "M":1.00000e+06L, "k":1000.00L, "h":100.000L, "da":10.0000L, "d":0.1L, "c":0.01L, "m":0.001L, "\xc2\xb5":1e-06L, "n":1e-09L, "p":1e-12L, "f":1e-15L, "a":1e-18L, "z":1e-21L, "y":1e-24L, "Yi":0x8p+77L, "Zi":0x8p+67L, "Ei":0x8.p+57L, "Pi":0x8.p+47L, "Ti":0x8.p+37L, "Gi":0x8.p+27L, "Mi":0x8.p+17L, "Ki":1024.00L], 2LU), parse).ctQuantityParser(string str);
 </big></dt>
 <dd>Parses a string for a a SI-compatible quantity.<br><br>
 <b>Examples:</b><br>

@@ -87,66 +87,91 @@ Nicolas Sicard
 <b>Source:</b><br>
 <a href="https://github.com/biozic/quantities">https://github.com/biozic/quantities</a><br><br>
 
-<dl><dt><big><a name="ctQuantityParser"></a>template <u>ctQuantityParser</u>(Sym...)</big></dt>
-<dd>Creates a compile-time parser capable of working on user-defined units
-and prefixes.
-<br><br>
-By default, the parser knows about SI units and prefixes. The user can add
-more units and prefix in the template parameters, using the global addUnit and addPrefix
-functions templates.<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
-<font color=blue>enum</font> byte_ = 8 * bit;
-
-<font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(
-    addUnit(<font color=red>"bit"</font>, bit),
-    addUnit(<font color=red>"B"</font>, byte_),
-    addPrefix(<font color=red>"hob"</font>, 7)
-);
-
-<font color=blue>auto</font> height = sz!<font color=red>"1 hobbit"</font>;
-<font color=blue>assert</font>(height.value(sz!<font color=red>"bit"</font>) == 7);
-</pre>
-<br><br>
-</dd>
-<dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, S)(S <i>text</i>, SymbolList <i>symbolList</i>) if (isQuantity!Q);
+<dl><dt><big><a name="SymbolList"></a>struct <u>SymbolList</u>(N);
 </big></dt>
-<dd>Parses text for a unit or a quantity at runtime or compile-time.<br><br>
+<dd>Contains the symbols of the units and the prefixes that a parser can handle.<br><br>
+
+</dd>
+<dt><big><a name="addUnit"></a>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
+</big></dt>
+<dd>Creates a unit that can be added to a SymbolList via the makeSymbolList function.<br><br>
+
+</dd>
+<dt><big><a name="addPrefix"></a>auto <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
+</big></dt>
+<dd>Creates a prefix that can be added to a SymbolList via the makeSymbolList function.<br><br>
+
+</dd>
+<dt><big><a name="makeSymbolList"></a>SymbolList!N <u>makeSymbolList</u>(N, Sym...)(Sym <i>list</i>);
+</big></dt>
+<dd>Builds a SymbolList from a list of units and prefixes
+<br><br>
+<b>See:</b><br>
+Example of the parseQuantity function.<br><br>
+
+</dd>
+<dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, alias parseFun = (ref string s) =&gt; parse!(Q.valueType)(s), S, SL)(S <i>text</i>, auto ref SL <i>symbolList</i>) if (isQuantity!Q);
+</big></dt>
+<dd>Parses text for a quantity of type Q at runtime.
+<br><br>
+<b>Params:</b><br>
+<table><tr><td>S text</td>
+<td>The string to parse.</td></tr>
+<tr><td>SL symbolList</td>
+<td>A prefilled SymbolList struct that contains all units and prefixes.</td></tr>
+<tr><td>Q</td>
+<td>The type of the quantity that the function should return.</td></tr>
+<tr><td>parseFun</td>
+<td>A function that can parse the beginning of text for a numeric value.
+        This function must consume the parsed numeric value and leave only a unit to parse.</td></tr>
+</table><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>enum</font> bit = unit!(<font color=red>"bit"</font>, <font color=blue>ulong</font>);
 <font color=blue>alias</font> BinarySize = QuantityType!bit;
 <font color=blue>enum</font> byte_ = 8 * bit;
 
-SymbolList symbols;
-symbols.addUnit(<font color=red>"bit"</font>, bit);
-symbols.addUnit(<font color=red>"B"</font>, byte_);
-symbols.addPrefix(<font color=red>"hob"</font>, 7);
+<font color=blue>auto</font> symbolList = makeSymbolList!<font color=blue>ulong</font>(
+    addUnit(<font color=red>"bit"</font>, bit),
+    addUnit(<font color=red>"B"</font>, byte_),
+    addPrefix(<font color=red>"hob"</font>, 7)
+);
 
-<font color=blue>auto</font> height = <u>parseQuantity</u>!BinarySize(<font color=red>"1 hobbit"</font>, symbols);
+<font color=blue>auto</font> height = <u>parseQuantity</u>!BinarySize(<font color=red>"1 hobbit"</font>, symbolList);
 <font color=blue>assert</font>(height.value(bit) == 7);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="SymbolList"></a>struct <u>SymbolList</u>;
-</big></dt>
-<dd>This struct contains the symbols of the units and the prefixes that the
-parser can handle.<br><br>
+<dt><big><a name="ctQuantityParser"></a>template <u>ctQuantityParser</u>(N, alias symbolList, alias parseFun)</big></dt>
+<dd>Creates a compile-time parser capable of working on user-defined units and prefixes.
+<br><br>
+<b>Params:</b><br>
+<table><tr><td>N</td>
+<td>The type of the value type stored in the Quantity struct.</td></tr>
+<tr><td>symbolList</td>
+<td>A prefilled SymbolList struct that contains all units and prefixes.</td></tr>
+<tr><td>parseFun</td>
+<td>A function that can parse the beginning of text for a numeric value.
+        This function must consume the parsed numeric value and leave only a unit to parse.</td></tr>
+</table><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
+<font color=blue>enum</font> byte_ = 8 * bit;
+<font color=blue>enum</font> symbolList = makeSymbolList!<font color=blue>real</font>(
+    addUnit(<font color=red>"bit"</font>, bit),
+    addUnit(<font color=red>"B"</font>, byte_),
+    addPrefix(<font color=red>"hob"</font>, 7)
+);
 
-<dl><dt><big><a name="SymbolList.addPrefix"></a>void <u>addPrefix</u>(string <i>symbol</i>, real <i>factor</i>);
-</big></dt>
-<dd>Adds a new prefix to the list<br><br>
+<font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(<font color=blue>real</font>, symbolList, std.conv.parse!(<font color=blue>real</font>, string));
 
+<font color=blue>auto</font> height = sz!<font color=red>"1 hobbit"</font>;
+<font color=blue>assert</font>(height.value(sz!<font color=red>"bit"</font>) == 7);
+</pre>
+<br><br>
 </dd>
-<dt><big><a name="SymbolList.addUnit"></a>void <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
-</big></dt>
-<dd>Adds a new unit to the list<br><br>
-
-</dd>
-</dl>
-</dd>
-<dt><big><a name="ParsingException"></a>class <u>ParsingException</u>: object.Exception;
+<dt><big><a name="ParsingException"></a>class <u>ParsingException</u>: <u>object.Exception</u>;
 </big></dt>
 <dd>Exception thrown when parsing encounters an unexpected token.<br><br>
 

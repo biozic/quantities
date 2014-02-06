@@ -127,7 +127,7 @@ Nicolas Sicard
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="store"></a>const auto <u>store</u>(T)() if (isNumeric!T);
+<dt><big><a name="store"></a>const auto <u>store</u>(T, alias convertFun = null)() if (isValue!T);
 </big></dt>
 <dd>Returns a new quantity where the value is stored in a field of type T.<br><br>
 <b>Examples:</b><br>
@@ -140,18 +140,9 @@ Nicolas Sicard
 <dt><big><a name="opCast"></a>const Q <u>opCast</u>(Q)() if (isQuantity!Q);
 </big></dt>
 <dd>Cast a quantity to another quantity type with the same dimensions<br><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>alias</font> Length = QuantityType!(meter, <font color=blue>float</font>);
-<font color=blue>auto</font> m = <font color=blue>cast</font>(Length) meter;
-<font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(meter.valueType == <font color=blue>real</font>));
-<font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(m.valueType == <font color=blue>float</font>));
 
-<font color=blue>static</font> <font color=blue>assert</font>(!<font color=blue>__traits</font>(compiles, <font color=blue>cast</font>(Time) meter));
-</pre>
-<br><br>
 </dd>
-<dt><big><a name="opCast"></a>const T <u>opCast</u>(T)() if (isNumeric!T);
+<dt><big><a name="opCast"></a>const T <u>opCast</u>(T)() if (isValue!T);
 </big></dt>
 <dd>Cast a dimensionless quantity to a scalar numeric type<br><br>
 <b>Examples:</b><br>
@@ -165,23 +156,23 @@ Nicolas Sicard
 <br><br>
 </dd>
 <dt><big><a name="opAssign"></a>void <u>opAssign</u>(T)(T <i>other</i>) if (isQuantity!T);
-<br><a name="opAssign"></a>void <u>opAssign</u>(T)(T <i>other</i>) if (isNumeric!T);
+<br><a name="opAssign"></a>void <u>opAssign</u>(T)(T <i>other</i>) if (isValue!T);
 <br><a name="opUnary"></a>const auto <u>opUnary</u>(string op)() if (op == "+" || op == "-");
 <br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isQuantity!T &amp;&amp; (op == "+" || op == "-"));
-<br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; (op == "+" || op == "-"));
-<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; (op == "+" || op == "-"));
+<br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; (op == "+" || op == "-"));
+<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; (op == "+" || op == "-"));
 <br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isQuantity!T &amp;&amp; (op == "*" || op == "/"));
-<br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; (op == "*" || op == "/"));
-<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; op == "*");
-<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; op == "/");
+<br><a name="opBinary"></a>const auto <u>opBinary</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; (op == "*" || op == "/"));
+<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; op == "*");
+<br><a name="opBinaryRight"></a>const auto <u>opBinaryRight</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; op == "/");
 <br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isQuantity!T &amp;&amp; (op == "+" || op == "-"));
-<br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; (op == "+" || op == "-"));
+<br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; (op == "+" || op == "-"));
 <br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isQuantity!T &amp;&amp; (op == "*" || op == "/"));
-<br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isNumeric!T &amp;&amp; (op == "*" || op == "/"));
+<br><a name="opOpAssign"></a>void <u>opOpAssign</u>(string op, T)(T <i>other</i>) if (isValue!T &amp;&amp; (op == "*" || op == "/"));
 <br><a name="opEquals"></a>const bool <u>opEquals</u>(T)(T <i>other</i>) if (isQuantity!T);
-<br><a name="opEquals"></a>const bool <u>opEquals</u>(T)(T <i>other</i>) if (isNumeric!T);
+<br><a name="opEquals"></a>const bool <u>opEquals</u>(T)(T <i>other</i>) if (isValue!T);
 <br><a name="opCmp"></a>const int <u>opCmp</u>(T)(T <i>other</i>) if (isQuantity!T);
-<br><a name="opCmp"></a>const int <u>opCmp</u>(T)(T <i>other</i>) if (isNumeric!T);
+<br><a name="opCmp"></a>const int <u>opCmp</u>(T)(T <i>other</i>) if (isValue!T);
 </big></dt>
 <dd>Overloaded operators.
  Only dimensionally correct operations will compile.<br><br>
@@ -200,33 +191,6 @@ By default, a quantity is represented as a string by a number
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="toString"></a>const string <u>toString</u>(string <i>formatString</i>, SymbolList <i>symbolList</i> = siSymbolList);
-<br><a name="toString"></a>const string <u>toString</u>(string formatString, alias ctParser = si)();
-</big></dt>
-<dd>Returns a formatted string from the quantity.
-<br><br>
-The format string must be formed of a format specifier for the numeric value
-    (e.g %s, %g, %.2f, etc.), followed by a unit. The whitespace between the
-    format specifier and the unit is not significant.
-<br><br>
-
-    The unit present in the format is parsed each time the function is called, in
-    order to calculate the value. If this quantity can be known at runtime,
-    the template version of this function is more efficient.<br><br>
-
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>enum</font> inch = 2.54 * centi(meter);
-
-<font color=green>// Format parsed at runtime
-</font><font color=blue>assert</font>(inch.<u>toString</u>(<font color=red>"%s cm"</font>) == <font color=red>"2.54 cm"</font>);
-<font color=blue>assert</font>(inch.<u>toString</u>(<font color=red>"%.2f mm"</font>) == <font color=red>"25.40 mm"</font>);
-
-<font color=green>// Format parsed at compile-time
-</font><font color=blue>assert</font>(inch.<u>toString</u>!<font color=red>"%s cm"</font> == <font color=red>"2.54 cm"</font>);
-<font color=blue>assert</font>(inch.<u>toString</u>!<font color=red>"%.2f mm"</font> == <font color=red>"25.40 mm"</font>);
-</pre>
-<br><br></dd>
 </dl>
 </dd>
 <dt><big><a name="isQuantity"></a>template <u>isQuantity</u>(T)</big></dt>
@@ -280,20 +244,16 @@ side = cbrt(volume);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="QuantityType"></a>template <u>QuantityType</u>(alias unit, N = real) if (isQuantity!(typeof(unit)))</big></dt>
+<dt><big><a name="QuantityType"></a>template <u>QuantityType</u>(alias unit) if (isQuantity!(typeof(unit)))</big></dt>
 <dd>Returns the quantity type of a unit<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>alias</font> Mass = <u>QuantityType</u>!kilogram;
 Mass mass = 15 * ton;
-
-<font color=blue>alias</font> Surface = <u>QuantityType</u>!(square(meter), <font color=blue>float</font>);
-<font color=blue>assert</font>(<font color=blue>is</font>(Surface.valueType == <font color=blue>float</font>));
-Surface s = 4 * square(meter);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="Store"></a>template <u>Store</u>(Q, N) if (isQuantity!Q)</big></dt>
+<dt><big><a name="Store"></a>template <u>Store</u>(Q, N) if (isQuantity!Q &amp;&amp; isValue!N)</big></dt>
 <dd>Creates a new quantity type where the payload is stored as another numeric type.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
@@ -333,7 +293,7 @@ Surface s = 4 * square(meter);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="DimensionException"></a>class <u>DimensionException</u>: object.Exception;
+<dt><big><a name="DimensionException"></a>class <u>DimensionException</u>: <u>object.Exception</u>;
 </big></dt>
 <dd>Exception thrown when operating on two units that are not interconvertible.<br><br>
 

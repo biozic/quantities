@@ -118,21 +118,6 @@ struct SymbolList(N)
         N[string] prefixes;
         size_t maxPrefixLength;
     }
-    
-    /// Adds a new prefix to the list
-    void addPrefix(string symbol, N factor)
-    {
-        prefixes[symbol] = factor;
-        if (symbol.length > maxPrefixLength)
-            maxPrefixLength = symbol.length;
-    }
-    
-    /// Adds a new unit to the list
-    void addUnit(Q)(string symbol, Q unit)
-        if (isQuantity!Q)
-    {
-        units[symbol] = unit.toRT;
-    }
 }
 
 private struct AddUnit(Q)
@@ -141,6 +126,7 @@ private struct AddUnit(Q)
     Q unit;
 }
 
+/// Creates a unit that can be added to a SymbolList via the makeSymbolList function.
 auto addUnit(Q)(string symbol, Q unit)
     if (isQuantity!Q)
 {
@@ -153,12 +139,17 @@ private struct AddPrefix(N)
     N factor;
 }
 
+/// Creates a prefix that can be added to a SymbolList via the makeSymbolList function.
 auto addPrefix(N)(string symbol, N factor)
     if (isValue!N)
 {
     return AddPrefix!N(symbol, factor);
 }
 
+/++
+Builds a SymbolList from a list of units and prefixes
+See: Example of the parseQuantity function.
++/
 SymbolList!N makeSymbolList(N, Sym...)(Sym list)
 {
     SymbolList!N ret;
@@ -180,8 +171,18 @@ SymbolList!N makeSymbolList(N, Sym...)(Sym list)
     return ret;
 }
 
-/// Parses text for a unit or a quantity at runtime or compile-time.
-auto parseQuantity(Q, alias parseFun, S, SL)(S text, auto ref SL symbolList)
+/++
+Parses text for a quantity of type Q at runtime.
+
+Params:
+    text = The string to parse.
+    symbolList = A prefilled SymbolList struct that contains all units and prefixes.
+    Q = The type of the quantity that the function should return.
+    parseFun = A function that can parse the beginning of text for a numeric value.
+        This function must consume the parsed numeric value and leave only a unit to parse.
++/
+auto parseQuantity(Q, alias parseFun = (ref string s) => parse!(Q.valueType)(s), S, SL)
+    (S text, auto ref SL symbolList)
     if (isQuantity!Q)
 {
     auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(text, symbolList);
@@ -198,20 +199,26 @@ unittest
     alias BinarySize = QuantityType!bit;
     enum byte_ = 8 * bit;
 
-    SymbolList!ulong symbols;
-    symbols.addUnit("bit", bit);
-    symbols.addUnit("B", byte_);
-    symbols.addPrefix("hob", 7);
+    auto symbolList = makeSymbolList!ulong(
+        addUnit("bit", bit),
+        addUnit("B", byte_),
+        addPrefix("hob", 7)
+    );
 
-    auto height = parseQuantity!(BinarySize, (ref string s) => parse!ulong(s))("1 hobbit", symbols);
+    auto height = parseQuantity!BinarySize("1 hobbit", symbolList);
     assert(height.value(bit) == 7);
 }
 
 /++
-Creates a compile-time parser capable of working on user-defined units
-and prefixes.
+Creates a compile-time parser capable of working on user-defined units and prefixes.
+
+Params:
+    N = The type of the value type stored in the Quantity struct.
+    symbolList = A prefilled SymbolList struct that contains all units and prefixes.
+    parseFun = A function that can parse the beginning of text for a numeric value.
+        This function must consume the parsed numeric value and leave only a unit to parse.    
 +/
-template ctQuantityParser(N, alias parseFun, alias symbolList)
+template ctQuantityParser(N, alias symbolList, alias parseFun)
 {
     template ctQuantityParser(string str)
     {
@@ -246,7 +253,7 @@ unittest
         addPrefix("hob", 7)
     );
     
-    alias sz = ctQuantityParser!(real, std.conv.parse!(real, string), symbolList);
+    alias sz = ctQuantityParser!(real, symbolList, std.conv.parse!(real, string));
 
     auto height = sz!"1 hobbit";
     assert(height.value(sz!"bit") == 7);
