@@ -143,7 +143,7 @@ alias atto = prefix!1e-18; /// ditto
 alias zepto = prefix!1e-21; /// ditto
 alias yocto = prefix!1e-24; /// ditto
 
-enum siSymbolList = makeSymbolList!real(
+private alias siSymbolTuple = TypeTuple!(
     addUnit("m", meter),
     addUnit("kg", kilogram),
     addUnit("s", second),
@@ -211,17 +211,19 @@ enum siSymbolList = makeSymbolList!real(
     addPrefix("Ki", 1024.0L)
 );
 
-static __gshared SymbolList!real _siSymbolList;
+enum _siSymbolList = makeSymbolList!real(siSymbolTuple);
+
+static __gshared SymbolList!real siSymbolList;
 static this()
 {
-    _siSymbolList = siSymbolList;
+    siSymbolList = _siSymbolList;
 }
 
 /// Parses text for a SI unit or quantity at runtime or compile-time.
 auto parseSI(Q, S)(S text)
     if (isQuantity!Q)
 {
-    return parseQuantity!(Q, std.conv.parse!(real, string))(text, _siSymbolList);
+    return parseQuantity!(Q, std.conv.parse!(real, string))(text, siSymbolList);
 }
 ///
 unittest
@@ -241,7 +243,7 @@ unittest
 /++
 Parses a string for a a SI-compatible quantity.
 +/
-alias si = ctQuantityParser!(real, siSymbolList, std.conv.parse!(real, string));
+alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string));
 ///
 unittest
 {
@@ -257,21 +259,11 @@ unittest
     static assert(is(typeof(value) == Dimensionless));
 }
 
-
 /++
-Helper function to add all SI units and prefixes when building a SymbolList
-at compile-time with the makeSymbolList function.
+Helper template that can be used to add all SI units and prefixes when
+building a symbol list with makeSymbolList.
 +/
-auto addAllSI(SL)(SL symbolList)
-{
-	SL symList = symbolList;
-	foreach (sym, unit; siSymbolList.units)
-		symList.units[sym] = unit;
-	foreach (sym, prefix; siSymbolList.prefixes)
-		symList.prefixes[sym] = prefix;
-	return symList;
-}
-
+alias addAllSI = siSymbolTuple;
 
 /// Converts a quantity of time to or from a core.time.Duration
 Time fromDuration(Duration d)

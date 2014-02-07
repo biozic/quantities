@@ -150,7 +150,7 @@ SymbolList!N makeSymbolList(N, Sym...)(Sym list)
 		{
 			static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
 			              .format(Q.valueType.stringof, N.stringof));
-			ret.units[sym.symbol] = sym.unit.toRT;
+			ret.units[sym.symbol] = sym.unit;
 		}
 		else static if (is(typeof(sym) == AddPrefix!T, T))
 		{
@@ -178,20 +178,20 @@ unittest
 	);
 }
 
-private struct AddUnit(Q)
+package struct AddUnit(Q)
 {
     string symbol;
-    Q unit;
+    RTQuantity!(Q.valueType) unit;
 }
 
 /// Creates a unit that can be added to a SymbolList via the SymbolList constuctor.
 auto addUnit(Q)(string symbol, Q unit)
     if (isQuantity!Q)
 {
-    return AddUnit!Q(symbol, unit);
+    return AddUnit!Q(symbol, unit.toRT);
 }
 
-private struct AddPrefix(N)
+package struct AddPrefix(N)
 {
     string symbol;
     N factor;
@@ -204,7 +204,6 @@ auto addPrefix(N)(string symbol, N factor)
     return AddPrefix!N(symbol, factor);
 }
 
-// TODO: Add possibility of finding a unit befor the value, e.g. $1000.
 /++
 Parses text for a quantity of type Q at runtime.
 
@@ -278,18 +277,23 @@ template ctQuantityParser(N, alias symbolList, alias parseFun)
 ///
 unittest
 {
+	import quantities.si;
+
     enum bit = unit!"bit";
     enum byte_ = 8 * bit;
     enum symbolList = makeSymbolList!real(
         addUnit("bit", bit),
         addUnit("B", byte_),
-        addPrefix("hob", 7)
+        addPrefix("hob", 7),
+		addAllSI
     );
     
     alias sz = ctQuantityParser!(real, symbolList, std.conv.parse!(real, string));
 
     auto height = sz!"1 hobbit";
     assert(height.value(sz!"bit") == 7);
+	height = sz!"1 kB";
+	assert(height.value(byte_) == 1000);
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
