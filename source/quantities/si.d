@@ -14,6 +14,7 @@ import quantities.base;
 import quantities.parsing;
 import std.conv;
 import std.math : PI;
+import std.typetuple;
 import core.time : Duration, dur;
 version (unittest)
 {
@@ -142,7 +143,7 @@ alias atto = prefix!1e-18; /// ditto
 alias zepto = prefix!1e-21; /// ditto
 alias yocto = prefix!1e-24; /// ditto
 
-enum siSymbolList = SymbolList!real(
+enum siSymbolList = makeSymbolList!real(
     addUnit("m", meter),
     addUnit("kg", kilogram),
     addUnit("s", second),
@@ -255,6 +256,22 @@ unittest
     static assert(is(typeof(speed) == Speed));
     static assert(is(typeof(value) == Dimensionless));
 }
+
+
+/++
+Helper function to add all SI units and prefixes when building a SymbolList
+at compile-time with the makeSymbolList function.
++/
+auto addAllSI(SL)(SL symbolList)
+{
+	SL symList = symbolList;
+	foreach (sym, unit; siSymbolList.units)
+		symList.units[sym] = unit;
+	foreach (sym, prefix; siSymbolList.prefixes)
+		symList.prefixes[sym] = prefix;
+	return symList;
+}
+
 
 /// Converts a quantity of time to or from a core.time.Duration
 Time fromDuration(Duration d)

@@ -108,55 +108,15 @@ version (unittest)
 /++
 Contains the symbols of the units and the prefixes that a parser can handle.
 +/
-// TODO: Add a way to add SI units and prefixes
 struct SymbolList(N)
 {
     static assert(isValue!N, "Incompatible type: " ~ N.stringof);
 
-    private
+    package
     {
         RTQuantity!N[string] units;
         N[string] prefixes;
         size_t maxPrefixLength;
-    }
-
-    /++
-    Builds a SymbolList from a list of units and prefixes.
-    +/
-    this(Sym...)(Sym list)
-    {
-        foreach (sym; list)
-        {
-            static if (is(typeof(sym) == AddUnit!Q, Q))
-            {
-                static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
-                              .format(Q.valueType.stringof, N.stringof));
-                units[sym.symbol] = sym.unit.toRT;
-            }
-            else static if (is(typeof(sym) == AddPrefix!T, T))
-            {
-                static assert(is(T : N), "Incompatible value types: %s and %s" 
-                              .format(T.stringof, N.stringof));
-                prefixes[sym.symbol] = sym.factor;
-                if (sym.symbol.length > maxPrefixLength)
-                    maxPrefixLength = sym.symbol.length;
-            }
-            else
-                static assert(false, "Unexpected symbol: " ~ sym.stringof);
-        }
-    }
-    ///
-    version (D_Ddoc) unittest
-    {
-        auto euro = unit!("C", double);
-        alias Currency = QuantityType!euro;
-        auto dollar = 1.35 * euro;
-        
-        auto symbolList = SymbolList!double(
-            addUnit("€", euro),
-            addUnit("$", dollar),
-            addPrefix("k", 1e3)
-        );
     }
 
     /// Adds (or replaces) a unit in the list
@@ -174,6 +134,48 @@ struct SymbolList(N)
         if (symbol.length > maxPrefixLength)
             maxPrefixLength = symbol.length;
     }
+}
+
+/++
+Helps build a SymbolList at compile-time.
+
+Use with the global addUnit and addPrefix functions.
++/
+SymbolList!N makeSymbolList(N, Sym...)(Sym list)
+{
+	SymbolList!N ret;
+	foreach (sym; list)
+	{
+		static if (is(typeof(sym) == AddUnit!Q, Q))
+		{
+			static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
+			              .format(Q.valueType.stringof, N.stringof));
+			ret.units[sym.symbol] = sym.unit.toRT;
+		}
+		else static if (is(typeof(sym) == AddPrefix!T, T))
+		{
+			static assert(is(T : N), "Incompatible value types: %s and %s" 
+			              .format(T.stringof, N.stringof));
+			ret.prefixes[sym.symbol] = sym.factor;
+			if (sym.symbol.length > ret.maxPrefixLength)
+				ret.maxPrefixLength = sym.symbol.length;
+		}
+		else
+			static assert(false, "Unexpected symbol: " ~ sym.stringof);
+	}
+	return ret;
+}
+///
+unittest
+{
+	enum euro = unit!("C", double);
+	alias Currency = QuantityType!euro;
+	enum dollar = 1.35 * euro;
+
+	enum symbolList = makeSymbolList!double(
+		addUnit("€", euro),
+		addUnit("$", dollar)
+	);
 }
 
 private struct AddUnit(Q)
@@ -231,11 +233,10 @@ unittest
     alias BinarySize = QuantityType!bit;
     enum byte_ = 8 * bit;
 
-    auto symbolList = SymbolList!ulong(
-        addUnit("bit", bit),
-        addUnit("B", byte_),
-        addPrefix("hob", 7)
-    );
+	SymbolList!ulong symbolList;
+	symbolList.addUnit("bit", bit);
+	symbolList.addUnit("B", byte_);
+	symbolList.addPrefix("hob", 7);
 
     auto height = parseQuantity!BinarySize("1 hobbit", symbolList);
     assert(height.value(bit) == 7);
@@ -279,7 +280,7 @@ unittest
 {
     enum bit = unit!"bit";
     enum byte_ = 8 * bit;
-    enum symbolList = SymbolList!real(
+    enum symbolList = makeSymbolList!real(
         addUnit("bit", bit),
         addUnit("B", byte_),
         addPrefix("hob", 7)

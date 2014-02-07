@@ -12,10 +12,8 @@ alias Currency = QuantityType!euro;
 static __gshared SymbolList!(double) currencySymbols;
 shared static this()
 {
-    currencySymbols = SymbolList!double(
-        addUnit("€", euro),
-        addUnit("$", 0.73 * euro)
-    );
+	currencySymbols.addUnit("€", euro);
+	currencySymbols.addUnit("$", 0.73 * euro);
 }
 
 Currency parseCurrency(S)(S text)
