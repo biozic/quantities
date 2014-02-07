@@ -98,6 +98,7 @@ template hasNumericBehavior(N)
         && __traits(compiles, (n1 * n2))
         && __traits(compiles, (n1 / n2))
         && __traits(compiles, (n1 = 1))
+        && __traits(compiles, (cast(const) n1 + n2))
     )
         enum hasNumericBehavior = true;
     else
@@ -108,9 +109,10 @@ unittest
     static assert(hasNumericBehavior!real);
     static assert(hasNumericBehavior!int);
 
-    import std.bigint, std.numeric;
+    import std.bigint, std.numeric, std.typecons;
     static assert(hasNumericBehavior!BigInt);
-    static assert(hasNumericBehavior!(CustomFloat!16));
+    static assert(hasNumericBehavior!(RefCounted!real));
+    static assert(!hasNumericBehavior!(CustomFloat!16));
 }
 
 enum isValue(T) = hasNumericBehavior!T && !isQuantity!T;
@@ -191,9 +193,9 @@ struct Quantity(N, Dim...)
         // Workaround for @@BUG 5770@@
         // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
         // "Template constructor bypass access check"
-        package static auto make(T)(T value)
+        package static Quantity make(T)(T value)
         {
-            Quantity!(N, Dim) ret;
+            Quantity ret;
             ret._value = cast(N) value;
             return ret;
         }
@@ -202,7 +204,7 @@ struct Quantity(N, Dim...)
     // Gets the internal scalar value of this quantity.
     @property N rawValue() const
     {
-        return _value;
+        return cast(N) _value;
     }
     // Implicitly convert a dimensionless value to the value type
     static if (!Dim.length)

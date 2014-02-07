@@ -91,23 +91,33 @@ Nicolas Sicard
 </big></dt>
 <dd>Contains the symbols of the units and the prefixes that a parser can handle.<br><br>
 
+<dl><dt><big><a name="this"></a> this(Sym...)(Sym <i>list</i>);
+</big></dt>
+<dd>Builds a SymbolList from a list of units and prefixes.<br><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>auto</font> euro = unit!(<font color=red>"C"</font>, <font color=blue>double</font>);
+<font color=blue>alias</font> Currency = QuantityType!euro;
+<font color=blue>auto</font> dollar = 1.35 * euro;
+
+<font color=blue>auto</font> symbolList = SymbolList!<font color=blue>double</font>(
+    addUnit(<font color=red>"€"</font>, euro),
+    addUnit(<font color=red>"$"</font>, dollar),
+    addPrefix(<font color=red>"k"</font>, 1e3)
+);
+</pre>
+<br><br>
+</dd>
+</dl>
 </dd>
 <dt><big><a name="addUnit"></a>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
 </big></dt>
-<dd>Creates a unit that can be added to a SymbolList via the makeSymbolList function.<br><br>
+<dd>Creates a unit that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
 </dd>
 <dt><big><a name="addPrefix"></a>auto <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
 </big></dt>
-<dd>Creates a prefix that can be added to a SymbolList via the makeSymbolList function.<br><br>
-
-</dd>
-<dt><big><a name="makeSymbolList"></a>SymbolList!N <u>makeSymbolList</u>(N, Sym...)(Sym <i>list</i>);
-</big></dt>
-<dd>Builds a SymbolList from a list of units and prefixes
-<br><br>
-<b>See:</b><br>
-Example of the parseQuantity function.<br><br>
+<dd>Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
 </dd>
 <dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, alias parseFun = (ref string s) =&gt; parse!(Q.valueType)(s), S, SL)(S <i>text</i>, auto ref SL <i>symbolList</i>) if (isQuantity!Q);
@@ -131,7 +141,7 @@ Example of the parseQuantity function.<br><br>
 <font color=blue>alias</font> BinarySize = QuantityType!bit;
 <font color=blue>enum</font> byte_ = 8 * bit;
 
-<font color=blue>auto</font> symbolList = makeSymbolList!<font color=blue>ulong</font>(
+<font color=blue>auto</font> symbolList = SymbolList!<font color=blue>ulong</font>(
     addUnit(<font color=red>"bit"</font>, bit),
     addUnit(<font color=red>"B"</font>, byte_),
     addPrefix(<font color=red>"hob"</font>, 7)
@@ -158,7 +168,7 @@ Example of the parseQuantity function.<br><br>
 <pre class="d_code">
 <font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
 <font color=blue>enum</font> byte_ = 8 * bit;
-<font color=blue>enum</font> symbolList = makeSymbolList!<font color=blue>real</font>(
+<font color=blue>enum</font> symbolList = SymbolList!<font color=blue>real</font>(
     addUnit(<font color=red>"bit"</font>, bit),
     addUnit(<font color=red>"B"</font>, byte_),
     addPrefix(<font color=red>"hob"</font>, 7)

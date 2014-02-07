@@ -108,15 +108,71 @@ version (unittest)
 /++
 Contains the symbols of the units and the prefixes that a parser can handle.
 +/
+// TODO: Add a way to add SI units and prefixes
 struct SymbolList(N)
 {
     static assert(isValue!N, "Incompatible type: " ~ N.stringof);
-    
+
     private
     {
         RTQuantity!N[string] units;
         N[string] prefixes;
         size_t maxPrefixLength;
+    }
+
+    /++
+    Builds a SymbolList from a list of units and prefixes.
+    +/
+    this(Sym...)(Sym list)
+    {
+        foreach (sym; list)
+        {
+            static if (is(typeof(sym) == AddUnit!Q, Q))
+            {
+                static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
+                              .format(Q.valueType.stringof, N.stringof));
+                units[sym.symbol] = sym.unit.toRT;
+            }
+            else static if (is(typeof(sym) == AddPrefix!T, T))
+            {
+                static assert(is(T : N), "Incompatible value types: %s and %s" 
+                              .format(T.stringof, N.stringof));
+                prefixes[sym.symbol] = sym.factor;
+                if (sym.symbol.length > maxPrefixLength)
+                    maxPrefixLength = sym.symbol.length;
+            }
+            else
+                static assert(false, "Unexpected symbol: " ~ sym.stringof);
+        }
+    }
+    ///
+    version (D_Ddoc) unittest
+    {
+        auto euro = unit!("C", double);
+        alias Currency = QuantityType!euro;
+        auto dollar = 1.35 * euro;
+        
+        auto symbolList = SymbolList!double(
+            addUnit("€", euro),
+            addUnit("$", dollar),
+            addPrefix("k", 1e3)
+        );
+    }
+
+    /// Adds (or replaces) a unit in the list
+    void addUnit(Q)(string symbol, Q unit)
+        if (isQuantity!Q)
+    {
+        units[symbol] = unit.toRT;
+    }
+
+    /// Adds (or replaces) a prefix in the list
+    void addPrefix(N)(string symbol, N factor)
+        if (isValue!N)
+    {
+        prefixes[symbol] = factor;
+        if (symbol.length > maxPrefixLength)
+            maxPrefixLength = symbol.length;
     }
 }
 
@@ -126,7 +182,7 @@ private struct AddUnit(Q)
     Q unit;
 }
 
-/// Creates a unit that can be added to a SymbolList via the makeSymbolList function.
+/// Creates a unit that can be added to a SymbolList via the SymbolList constuctor.
 auto addUnit(Q)(string symbol, Q unit)
     if (isQuantity!Q)
 {
@@ -139,38 +195,14 @@ private struct AddPrefix(N)
     N factor;
 }
 
-/// Creates a prefix that can be added to a SymbolList via the makeSymbolList function.
+/// Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.
 auto addPrefix(N)(string symbol, N factor)
     if (isValue!N)
 {
     return AddPrefix!N(symbol, factor);
 }
 
-/++
-Builds a SymbolList from a list of units and prefixes
-See: Example of the parseQuantity function.
-+/
-SymbolList!N makeSymbolList(N, Sym...)(Sym list)
-{
-    SymbolList!N ret;
-    foreach (sym; list)
-    {
-        static if (is(typeof(sym) == AddUnit!Q, Q))
-        {
-            ret.units[sym.symbol] = sym.unit.toRT;
-        }
-        else static if (is(typeof(sym) == AddPrefix!N, N))
-        {
-            ret.prefixes[sym.symbol] = sym.factor;
-            if (sym.symbol.length > ret.maxPrefixLength)
-                ret.maxPrefixLength = sym.symbol.length;
-        }
-        else
-            static assert(false, "Unexpected symbol: " ~ sym.stringof);
-    }
-    return ret;
-}
-
+// TODO: Add possibility of finding a unit befor the value, e.g. $1000.
 /++
 Parses text for a quantity of type Q at runtime.
 
@@ -199,7 +231,7 @@ unittest
     alias BinarySize = QuantityType!bit;
     enum byte_ = 8 * bit;
 
-    auto symbolList = makeSymbolList!ulong(
+    auto symbolList = SymbolList!ulong(
         addUnit("bit", bit),
         addUnit("B", byte_),
         addPrefix("hob", 7)
@@ -247,7 +279,7 @@ unittest
 {
     enum bit = unit!"bit";
     enum byte_ = 8 * bit;
-    enum symbolList = makeSymbolList!real(
+    enum symbolList = SymbolList!real(
         addUnit("bit", bit),
         addUnit("B", byte_),
         addPrefix("hob", 7)

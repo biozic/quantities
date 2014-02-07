@@ -142,7 +142,7 @@ alias atto = prefix!1e-18; /// ditto
 alias zepto = prefix!1e-21; /// ditto
 alias yocto = prefix!1e-24; /// ditto
 
-enum siSymbolList = makeSymbolList!real(
+enum siSymbolList = SymbolList!real(
     addUnit("m", meter),
     addUnit("kg", kilogram),
     addUnit("s", second),
