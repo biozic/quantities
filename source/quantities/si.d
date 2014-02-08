@@ -144,87 +144,82 @@ alias zepto = prefix!1e-21; /// ditto
 alias yocto = prefix!1e-24; /// ditto
 
 private alias siSymbolTuple = TypeTuple!(
-    addUnit("m", meter),
-    addUnit("kg", kilogram),
-    addUnit("s", second),
-    addUnit("A", ampere),
-    addUnit("K", kelvin),
-    addUnit("mol", mole),
-    addUnit("cd", candela),
-    addUnit("rad", radian),
-    addUnit("sr", steradian),
-    addUnit("Hz", hertz),
-    addUnit("N", newton),
-    addUnit("Pa", pascal),
-    addUnit("J", joule),
-    addUnit("W", watt),
-    addUnit("C", coulomb),
-    addUnit("V", volt),
-    addUnit("F", farad),
-    addUnit("Ω", ohm),
-    addUnit("S", siemens),
-    addUnit("Wb", weber),
-    addUnit("T", tesla),
-    addUnit("H", henry),
-    addUnit("lm", lumen),
-    addUnit("lx", lux),
-    addUnit("Bq", becquerel),
-    addUnit("Gy", gray),
-    addUnit("Sv", sievert),
-    addUnit("kat", katal),
-    addUnit("g", gram),
-    addUnit("min", minute),
-    addUnit("h", hour),
-    addUnit("d", day),
-    addUnit("l", liter),
-    addUnit("L", liter),
-    addUnit("t", ton),
-    addUnit("eV", electronVolt),
-    addUnit("Da", dalton),
-    addPrefix("Y", 1e24L),
-    addPrefix("Z", 1e21L),
-    addPrefix("E", 1e18L),
-    addPrefix("P", 1e15L),
-    addPrefix("T", 1e12L),
-    addPrefix("G", 1e9L),
-    addPrefix("M", 1e6L),
-    addPrefix("k", 1e3L),
-    addPrefix("h", 1e2L),
-    addPrefix("da", 1e1L),
-    addPrefix("d", 1e-1L),
-    addPrefix("c", 1e-2L),
-    addPrefix("m", 1e-3L),
-    addPrefix("µ", 1e-6L),
-    addPrefix("n", 1e-9L),
-    addPrefix("p", 1e-12L),
-    addPrefix("f", 1e-15L),
-    addPrefix("a", 1e-18L),
-    addPrefix("z", 1e-21L),
-    addPrefix("y", 1e-24L),
-    addPrefix("Yi", 1024.0L^^8),
-    addPrefix("Zi", 1024.0L^^7),
-    addPrefix("Ei", 1024.0L^^6),
-    addPrefix("Pi", 1024.0L^^5),
-    addPrefix("Ti", 1024.0L^^4),
-    addPrefix("Gi", 1024.0L^^3),
-    addPrefix("Mi", 1024.0L^^2),
-    addPrefix("Ki", 1024.0L)
+    withUnit("m", meter),
+    withUnit("kg", kilogram),
+    withUnit("s", second),
+    withUnit("A", ampere),
+    withUnit("K", kelvin),
+    withUnit("mol", mole),
+    withUnit("cd", candela),
+    withUnit("rad", radian),
+    withUnit("sr", steradian),
+    withUnit("Hz", hertz),
+    withUnit("N", newton),
+    withUnit("Pa", pascal),
+    withUnit("J", joule),
+    withUnit("W", watt),
+    withUnit("C", coulomb),
+    withUnit("V", volt),
+    withUnit("F", farad),
+    withUnit("Ω", ohm),
+    withUnit("S", siemens),
+    withUnit("Wb", weber),
+    withUnit("T", tesla),
+    withUnit("H", henry),
+    withUnit("lm", lumen),
+    withUnit("lx", lux),
+    withUnit("Bq", becquerel),
+    withUnit("Gy", gray),
+    withUnit("Sv", sievert),
+    withUnit("kat", katal),
+    withUnit("g", gram),
+    withUnit("min", minute),
+    withUnit("h", hour),
+    withUnit("d", day),
+    withUnit("l", liter),
+    withUnit("L", liter),
+    withUnit("t", ton),
+    withUnit("eV", electronVolt),
+    withUnit("Da", dalton),
+    withPrefix("Y", 1e24L),
+    withPrefix("Z", 1e21L),
+    withPrefix("E", 1e18L),
+    withPrefix("P", 1e15L),
+    withPrefix("T", 1e12L),
+    withPrefix("G", 1e9L),
+    withPrefix("M", 1e6L),
+    withPrefix("k", 1e3L),
+    withPrefix("h", 1e2L),
+    withPrefix("da", 1e1L),
+    withPrefix("d", 1e-1L),
+    withPrefix("c", 1e-2L),
+    withPrefix("m", 1e-3L),
+    withPrefix("µ", 1e-6L),
+    withPrefix("n", 1e-9L),
+    withPrefix("p", 1e-12L),
+    withPrefix("f", 1e-15L),
+    withPrefix("a", 1e-18L),
+    withPrefix("z", 1e-21L),
+    withPrefix("y", 1e-24L),
+    withPrefix("Yi", 1024.0L^^8),
+    withPrefix("Zi", 1024.0L^^7),
+    withPrefix("Ei", 1024.0L^^6),
+    withPrefix("Pi", 1024.0L^^5),
+    withPrefix("Ti", 1024.0L^^4),
+    withPrefix("Gi", 1024.0L^^3),
+    withPrefix("Mi", 1024.0L^^2),
+    withPrefix("Ki", 1024.0L)
 );
 
 enum _siSymbolList = makeSymbolList!real(siSymbolTuple);
-
 static __gshared SymbolList!real siSymbolList;
-static this()
+shared static this()
 {
     siSymbolList = _siSymbolList;
 }
 
-/// Parses text for a SI unit or quantity at runtime or compile-time.
-auto parseSI(Q, S)(S text)
-    if (isQuantity!Q)
-{
-    return parseQuantity!(Q, std.conv.parse!(real, string))(text, siSymbolList);
-}
+/// Creates a function that parses a string for a SI unit or quantity at runtime.
+alias parseSI = rtQuantityParser!(real, siSymbolList);
 ///
 unittest
 {
@@ -240,10 +235,8 @@ unittest
     assert(v == (2 * meter) / meter);
 }
 
-/++
-Parses a string for a a SI-compatible quantity.
-+/
-alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string));
+/// Creates a function that parses a string for a SI unit or quantity at compile-time.
+alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string), 1.0L);
 ///
 unittest
 {
@@ -263,7 +256,7 @@ unittest
 Helper template that can be used to add all SI units and prefixes when
 building a symbol list with makeSymbolList.
 +/
-alias addAllSI = siSymbolTuple;
+alias withAllSI = siSymbolTuple;
 
 /// Converts a quantity of time to or from a core.time.Duration
 Time fromDuration(Duration d)

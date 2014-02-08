@@ -16,14 +16,11 @@ shared static this()
 	currencySymbols.addUnit("$", 0.73 * euro);
 }
 
-Currency parseCurrency(S)(S text)
-{
-    return parseQuantity!Currency(text, currencySymbols);
-}
+alias parse =  rtQuantityParser!(double, currencySymbols);
 
 unittest
 {
-    writefln("The price is %.2f €", parseCurrency("2000 $").value(euro));
+    writefln("The price is %.2f €", parse!Currency("2000 $").value(euro));
 }
 
 unittest
@@ -33,5 +30,5 @@ unittest
 
 unittest
 {
-    writefln("The price is %.2f €", parseCurrency("2000 $").value(euro));
+    writefln("The price is %.2f €", parse!Currency("2000 $").value(euro));
 }

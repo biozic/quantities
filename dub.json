@@ -23,8 +23,7 @@
             "targetName": "bench",
             "targetType": "executable",
             "importPaths": ["benchmark"],
-            "sourcePaths": ["benchmark"],
-            "buildOptions": ["profile"]
+            "sourcePaths": ["benchmark"]
         }
     ]
 }

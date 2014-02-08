@@ -145,9 +145,9 @@ Nicolas Sicard
 <dd>SI prefixes.<br><br>
 
 </dd>
-<dt><big><a name="parseSI"></a>auto <u>parseSI</u>(Q, S)(S <i>text</i>) if (isQuantity!Q);
+<dt><big><a name="parseSI"></a>alias <u>parseSI</u> = quantities.parsing.rtQuantityParser!(real, siSymbolList).rtQuantityParser(Q, S)(S str) if (isQuantity!Q);
 </big></dt>
-<dd>Parses text for a SI unit or quantity at runtime or compile-time.<br><br>
+<dd>Creates a function that parses a string for a SI unit or quantity at runtime.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> t = <u>parseSI</u>!Time(<font color=red>"90 min"</font>);
@@ -157,9 +157,9 @@ t = <u>parseSI</u>!Time(<font color=red>"h"</font>);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.ctQuantityParser!(real, SymbolList(["m":RTQuantity(1.00000L, ["L":1]), "kg":RTQuantity(1.00000L, ["M":1]), "s":RTQuantity(1.00000L, ["T":1]), "A":RTQuantity(1.00000L, ["I":1]), "K":RTQuantity(1.00000L, ["\xce\x98":1]), "mol":RTQuantity(1.00000L, ["N":1]), "cd":RTQuantity(1.00000L, ["J":1]), "rad":RTQuantity(1.00000L, null), "sr":RTQuantity(1.00000L, null), "Hz":RTQuantity(1.00000L, ["T":-1]), "N":RTQuantity(1.00000L, ["L":1, "M":1, "T":-2]), "Pa":RTQuantity(1.00000L, ["L":-1, "M":1, "T":-2]), "J":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2]), "W":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3]), "C":RTQuantity(1.00000L, ["T":1, "I":1]), "V":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-1]), "F":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":4, "I":2]), "\xce\xa9":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-2]), "S":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":3, "I":2]), "Wb":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-1]), "T":RTQuantity(1.00000L, ["M":1, "T":-2, "I":-1]), "H":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-2]), "lm":RTQuantity(1.00000L, ["J":1]), "lx":RTQuantity(1.00000L, ["L":-2, "J":1]), "Bq":RTQuantity(1.00000L, ["T":-1]), "Gy":RTQuantity(1.00000L, ["L":2, "T":-2]), "Sv":RTQuantity(1.00000L, ["L":2, "T":-2]), "kat":RTQuantity(1.00000L, ["T":-1, "N":1]), "g":RTQuantity(0.001L, ["M":1]), "min":RTQuantity(60.0000L, ["T":1]), "h":RTQuantity(3600.00L, ["T":1]), "d":RTQuantity(86400.0L, ["T":1]), "l":RTQuantity(0.001L, ["L":3]), "L":RTQuantity(0.001L, ["L":3]), "t":RTQuantity(1000.00L, ["M":1]), "eV":RTQuantity(0xb.d26d07a626ec67ep-66L, ["L":2, "M":1, "T":-2]), "Da":RTQuantity(0x8.38fbab4ccff329fp-92L, ["M":1])], ["Y":1e+24L, "Z":1e+21L, "E":1.00000e+18L, "P":1.00000e+15L, "T":1.00000e+12L, "G":1.00000e+09L, "M":1.00000e+06L, "k":1000.00L, "h":100.000L, "da":10.0000L, "d":0.1L, "c":0.01L, "m":0.001L, "\xc2\xb5":1e-06L, "n":1e-09L, "p":1e-12L, "f":1e-15L, "a":1e-18L, "z":1e-21L, "y":1e-24L, "Yi":0x8p+77L, "Zi":0x8p+67L, "Ei":0x8.p+57L, "Pi":0x8.p+47L, "Ti":0x8.p+37L, "Gi":0x8.p+27L, "Mi":0x8.p+17L, "Ki":1024.00L], 2LU), parse).ctQuantityParser(string str);
+<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.ctQuantityParser!(real, SymbolList(["m":RTQuantity(1.00000L, ["L":1]), "kg":RTQuantity(1.00000L, ["M":1]), "s":RTQuantity(1.00000L, ["T":1]), "A":RTQuantity(1.00000L, ["I":1]), "K":RTQuantity(1.00000L, ["\xce\x98":1]), "mol":RTQuantity(1.00000L, ["N":1]), "cd":RTQuantity(1.00000L, ["J":1]), "rad":RTQuantity(1.00000L, null), "sr":RTQuantity(1.00000L, null), "Hz":RTQuantity(1.00000L, ["T":-1]), "N":RTQuantity(1.00000L, ["L":1, "M":1, "T":-2]), "Pa":RTQuantity(1.00000L, ["L":-1, "M":1, "T":-2]), "J":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2]), "W":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3]), "C":RTQuantity(1.00000L, ["T":1, "I":1]), "V":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-1]), "F":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":4, "I":2]), "\xce\xa9":RTQuantity(1.00000L, ["L":2, "M":1, "T":-3, "I":-2]), "S":RTQuantity(1.00000L, ["L":-2, "M":-1, "T":3, "I":2]), "Wb":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-1]), "T":RTQuantity(1.00000L, ["M":1, "T":-2, "I":-1]), "H":RTQuantity(1.00000L, ["L":2, "M":1, "T":-2, "I":-2]), "lm":RTQuantity(1.00000L, ["J":1]), "lx":RTQuantity(1.00000L, ["L":-2, "J":1]), "Bq":RTQuantity(1.00000L, ["T":-1]), "Gy":RTQuantity(1.00000L, ["L":2, "T":-2]), "Sv":RTQuantity(1.00000L, ["L":2, "T":-2]), "kat":RTQuantity(1.00000L, ["T":-1, "N":1]), "g":RTQuantity(0.001L, ["M":1]), "min":RTQuantity(60.0000L, ["T":1]), "h":RTQuantity(3600.00L, ["T":1]), "d":RTQuantity(86400.0L, ["T":1]), "l":RTQuantity(0.001L, ["L":3]), "L":RTQuantity(0.001L, ["L":3]), "t":RTQuantity(1000.00L, ["M":1]), "eV":RTQuantity(0xb.d26d07a626ec67ep-66L, ["L":2, "M":1, "T":-2]), "Da":RTQuantity(0x8.38fbab4ccff329fp-92L, ["M":1])], ["Y":1e+24L, "Z":1e+21L, "E":1.00000e+18L, "P":1.00000e+15L, "T":1.00000e+12L, "G":1.00000e+09L, "M":1.00000e+06L, "k":1000.00L, "h":100.000L, "da":10.0000L, "d":0.1L, "c":0.01L, "m":0.001L, "\xc2\xb5":1e-06L, "n":1e-09L, "p":1e-12L, "f":1e-15L, "a":1e-18L, "z":1e-21L, "y":1e-24L, "Yi":0x8p+77L, "Zi":0x8p+67L, "Ei":0x8.p+57L, "Pi":0x8.p+47L, "Ti":0x8.p+37L, "Gi":0x8.p+27L, "Mi":0x8.p+17L, "Ki":1024.00L], 2LU), parse, 1.00000L).ctQuantityParser(string str);
 </big></dt>
-<dd>Parses a string for a a SI-compatible quantity.<br><br>
+<dd>Creates a function that parses a string for a SI unit or quantity at compile-time.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>enum</font> min = <u>si</u>!<font color=red>"min"</font>;
@@ -175,11 +175,16 @@ t = <u>parseSI</u>!Time(<font color=red>"h"</font>);
 </pre>
 <br><br>
 </dd>
+<dt><big><a name="withAllSI"></a>alias <u>withAllSI</u> = TList;
+</big></dt>
+<dd>Helper template that can be used to add all SI units and prefixes when
+building a symbol list with makeSymbolList.<br><br>
+
+</dd>
 <dt><big><a name="fromDuration"></a>Time <u>fromDuration</u>(Duration <i>d</i>);
 <br><a name="toDuration"></a>Duration <u>toDuration</u>(Q)(Q <i>quantity</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Converts a quantity of time to or from a core.time.Duration<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> d = 4.dur!<font color=red>"msecs"</font>;
@@ -190,7 +195,8 @@ t = <u>parseSI</u>!Time(<font color=red>"h"</font>);
 <font color=blue>auto</font> d2 = t2.<u>toDuration</u>;
 <font color=blue>assert</font>(d2.get!<font color=red>"minutes"</font> == 3 &amp;&amp; d2.get!<font color=red>"seconds"</font> == 30);
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 </dl>
 
         <hr><small>Page generated by <a href="http://dlang.org/ddoc.html">Ddoc</a>. Copyright 2013-2014, Nicolas Sicard

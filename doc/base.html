@@ -222,7 +222,6 @@ By default, a quantity is represented as a string by a number
 <br><a name="nthRoot"></a>auto <u>nthRoot</u>(int n, Q)(Q <i>quantity</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Transforms a quantity/unit.<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> surface = 25 * square(meter);
@@ -233,7 +232,8 @@ By default, a quantity is represented as a string by a number
 side = cbrt(volume);
 <font color=blue>assert</font>(side.value(deci(meter)).approxEqual(3));
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="abs"></a>Q <u>abs</u>(Q)(Q <i>quantity</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Returns the absolute value of a quantity<br><br>
@@ -273,7 +273,6 @@ Mass mass = 15 * ton;
 </dd>
 <dt><big><a name="Inverse"></a>template <u>Inverse</u>(Q, N = real) if (isQuantity!Q)<br><a name="Product"></a>template <u>Product</u>(Q1, Q2, N = real) if (isQuantity!Q1 &amp;&amp; isQuantity!Q2)<br><a name="Quotient"></a>template <u>Quotient</u>(Q1, Q2, N = real) if (isQuantity!Q1 &amp;&amp; isQuantity!Q2)<br><a name="Square"></a>template <u>Square</u>(Q, N = real) if (isQuantity!Q)<br><a name="Cubic"></a>template <u>Cubic</u>(Q, N = real) if (isQuantity!Q)</big></dt>
 <dd>Utility templates to manipulate quantity types.<br><br>
-
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(Inverse!Time == Frequency));
@@ -283,7 +282,8 @@ Mass mass = 15 * ton;
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<u>Cubic</u>!Length == Volume));
 <font color=blue>static</font> <font color=blue>assert</font>(AreConsistent!(Product!(Inverse!Time, Length), Speed));
 </pre>
-<br><br></dd>
+<br><br>
+</dd>
 <dt><big><a name="prefix"></a>template <u>prefix</u>(alias factor)</big></dt>
 <dd>Creates a new <u>prefix</u> function that mutlpy a Quantity by factor factor.<br><br>
 <b>Examples:</b><br>

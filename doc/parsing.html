@@ -91,69 +91,49 @@ Nicolas Sicard
 </big></dt>
 <dd>Contains the symbols of the units and the prefixes that a parser can handle.<br><br>
 
-<dl><dt><big><a name="this"></a> this(Sym...)(Sym <i>list</i>);
+<dl><dt><big><a name="addUnit"></a>void <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
 </big></dt>
-<dd>Builds a SymbolList from a list of units and prefixes.<br><br>
+<dd>Adds (or replaces) a unit in the list<br><br>
+
+</dd>
+<dt><big><a name="addPrefix"></a>void <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
+</big></dt>
+<dd>Adds (or replaces) a prefix in the list<br><br>
+
+</dd>
+</dl>
+</dd>
+<dt><big><a name="makeSymbolList"></a>SymbolList!N <u>makeSymbolList</u>(N, Sym...)(Sym <i>list</i>);
+</big></dt>
+<dd>Helps build a SymbolList at compile-time.
+<br><br>
+Use with the global addUnit and addPrefix functions.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>auto</font> euro = unit!(<font color=red>"C"</font>, <font color=blue>double</font>);
+<font color=blue>enum</font> euro = unit!(<font color=red>"C"</font>, <font color=blue>double</font>);
 <font color=blue>alias</font> Currency = QuantityType!euro;
-<font color=blue>auto</font> dollar = 1.35 * euro;
+<font color=blue>enum</font> dollar = 1.35 * euro;
 
-<font color=blue>auto</font> symbolList = SymbolList!<font color=blue>double</font>(
-    addUnit(<font color=red>"€"</font>, euro),
-    addUnit(<font color=red>"$"</font>, dollar),
-    addPrefix(<font color=red>"k"</font>, 1e3)
+<font color=blue>enum</font> symbolList = <u>makeSymbolList</u>!<font color=blue>double</font>(
+	withUnit(<font color=red>"€"</font>, euro),
+	withUnit(<font color=red>"$"</font>, dollar),
+       withPrefix(<font color=red>"doz"</font>, 12)
 );
 </pre>
 <br><br>
 </dd>
-</dl>
-</dd>
-<dt><big><a name="addUnit"></a>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
+<dt><big><a name="withUnit"></a>auto <u>withUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Creates a unit that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
 </dd>
-<dt><big><a name="addPrefix"></a>auto <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
+<dt><big><a name="withPrefix"></a>auto <u>withPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
 </big></dt>
 <dd>Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
 </dd>
-<dt><big><a name="parseQuantity"></a>auto <u>parseQuantity</u>(Q, alias parseFun = (ref string s) =&gt; parse!(Q.valueType)(s), S, SL)(S <i>text</i>, auto ref SL <i>symbolList</i>) if (isQuantity!Q);
-</big></dt>
-<dd>Parses text for a quantity of type Q at runtime.
-<br><br>
-<b>Params:</b><br>
-<table><tr><td>S text</td>
-<td>The string to parse.</td></tr>
-<tr><td>SL symbolList</td>
-<td>A prefilled SymbolList struct that contains all units and prefixes.</td></tr>
-<tr><td>Q</td>
-<td>The type of the quantity that the function should return.</td></tr>
-<tr><td>parseFun</td>
-<td>A function that can parse the beginning of text for a numeric value.
-        This function must consume the parsed numeric value and leave only a unit to parse.</td></tr>
-</table><br>
-<b>Examples:</b><br>
-<pre class="d_code">
-<font color=blue>enum</font> bit = unit!(<font color=red>"bit"</font>, <font color=blue>ulong</font>);
-<font color=blue>alias</font> BinarySize = QuantityType!bit;
-<font color=blue>enum</font> byte_ = 8 * bit;
-
-<font color=blue>auto</font> symbolList = SymbolList!<font color=blue>ulong</font>(
-    addUnit(<font color=red>"bit"</font>, bit),
-    addUnit(<font color=red>"B"</font>, byte_),
-    addPrefix(<font color=red>"hob"</font>, 7)
-);
-
-<font color=blue>auto</font> height = <u>parseQuantity</u>!BinarySize(<font color=red>"1 hobbit"</font>, symbolList);
-<font color=blue>assert</font>(height.value(bit) == 7);
-</pre>
-<br><br>
-</dd>
-<dt><big><a name="ctQuantityParser"></a>template <u>ctQuantityParser</u>(N, alias symbolList, alias parseFun)</big></dt>
-<dd>Creates a compile-time parser capable of working on user-defined units and prefixes.
+<dt><big><a name="rtQuantityParser"></a>template <u>rtQuantityParser</u>(N, alias symbolList, alias parseFun = (ref string s) =&gt; parse!N(s), N one = 1)</big></dt>
+<dd>Creates a runtime parser capable of working on user-defined units and prefixes.
 <br><br>
 <b>Params:</b><br>
 <table><tr><td>N</td>
@@ -161,23 +141,72 @@ Nicolas Sicard
 <tr><td>symbolList</td>
 <td>A prefilled SymbolList struct that contains all units and prefixes.</td></tr>
 <tr><td>parseFun</td>
-<td>A function that can parse the beginning of text for a numeric value.
-        This function must consume the parsed numeric value and leave only a unit to parse.</td></tr>
+<td>A function that can parse the beginning of a string to return a numeric value of type N.
+        After this function returns, it must have consumed the numeric part and leave only the unit part.</td></tr>
+<tr><td>one</td>
+<td>The value of type N that is equivalent to 1.</td></tr>
 </table><br>
 <b>Examples:</b><br>
 <pre class="d_code">
-<font color=blue>enum</font> bit = unit!<font color=red>"bit"</font>;
+<font color=blue>import</font> std.bigint;
+
+<font color=blue>enum</font> bit = unit!(<font color=red>"bit"</font>, BigInt);
+<font color=blue>alias</font> BinarySize = QuantityType!bit;
+
+SymbolList!BigInt symbolList;
+symbolList.addUnit(<font color=red>"bit"</font>, bit);
+symbolList.addPrefix(<font color=red>"or"</font>, BigInt(<font color=red>"1234567890987654321"</font>));
+
+<font color=blue>static</font> BigInt parseFun(<font color=blue>ref</font> string input)
+{
+	<font color=blue>import</font> std.exception, std.regex;
+	<font color=blue>enum</font> rgx = ctRegex!<font color=red>`^(\d*)\s*(.*)$`</font>;
+	<font color=blue>auto</font> m = enforce(match(input, rgx));
+	input = m.captures[2];
+	<font color=blue>return</font> BigInt(m.captures[1]);
+}
+
+<font color=blue>alias</font> parse = <u>rtQuantityParser</u>!(BigInt, symbolList, parseFun, BigInt(1));
+
+<font color=blue>auto</font> foo = BigInt(<font color=red>"1234567890987654300"</font>) * bit;
+foo += 21 * bit;
+<font color=blue>assert</font>(foo == parse!BinarySize(<font color=red>"1 orbit"</font>));
+</pre>
+<br><br>
+</dd>
+<dt><big><a name="ctQuantityParser"></a>template <u>ctQuantityParser</u>(N, alias symbolList, alias parseFun = (ref string s) =&gt; parse!N(s), N one = 1)</big></dt>
+<dd>Creates a compile-time parser capable of working on user-defined units and prefixes.
+<br><br>
+Contrary to a runtime parser, a compile-time parser infers the type of the parsed quantity
+automatically from the dimensions of its components.
+
+<br><br>
+<b>Params:</b><br>
+<table><tr><td>N</td>
+<td>The type of the value type stored in the Quantity struct.</td></tr>
+<tr><td>symbolList</td>
+<td>A prefilled SymbolList struct that contains all units and prefixes.</td></tr>
+<tr><td>parseFun</td>
+<td>A function that can parse the beginning of a string to return a numeric value of type N.
+        After this function returns, it must have consumed the numeric part and leave only the unit part.</td></tr>
+<tr><td>one</td>
+<td>The value of type N that is equivalent to 1.</td></tr>
+</table><br>
+<b>Examples:</b><br>
+<pre class="d_code">
+<font color=blue>enum</font> bit = unit!(<font color=red>"bit"</font>, <font color=blue>ulong</font>);
+<font color=blue>alias</font> BinarySize = QuantityType!bit;
 <font color=blue>enum</font> byte_ = 8 * bit;
-<font color=blue>enum</font> symbolList = SymbolList!<font color=blue>real</font>(
-    addUnit(<font color=red>"bit"</font>, bit),
-    addUnit(<font color=red>"B"</font>, byte_),
-    addPrefix(<font color=red>"hob"</font>, 7)
+
+<font color=blue>enum</font> symbolList = makeSymbolList!<font color=blue>ulong</font>(
+	withUnit(<font color=red>"bit"</font>, bit),
+	withUnit(<font color=red>"B"</font>, byte_),
+	withPrefix(<font color=red>"hob"</font>, 7)
 );
 
-<font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(<font color=blue>real</font>, symbolList, std.conv.parse!(<font color=blue>real</font>, string));
+<font color=blue>alias</font> sz = <u>ctQuantityParser</u>!(<font color=blue>ulong</font>, symbolList);
 
-<font color=blue>auto</font> height = sz!<font color=red>"1 hobbit"</font>;
-<font color=blue>assert</font>(height.value(sz!<font color=red>"bit"</font>) == 7);
+<font color=blue>assert</font>(sz!<font color=red>"1 hobbit"</font>.value(bit) == 7);
 </pre>
 <br><br>
 </dd>
