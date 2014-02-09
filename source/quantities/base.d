@@ -364,6 +364,12 @@ struct Quantity(N, Dim...)
             .make(other / _value);
     }
 
+	auto opBinary(string op, T)(T power) const
+		if (op == "^^")
+	{
+		static assert(false, "Unsupporter operator: ^^");
+	}
+
     // Add/sub assign with a quantity that shares the same dimensions
     void opOpAssign(string op, Q)(Q other) /// ditto
         if (isQuantity!Q && (op == "+" || op == "-"))
@@ -644,7 +650,12 @@ unittest
 }
 
 
-/// Transforms a quantity/unit.
+/++
+Math functions operating on a quantity.
+
+Note that these functions use std.math internally, and therefore
+only work for quantities storing a builtin numeric type.
++/
 auto square(U)(U unit)
     if (isQuantity!U)
 {
@@ -662,6 +673,8 @@ auto cubic(U)(U unit)
 auto pow(int n, U)(U unit)
     if (isQuantity!U)
 {
+	static assert(__traits(compiles, unit.rawValue ^^ n),
+	              U.valueType.stringof ~ " doesn't overload operator ^^");
     return Quantity!(U.valueType, Pow!(n, U.dimensions)).make(unit.rawValue ^^ n);
 }
 
@@ -670,7 +683,9 @@ auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(sqrt(quantity.rawValue));
+	static assert(__traits(compiles, sqrt(quantity.rawValue)),
+	              "No overload of sqrt for an argument of type " ~ Q.valueType.stringof);
+	return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(sqrt(quantity.rawValue));
 }
 
 /// ditto
@@ -678,7 +693,9 @@ auto cbrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(cbrt(quantity.rawValue));
+	static assert(__traits(compiles, cbrt(quantity.rawValue)),
+	              "No overload of cbrt for an argument of type " ~ Q.valueType.stringof);
+	return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(cbrt(quantity.rawValue));
 }
 
 /// ditto
@@ -686,7 +703,19 @@ auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
     import std.math;
-    return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(pow(quantity.rawValue, 1.0 / n));
+	static assert(__traits(compiles, pow(quantity.rawValue, 1.0 / n)),
+	              "No overload of pow for an argument of type " ~ Q.valueType.stringof);
+	return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(pow(quantity.rawValue, 1.0 / n));
+}
+
+/// ditto
+Q abs(Q)(Q quantity)
+	if (isQuantity!Q)
+{
+	import std.math;
+	static assert(__traits(compiles, fabs(quantity.rawValue)),
+	              "No overload of fabs for an argument of type " ~ Q.valueType.stringof);
+	return Q.make(fabs(quantity.rawValue));
 }
 
 ///
@@ -699,20 +728,9 @@ unittest
     auto volume = 27 * liter;
     side = cbrt(volume);
     assert(side.value(deci(meter)).approxEqual(3));
-}
 
-/// Returns the absolute value of a quantity
-Q abs(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    import std.math;
-    return Q.make(fabs(quantity.rawValue));
-}
-///
-unittest // abs
-{
-    auto deltaT = -10 * second;
-    assert(abs(deltaT) == 10 * second);
+	auto deltaT = -10 * second;
+	assert(abs(deltaT) == 10 * second);
 }
 
 
