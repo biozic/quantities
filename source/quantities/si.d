@@ -11,6 +11,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.si;
 
 import quantities.base;
+import quantities.math;
 import quantities.parsing;
 import std.conv;
 import std.math : PI;
@@ -20,6 +21,8 @@ version (unittest)
 {
     import std.math : approxEqual;
 }
+
+mixin MathFunctions!("std.math");
 
 /++
 Predefined SI units.

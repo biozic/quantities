@@ -84,6 +84,7 @@ import std.typetuple;
 
 version (unittest)
 {
+	import quantities.math;
     import quantities.si;
     import std.math : approxEqual;
 }
@@ -661,90 +662,6 @@ unittest
 }
 
 
-/++
-Math functions operating on a quantity.
-
-Note that these functions use std.math internally, and therefore
-only work for quantities storing a builtin numeric type.
-+/
-auto square(U)(U unit)
-    if (isQuantity!U)
-{
-    return pow!2(unit);
-}
-
-/// ditto
-auto cubic(U)(U unit)
-    if (isQuantity!U)
-{
-    return pow!3(unit);
-}
-
-/// ditto
-auto pow(int n, U)(U unit)
-    if (isQuantity!U)
-{
-	static assert(__traits(compiles, unit.rawValue ^^ n),
-	              U.valueType.stringof ~ " doesn't overload operator ^^");
-    return Quantity!(U.valueType, Pow!(n, U.dimensions)).make(unit.rawValue ^^ n);
-}
-
-/// ditto
-auto sqrt(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    import std.math;
-	static assert(__traits(compiles, sqrt(quantity.rawValue)),
-	              "No overload of sqrt for an argument of type " ~ Q.valueType.stringof);
-	return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(sqrt(quantity.rawValue));
-}
-
-/// ditto
-auto cbrt(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    import std.math;
-	static assert(__traits(compiles, cbrt(quantity.rawValue)),
-	              "No overload of cbrt for an argument of type " ~ Q.valueType.stringof);
-	return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(cbrt(quantity.rawValue));
-}
-
-/// ditto
-auto nthRoot(int n, Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    import std.math;
-	static assert(__traits(compiles, pow(quantity.rawValue, 1.0 / n)),
-	              "No overload of pow for an argument of type " ~ Q.valueType.stringof);
-	return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(pow(quantity.rawValue, 1.0 / n));
-}
-
-/// ditto
-Q abs(Q)(Q quantity)
-	if (isQuantity!Q)
-{
-	import std.math;
-	static assert(__traits(compiles, fabs(quantity.rawValue)),
-	              "No overload of fabs for an argument of type " ~ Q.valueType.stringof);
-	return Q.make(fabs(quantity.rawValue));
-}
-
-///
-unittest
-{
-    auto surface = 25 * square(meter);
-    auto side = sqrt(surface);
-    assert(side.value(meter).approxEqual(5));
-
-    auto volume = 27 * liter;
-    side = cbrt(volume);
-    assert(side.value(deci(meter)).approxEqual(3));
-
-	auto deltaT = -10 * second;
-	assert(abs(deltaT) == 10 * second);
-}
-
-
 /// Returns the quantity type of a unit
 template QuantityType(alias unit)
     if (isQuantity!(typeof(unit)))
@@ -813,53 +730,6 @@ unittest
     alias Speed = QuantityType!(meter/second);
     alias Velocity = QuantityType!((1/second * meter));
     static assert(AreConsistent!(Speed, Velocity));
-}
-
-
-/// Utility templates to manipulate quantity types.
-template Inverse(Q, N = real)
-    if (isQuantity!Q)
-{
-    alias Inverse = Quantity!(N, typeof(1 / Q.init).dimensions);
-}
-
-/// ditto
-template Product(Q1, Q2, N = real)
-    if (isQuantity!Q1 && isQuantity!Q2)
-{
-    alias Product = Quantity!(N, typeof(Q1.init * Q2.init).dimensions);
-}
-
-/// ditto
-template Quotient(Q1, Q2, N = real)
-    if (isQuantity!Q1 && isQuantity!Q2)
-{
-    alias Quotient = Quantity!(N, typeof(Q1.init / Q2.init).dimensions);
-}
-
-/// ditto
-template Square(Q, N = real)
-    if (isQuantity!Q)
-{
-    alias Square = Quantity!(N, typeof(square(Q.init)).dimensions);
-}
-
-/// ditto
-template Cubic(Q, N = real)
-    if (isQuantity!Q)
-{
-    alias Cubic = Quantity!(N, typeof(cubic(Q.init)).dimensions);
-}
-
-///
-unittest
-{
-    static assert(is(Inverse!Time == Frequency));
-    static assert(is(Product!(Power, Time) == Energy));
-    static assert(is(Quotient!(Length, Time) == Speed));
-    static assert(is(Square!Length == Area));
-    static assert(is(Cubic!Length == Volume));
-    static assert(AreConsistent!(Product!(Inverse!Time, Length), Speed));
 }
 
 
