@@ -330,7 +330,7 @@ struct Quantity(N, Dim...)
 
     // Multiply or divide two quantities
     auto opBinary(string op, Q)(Q other) const /// ditto
-        if (isQuantity!Q && (op == "*" || op == "/"))
+		if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
 		mixin(checkValueType!"Q.valueType");
         return Quantity!(OperatorResultType!(N, "*", Q.valueType),
@@ -338,9 +338,9 @@ struct Quantity(N, Dim...)
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
-    // Multiply or divide a quantity by a factor
+    // Multiply or divide a quantity by a number
     auto opBinary(string op, T)(T other) const /// ditto
-        if (!isQuantity!T && (op == "*" || op == "/"))
+		if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
 		mixin(checkValueType!"T");
         return Quantity!(OperatorResultType!(N, "*", T), dimensions)
@@ -357,11 +357,11 @@ struct Quantity(N, Dim...)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const /// ditto
-        if (!isQuantity!T && op == "/")
+		if (!isQuantity!T && (op == "/" || op == "%"))
     {
 		mixin(checkValueType!"T");
         return Quantity!(OperatorResultType!(T, "/", N), Invert!dimensions)
-            .make(other / _value);
+            .make(mixin("other" ~ op ~ "_value"));
     }
 
 	auto opBinary(string op, T)(T power) const
@@ -390,7 +390,7 @@ struct Quantity(N, Dim...)
 
     // Mul/div assign with a dimensionless quantity
     void opOpAssign(string op, Q)(Q other) /// ditto
-        if (isQuantity!Q && (op == "*" || op == "/"))
+		if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkDim!"");
 		mixin(checkValueType!"Q.valueType");
@@ -399,7 +399,7 @@ struct Quantity(N, Dim...)
 
     // Mul/div assign with a number
     void opOpAssign(string op, T)(T other) /// ditto
-        if (!isQuantity!T && (op == "*" || op == "/"))
+		if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
 		mixin(checkValueType!"T");
         mixin("_value" ~ op ~ "= other;");
@@ -544,6 +544,15 @@ unittest // Quantity.opBinaryRight N/Q
     static assert(x.value(1/meter) == 1.0/2);
 }
 
+unittest // Quantity.opBinary Q%Q Q%N N%Q
+{
+	enum x = 258.1 * meter;
+	enum y1 = x % (5 * deca(meter));
+	static assert((cast(real) y1).approxEqual(8.1));
+	enum y2 = x % 50;
+	static assert(y2.value(meter).approxEqual(8.1));
+}
+
 unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
     auto time = 10 * second;
@@ -553,13 +562,15 @@ unittest // Quantity.opOpAssign Q+=Q Q-=Q
     assert(time.value(second).approxEqual(20));
 }
 
-unittest // Quantity.opOpAssign Q*=N Q/=N
+unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     auto time = 20 * second;
     time *= 2;
     assert(time.value(second).approxEqual(40));
     time /= 4;
     assert(time.value(second).approxEqual(10));
+	time %= 3;
+	assert(time.value(second).approxEqual(1));
 }
 
 unittest // Quantity.opEquals
@@ -1084,15 +1095,23 @@ template OpBinary(Dim...)
 {
     static assert(Dim.length % 2 == 1);
 
-    static if (staticIndexOf!("/", Dim) >= 0)
+	static if (staticIndexOf!("/", Dim) >= 0)
     {
-        // Division
+        // Division or modulo
         enum op = staticIndexOf!("/", Dim);
         alias numerator = Dim[0 .. op];
         alias denominator = Dim[op+1 .. $];
         alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
     }
-    else static if (staticIndexOf!("*", Dim) >= 0)
+	else static if (staticIndexOf!("%", Dim) >= 0)
+	{
+		// Modulo
+		enum op = staticIndexOf!("%", Dim);
+		alias numerator = Dim[0 .. op];
+		alias denominator = Dim[op+1 .. $];
+		alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
+	}
+	else static if (staticIndexOf!("*", Dim) >= 0)
     {
         // Multiplication
         enum op = staticIndexOf!("*", Dim);
