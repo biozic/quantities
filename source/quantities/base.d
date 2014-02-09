@@ -575,16 +575,16 @@ unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 
 unittest // Quantity.opEquals
 {
-    assert(1 * minute == 60 * second);
-    assert((1 / second) * meter == meter / second);
+    static assert(1 * minute == 60 * second);
+    static assert((1 / second) * meter == meter / second);
 }
 
 unittest // Quantity.opCmp
 {
-    assert(second < minute);
-    assert(minute <= minute);
-    assert(hour > minute);
-    assert(hour >= hour);
+    static assert(second < minute);
+	static assert(minute <= minute);
+	static assert(hour > minute);
+	static assert(hour >= hour);
 }
 
 unittest // Compilation errors for incompatible dimensions
