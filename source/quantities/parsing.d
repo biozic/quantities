@@ -97,7 +97,7 @@ Contains the symbols of the units and the prefixes that a parser can handle.
 +/
 struct SymbolList(N)
 {
-    static assert(isValue!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
 
     package
     {
@@ -115,7 +115,7 @@ struct SymbolList(N)
 
     /// Adds (or replaces) a prefix in the list
     void addPrefix(N)(string symbol, N factor)
-        if (isValue!N)
+        if (isNumberLike!N)
     {
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)
@@ -187,7 +187,7 @@ package struct WithPrefix(N)
 
 /// Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.
 auto withPrefix(N)(string symbol, N factor)
-    if (isValue!N)
+    if (isNumberLike!N)
 {
     return WithPrefix!N(symbol, factor);
 }
@@ -217,8 +217,8 @@ template rtQuantityParser(
         auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(str, symbolList, one);
         enforceEx!DimensionException(
             toAA!(Q.dimensions) == rtQuant.dimensions,
-            "Dimension error: %s is not compatible with %s"
-            .format(quantities.base.dimstr!(Q.dimensions)(true), dimstr(rtQuant.dimensions, true)));
+            "Dimension error: [%s] is not compatible with [%s]"
+            .format(quantities.base.dimstr!(Q.dimensions), dimstr(rtQuant.dimensions)));
         return Q.make(rtQuant.value);
     }    
 }
@@ -246,7 +246,7 @@ unittest
 	alias parse = rtQuantityParser!(BigInt, symbolList, parseFun, BigInt(1));
 
 	auto foo = BigInt("1234567890987654300") * bit;
-	foo += 21 * bit;
+	foo += BigInt(21) * bit;
 	assert(foo == parse!BinarySize("1 orbit"));
 }
 
@@ -846,28 +846,26 @@ int[string] expInv(int[string] dim, int value)
 }
 
 // Returns the string representation of a dimension array
-string dimstr(int[string] dim, bool complete = false)
+string dimstr(int[string] dim)
 {
-    import std.algorithm : filter;
-    import std.array : join;
-    import std.conv : to;
+	import std.algorithm : filter;
+	import std.array : join;
+	import std.conv : to;
+	
+	static string stringize(string base, int power)
+	{
+		if (power == 0)
+			return null;
+		if (power == 1)
+			return base;
+		return base ~ "^" ~ to!string(power);
+	}
+	
+	string[] dimstrs;
+	foreach (sym, pow; dim)
+		dimstrs ~= stringize(sym, pow);
 
-    static string stringize(string base, int power)
-    {
-        if (power == 0)
-            return null;
-        if (power == 1)
-            return base;
-        return base ~ "^" ~ to!string(power);
-    }
-
-    string[] dimstrs;
-    foreach (sym, pow; dim)
-        dimstrs ~= stringize(sym, pow);
-
-    string result = dimstrs.filter!"a !is null".join(" ");
-    if (!result.length)
-        return complete ? "scalar" : "";
-
-    return result;
+	return "%-(%s %)".format(dimstrs.filter!"a !is null");
 }
+
+
