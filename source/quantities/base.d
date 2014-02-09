@@ -84,31 +84,31 @@ import std.typetuple;
 
 version (unittest)
 {
-	import quantities.math;
+    import quantities.math;
     import quantities.si;
     import std.math : approxEqual;
 }
 
 template isNumberLike(N)
 {
-	N n1;
-	N n2;
-	enum isNumberLike = !isQuantity!N
-		&& __traits(compiles, { return -n1 + (+n2); })
-		&& __traits(compiles, { return n1 + n2; })
-		&& __traits(compiles, { return n1 - n2; })
-		&& __traits(compiles, { return n1 * n2; })
-		&& __traits(compiles, { return n1 / n2; })
-		&& (__traits(compiles, { n1 = 1; }) || __traits(compiles, { n1 = N(1); }))
-		&& __traits(compiles, { return cast(const) n1 + n2; } );
+    N n1;
+    N n2;
+    enum isNumberLike = !isQuantity!N
+        && __traits(compiles, { return -n1 + (+n2); })
+        && __traits(compiles, { return n1 + n2; })
+        && __traits(compiles, { return n1 - n2; })
+        && __traits(compiles, { return n1 * n2; })
+        && __traits(compiles, { return n1 / n2; })
+        && (__traits(compiles, { n1 = 1; }) || __traits(compiles, { n1 = N(1); }))
+        && __traits(compiles, { return cast(const) n1 + n2; } );
 }
 unittest
 {
     static assert(isNumberLike!real);
     static assert(isNumberLike!int);
-	static assert(!isNumberLike!string);
+    static assert(!isNumberLike!string);
 
-    import std.bigint, std.numeric, std.typecons;
+    import std.bigint, std.typecons;
     static assert(isNumberLike!BigInt);
     static assert(isNumberLike!(RefCounted!real));
 }
@@ -154,23 +154,23 @@ struct Quantity(N, Dim...)
                 .format(dimstr!(` ~ dim ~ `), dimstr!dimensions));`;
     }
 
-	template checkValueType(string type)
-	{
-		enum checkValueType =
-			`static assert(is(` ~ type ~ ` : N),
+    template checkValueType(string type)
+    {
+        enum checkValueType =
+            `static assert(is(` ~ type ~ ` : N),
                 "%s is not implicitly convertible to %s"
                 .format(` ~ type ~ `.stringof, N.stringof));`;
-	}
+    }
 
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
-		static if (isNumeric!N)
-			return Quantity.make(1);
-		else static if (__traits(compiles, N(1)))
-			return Quantity.make(N(1));
-		else
-			static assert(false, "BUG");
+        static if (isNumeric!N)
+            return Quantity.make(1);
+        else static if (__traits(compiles, N(1)))
+            return Quantity.make(N(1));
+        else
+            static assert(false, "BUG");
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -178,7 +178,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         _value = cast(N) other._value;
     }
 
@@ -186,22 +186,22 @@ struct Quantity(N, Dim...)
     this(T)(T value)
         if (!isQuantity!T && Dim.length == 0)
     {
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         _value = value;
     }
 
-	// Should be a constructor
+    // Should be a constructor
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
     // "Template constructor bypass access check"
     package static Quantity make(T)(T value)
-		if (!isQuantity!T)
+        if (!isQuantity!T)
     {
-		mixin(checkValueType!"T");
-		Quantity ret;
-		ret._value = value;
-		return ret;
-	}
+        mixin(checkValueType!"T");
+        Quantity ret;
+        ret._value = value;
+        return ret;
+    }
 
     // Gets the internal number of this quantity.
     @property N rawValue() const
@@ -219,7 +219,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"target.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         return _value / target._value;
     }
     ///
@@ -252,7 +252,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"Q.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         return store!(Q.valueType);
     }
 
@@ -261,7 +261,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T)
     {
         mixin(checkDim!"");
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         return _value;
     }
     ///
@@ -282,7 +282,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         _value = other._value;
     }
 
@@ -291,7 +291,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T)
     {
         mixin(checkDim!"");
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         _value = other;
     }
 
@@ -307,7 +307,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         return Quantity!(OperatorResultType!(N, "+", Q.valueType), dimensions)
             .make(mixin("_value" ~ op ~ "other._value"));
     }
@@ -317,7 +317,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"");
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         return Quantity!(OperatorResultType(N, "+", T), dimensions)
             .make(mixin("_value" ~ op ~ "other"));
     }
@@ -331,9 +331,9 @@ struct Quantity(N, Dim...)
 
     // Multiply or divide two quantities
     auto opBinary(string op, Q)(Q other) const /// ditto
-		if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
+        if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         return Quantity!(OperatorResultType!(N, "*", Q.valueType),
                          OpBinary!(dimensions, op, other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
@@ -341,9 +341,9 @@ struct Quantity(N, Dim...)
 
     // Multiply or divide a quantity by a number
     auto opBinary(string op, T)(T other) const /// ditto
-		if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
+        if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         return Quantity!(OperatorResultType!(N, "*", T), dimensions)
             .make(mixin("_value" ~ op ~ "other"));
     }
@@ -352,31 +352,31 @@ struct Quantity(N, Dim...)
     auto opBinaryRight(string op, T)(T other) const /// ditto
         if (!isQuantity!T && op == "*")
     {
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         return this * other;
     }
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const /// ditto
-		if (!isQuantity!T && (op == "/" || op == "%"))
+        if (!isQuantity!T && (op == "/" || op == "%"))
     {
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         return Quantity!(OperatorResultType!(T, "/", N), Invert!dimensions)
             .make(mixin("other" ~ op ~ "_value"));
     }
 
-	auto opBinary(string op, T)(T power) const
-		if (op == "^^")
-	{
-		static assert(false, "Unsupporter operator: ^^");
-	}
+    auto opBinary(string op, T)(T power) const
+        if (op == "^^")
+    {
+        static assert(false, "Unsupporter operator: ^^");
+    }
 
     // Add/sub assign with a quantity that shares the same dimensions
     void opOpAssign(string op, Q)(Q other) /// ditto
         if (isQuantity!Q && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         mixin("_value " ~ op ~ "= other._value;");
     }
 
@@ -385,24 +385,24 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"");
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         mixin("_value " ~ op ~ "= other;");
     }
 
     // Mul/div assign with a dimensionless quantity
     void opOpAssign(string op, Q)(Q other) /// ditto
-		if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
+        if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkDim!"");
-		mixin(checkValueType!"Q.valueType");
+        mixin(checkValueType!"Q.valueType");
         mixin("_value" ~ op ~ "= other._value;");
     }
 
     // Mul/div assign with a number
     void opOpAssign(string op, T)(T other) /// ditto
-		if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
+        if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
-		mixin(checkValueType!"T");
+        mixin(checkValueType!"T");
         mixin("_value" ~ op ~ "= other;");
     }
 
@@ -547,11 +547,11 @@ unittest // Quantity.opBinaryRight N/Q
 
 unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
-	enum x = 258.1 * meter;
-	enum y1 = x % (5 * deca(meter));
-	static assert((cast(real) y1).approxEqual(8.1));
-	enum y2 = x % 50;
-	static assert(y2.value(meter).approxEqual(8.1));
+    enum x = 258.1 * meter;
+    enum y1 = x % (5 * deca(meter));
+    static assert((cast(real) y1).approxEqual(8.1));
+    enum y2 = x % 50;
+    static assert(y2.value(meter).approxEqual(8.1));
 }
 
 unittest // Quantity.opOpAssign Q+=Q Q-=Q
@@ -570,8 +570,8 @@ unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
     assert(time.value(second).approxEqual(40));
     time /= 4;
     assert(time.value(second).approxEqual(10));
-	time %= 3;
-	assert(time.value(second).approxEqual(1));
+    time %= 3;
+    assert(time.value(second).approxEqual(1));
 }
 
 unittest // Quantity.opEquals
@@ -583,9 +583,9 @@ unittest // Quantity.opEquals
 unittest // Quantity.opCmp
 {
     static assert(second < minute);
-	static assert(minute <= minute);
-	static assert(hour > minute);
-	static assert(hour >= hour);
+    static assert(minute <= minute);
+    static assert(hour > minute);
+    static assert(hour >= hour);
 }
 
 unittest // Compilation errors for incompatible dimensions
@@ -645,12 +645,12 @@ unittest
 template unit(string symbol, N = real)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-	static if (isNumeric!N)
-    	enum unit = Quantity!(N, symbol, 1).make(1);
-	else static if (__traits(compiles, N(1)))
-		enum unit = Quantity!(N, symbol, 1).make(N(1));
-	else
-		static assert(false, "BUG");
+    static if (isNumeric!N)
+        enum unit = Quantity!(N, symbol, 1).make(1);
+    else static if (__traits(compiles, N(1)))
+        enum unit = Quantity!(N, symbol, 1).make(N(1));
+    else
+        static assert(false, "BUG");
 }
 ///
 unittest
@@ -695,26 +695,26 @@ Returns a new quantity where the value is stored in a field of type T.
 By default, the value is converted to type T using a cast.
 +/
 auto store(T, Q)(Q quantity, T delegate(Q.valueType) convertDelegate = x => cast(T) x)
-	if (!isQuantity!T && isQuantity!Q)
+    if (!isQuantity!T && isQuantity!Q)
 {
-	static if (is(Q.ValueType : T))
-		return Quantity!(T, Q.dimensions).make(quantity._value);
-	else
-	{
-		if (convertDelegate)
-			return Quantity!(T, Q.dimensions).make(convertDelegate(quantity._value));
-		else
-			assert(false, "%s is not implicitly convertible to %s: provide a conversion delegate)"
-			       .format(Q.valueType.stringof, T.stringof));
-	}
+    static if (is(Q.ValueType : T))
+        return Quantity!(T, Q.dimensions).make(quantity._value);
+    else
+    {
+        if (convertDelegate)
+            return Quantity!(T, Q.dimensions).make(convertDelegate(quantity._value));
+        else
+            assert(false, "%s is not implicitly convertible to %s: provide a conversion delegate)"
+                   .format(Q.valueType.stringof, T.stringof));
+    }
 }
 ///
 unittest
 {
-	auto sizeF = meter.store!float;
-	static assert(is(sizeF.valueType == float));
-	auto sizeI = meter.store!ulong;
-	static assert(is(sizeI.valueType == ulong));
+    auto sizeF = meter.store!float;
+    static assert(is(sizeF.valueType == float));
+    auto sizeI = meter.store!ulong;
+    static assert(is(sizeI.valueType == ulong));
 }
 
 
@@ -965,7 +965,7 @@ template OpBinary(Dim...)
 {
     static assert(Dim.length % 2 == 1);
 
-	static if (staticIndexOf!("/", Dim) >= 0)
+    static if (staticIndexOf!("/", Dim) >= 0)
     {
         // Division or modulo
         enum op = staticIndexOf!("/", Dim);
@@ -973,15 +973,15 @@ template OpBinary(Dim...)
         alias denominator = Dim[op+1 .. $];
         alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
     }
-	else static if (staticIndexOf!("%", Dim) >= 0)
-	{
-		// Modulo
-		enum op = staticIndexOf!("%", Dim);
-		alias numerator = Dim[0 .. op];
-		alias denominator = Dim[op+1 .. $];
-		alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
-	}
-	else static if (staticIndexOf!("*", Dim) >= 0)
+    else static if (staticIndexOf!("%", Dim) >= 0)
+    {
+        // Modulo
+        enum op = staticIndexOf!("%", Dim);
+        alias numerator = Dim[0 .. op];
+        alias denominator = Dim[op+1 .. $];
+        alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
+    }
+    else static if (staticIndexOf!("*", Dim) >= 0)
     {
         // Multiplication
         enum op = staticIndexOf!("*", Dim);

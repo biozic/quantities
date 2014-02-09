@@ -130,40 +130,40 @@ Use with the global addUnit and addPrefix functions.
 +/
 SymbolList!N makeSymbolList(N, Sym...)(Sym list)
 {
-	SymbolList!N ret;
-	foreach (sym; list)
-	{
-		static if (is(typeof(sym) == WithUnit!Q, Q))
-		{
-			static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
-			              .format(Q.valueType.stringof, N.stringof));
-			ret.units[sym.symbol] = sym.unit;
-		}
-		else static if (is(typeof(sym) == WithPrefix!T, T))
-		{
-			static assert(is(T : N), "Incompatible value types: %s and %s" 
-			              .format(T.stringof, N.stringof));
-			ret.prefixes[sym.symbol] = sym.factor;
-			if (sym.symbol.length > ret.maxPrefixLength)
-				ret.maxPrefixLength = sym.symbol.length;
-		}
-		else
-			static assert(false, "Unexpected symbol: " ~ sym.stringof);
-	}
-	return ret;
+    SymbolList!N ret;
+    foreach (sym; list)
+    {
+        static if (is(typeof(sym) == WithUnit!Q, Q))
+        {
+            static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
+                          .format(Q.valueType.stringof, N.stringof));
+            ret.units[sym.symbol] = sym.unit;
+        }
+        else static if (is(typeof(sym) == WithPrefix!T, T))
+        {
+            static assert(is(T : N), "Incompatible value types: %s and %s" 
+                          .format(T.stringof, N.stringof));
+            ret.prefixes[sym.symbol] = sym.factor;
+            if (sym.symbol.length > ret.maxPrefixLength)
+                ret.maxPrefixLength = sym.symbol.length;
+        }
+        else
+            static assert(false, "Unexpected symbol: " ~ sym.stringof);
+    }
+    return ret;
 }
 ///
 unittest
 {
-	enum euro = unit!("C", double);
-	alias Currency = QuantityType!euro;
-	enum dollar = 1.35 * euro;
+    enum euro = unit!("C", double);
+    alias Currency = QuantityType!euro;
+    enum dollar = 1.35 * euro;
 
-	enum symbolList = makeSymbolList!double(
-		withUnit("€", euro),
-		withUnit("$", dollar),
+    enum symbolList = makeSymbolList!double(
+        withUnit("€", euro),
+        withUnit("$", dollar),
         withPrefix("doz", 12)
-	);
+    );
 }
 
 package struct WithUnit(Q)
@@ -200,13 +200,13 @@ Params:
     symbolList = A prefilled SymbolList struct that contains all units and prefixes.
     parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
         After this function returns, it must have consumed the numeric part and leave only the unit part.
-	one = The value of type N that is equivalent to 1.
+    one = The value of type N that is equivalent to 1.
 +/
 template rtQuantityParser(
-	N, 
-	alias symbolList, 
-	alias parseFun = (ref string s) => parse!N(s),
-	N one = 1
+    N, 
+    alias symbolList, 
+    alias parseFun = (ref string s) => parse!N(s),
+    N one = 1
 )
 {
     auto rtQuantityParser(Q, S)(S str)
@@ -225,29 +225,29 @@ template rtQuantityParser(
 ///
 unittest
 {
-	import std.bigint;
-	
-	enum bit = unit!("bit", BigInt);
-	alias BinarySize = QuantityType!bit;
+    import std.bigint;
+    
+    enum bit = unit!("bit", BigInt);
+    alias BinarySize = QuantityType!bit;
 
-	SymbolList!BigInt symbolList;
-	symbolList.addUnit("bit", bit);
-	symbolList.addPrefix("or", BigInt("1234567890987654321"));
-	
-	static BigInt parseFun(ref string input)
-	{
-		import std.exception, std.regex;
-		enum rgx = ctRegex!`^(\d*)\s*(.*)$`;
-		auto m = enforce(match(input, rgx));
-		input = m.captures[2];
-		return BigInt(m.captures[1]);
-	}
-	
-	alias parse = rtQuantityParser!(BigInt, symbolList, parseFun, BigInt(1));
+    SymbolList!BigInt symbolList;
+    symbolList.addUnit("bit", bit);
+    symbolList.addPrefix("or", BigInt("1234567890987654321"));
+    
+    static BigInt parseFun(ref string input)
+    {
+        import std.exception, std.regex;
+        enum rgx = ctRegex!`^(\d*)\s*(.*)$`;
+        auto m = enforce(match(input, rgx));
+        input = m.captures[2];
+        return BigInt(m.captures[1]);
+    }
+    
+    alias parse = rtQuantityParser!(BigInt, symbolList, parseFun, BigInt(1));
 
-	auto foo = BigInt("1234567890987654300") * bit;
-	foo += BigInt(21) * bit;
-	assert(foo == parse!BinarySize("1 orbit"));
+    auto foo = BigInt("1234567890987654300") * bit;
+    foo += BigInt(21) * bit;
+    assert(foo == parse!BinarySize("1 orbit"));
 }
 
 /++
@@ -261,13 +261,13 @@ Params:
     symbolList = A prefilled SymbolList struct that contains all units and prefixes.
     parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
         After this function returns, it must have consumed the numeric part and leave only the unit part.
-	one = The value of type N that is equivalent to 1.
+    one = The value of type N that is equivalent to 1.
 +/
 template ctQuantityParser(
-	N, 
-	alias symbolList, 
-	alias parseFun = (ref string s) => parse!N(s),
-	N one = 1
+    N, 
+    alias symbolList, 
+    alias parseFun = (ref string s) => parse!N(s),
+    N one = 1
 )
 {
     template ctQuantityParser(string str)
@@ -278,7 +278,7 @@ template ctQuantityParser(
         }
         
         // This is for a nice compile-time error message
-		enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList, one)); }();
+        enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList, one)); }();
         static if (msg)
         {
             static assert(false, msg);
@@ -296,19 +296,19 @@ template ctQuantityParser(
 version (D_Ddoc) // DMD BUG? (Differents symbolLists but same template instantiation)
 unittest
 {
-	enum bit = unit!("bit", ulong);
-	alias BinarySize = QuantityType!bit;
-	enum byte_ = 8 * bit;
-	
-	enum symbolList = makeSymbolList!ulong(
-		withUnit("bit", bit),
-		withUnit("B", byte_),
-		withPrefix("hob", 7)
-	);
-	
-	alias sz = ctQuantityParser!(ulong, symbolList);
-	
-	assert(sz!"1 hobbit".value(bit) == 7);
+    enum bit = unit!("bit", ulong);
+    alias BinarySize = QuantityType!bit;
+    enum byte_ = 8 * bit;
+    
+    enum symbolList = makeSymbolList!ulong(
+        withUnit("bit", bit),
+        withUnit("B", byte_),
+        withPrefix("hob", 7)
+    );
+    
+    alias sz = ctQuantityParser!(ulong, symbolList);
+    
+    assert(sz!"1 hobbit".value(bit) == 7);
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -343,13 +343,13 @@ RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbol
     if (str.empty)
         return RTQuantity!N(value, null);
 
-	auto input = str.to!string;
-	auto tokens = lex(input);
-	auto parser = QuantityParser!N(symbolList);
-	
-	RTQuantity!N result = parser.parseCompoundUnit(tokens);
-	result.value *= value;
-	return result;
+    auto input = str.to!string;
+    auto tokens = lex(input);
+    auto parser = QuantityParser!N(symbolList);
+    
+    RTQuantity!N result = parser.parseCompoundUnit(tokens);
+    result.value *= value;
+    return result;
 }
 
 unittest // Test parsing
@@ -370,7 +370,7 @@ unittest // Test parsing
     static bool checkParse(Q)(string input, Q quantity)
     {
         return parseRTQuantity!(real, std.conv.parse!(real, string))(input, siSL, 1.0L)
-			== quantity.toRT;
+            == quantity.toRT;
     }
 
     assert(checkParse("1    m    ", meter));
@@ -483,13 +483,13 @@ struct QuantityParser(N)
 
         int n = parseInteger(tokens);
 
-		static if (__traits(compiles, std.math.pow(ret.value, n)))
-			ret.value = std.math.pow(ret.value, n);
-		else
-			foreach (i; 1 .. n)
-				ret.value *= ret.value;
-		ret.dimensions = ret.dimensions.exp(n);
-		return ret;
+        static if (__traits(compiles, std.math.pow(ret.value, n)))
+            ret.value = std.math.pow(ret.value, n);
+        else
+            foreach (i; 1 .. n)
+                ret.value *= ret.value;
+        ret.dimensions = ret.dimensions.exp(n);
+        return ret;
     }
 
     int parseInteger(T)(auto ref T[] tokens)
@@ -848,24 +848,24 @@ int[string] expInv(int[string] dim, int value)
 // Returns the string representation of a dimension array
 string dimstr(int[string] dim)
 {
-	import std.algorithm : filter;
-	import std.array : join;
-	import std.conv : to;
-	
-	static string stringize(string base, int power)
-	{
-		if (power == 0)
-			return null;
-		if (power == 1)
-			return base;
-		return base ~ "^" ~ to!string(power);
-	}
-	
-	string[] dimstrs;
-	foreach (sym, pow; dim)
-		dimstrs ~= stringize(sym, pow);
+    import std.algorithm : filter;
+    import std.array : join;
+    import std.conv : to;
+    
+    static string stringize(string base, int power)
+    {
+        if (power == 0)
+            return null;
+        if (power == 1)
+            return base;
+        return base ~ "^" ~ to!string(power);
+    }
+    
+    string[] dimstrs;
+    foreach (sym, pow; dim)
+        dimstrs ~= stringize(sym, pow);
 
-	return "%-(%s %)".format(dimstrs.filter!"a !is null");
+    return "%-(%s %)".format(dimstrs.filter!"a !is null");
 }
 
 
