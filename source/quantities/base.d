@@ -149,7 +149,7 @@ struct Quantity(N, Dim...)
     {
         enum checkDim =
             `static assert(Is!(` ~ dim ~ `).equivalentTo!dimensions,
-                "Dimension error: %s is not compatible with %s"
+                "Dimension error: [%s] is not compatible with [%s]"
                 .format(dimstr!(` ~ dim ~ `), dimstr!dimensions));`;
     }
 
