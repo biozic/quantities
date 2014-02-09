@@ -2,6 +2,10 @@
 /++
 This module defines the SI units and prefixes.
 
+All the quantities and units defined in this module store a value
+of type real intenally. So the predefined parsers can only parse
+real values.
+
 Copyright: Copyright 2013-2014, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)

@@ -96,7 +96,7 @@ Nicolas Sicard
 <dd>Adds (or replaces) a unit in the list<br><br>
 
 </dd>
-<dt><big><a name="addPrefix"></a>void <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
+<dt><big><a name="addPrefix"></a>void <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isNumberLike!N);
 </big></dt>
 <dd>Adds (or replaces) a prefix in the list<br><br>
 
@@ -127,7 +127,7 @@ Use with the global addUnit and addPrefix functions.<br><br>
 <dd>Creates a unit that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
 </dd>
-<dt><big><a name="withPrefix"></a>auto <u>withPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isValue!N);
+<dt><big><a name="withPrefix"></a>auto <u>withPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isNumberLike!N);
 </big></dt>
 <dd>Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.<br><br>
 
@@ -169,7 +169,7 @@ symbolList.addPrefix(<font color=red>"or"</font>, BigInt(<font color=red>"123456
 <font color=blue>alias</font> parse = <u>rtQuantityParser</u>!(BigInt, symbolList, parseFun, BigInt(1));
 
 <font color=blue>auto</font> foo = BigInt(<font color=red>"1234567890987654300"</font>) * bit;
-foo += 21 * bit;
+foo += BigInt(21) * bit;
 <font color=blue>assert</font>(foo == parse!BinarySize(<font color=red>"1 orbit"</font>));
 </pre>
 <br><br>
