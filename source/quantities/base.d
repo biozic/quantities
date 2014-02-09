@@ -90,24 +90,22 @@ version (unittest)
 
 template isNumberLike(N)
 {
-    N n1;
-    N n2;
-    static if (!isQuantity!N
-        && __traits(compiles, (n1 + n2))
-        && __traits(compiles, (n1 - n2))
-        && __traits(compiles, (n1 * n2))
-        && __traits(compiles, (n1 / n2))
-	    && (__traits(compiles, (n1 = 1)) || __traits(compiles, (n1 = N(1))))
-        && __traits(compiles, (cast(const) n1 + n2))
-    )
-		enum isNumberLike = true;
-    else
-        enum isNumberLike = false;
+	N n1;
+	N n2;
+	enum isNumberLike = !isQuantity!N
+		&& __traits(compiles, { return -n1 + (+n2); })
+		&& __traits(compiles, { return n1 + n2; })
+		&& __traits(compiles, { return n1 - n2; })
+		&& __traits(compiles, { return n1 * n2; })
+		&& __traits(compiles, { return n1 / n2; })
+		&& (__traits(compiles, { n1 = 1; }) || __traits(compiles, { n1 = N(1); }))
+		&& __traits(compiles, { return cast(const) n1 + n2; } );
 }
 unittest
 {
     static assert(isNumberLike!real);
     static assert(isNumberLike!int);
+	static assert(!isNumberLike!string);
 
     import std.bigint, std.numeric, std.typecons;
     static assert(isNumberLike!BigInt);
