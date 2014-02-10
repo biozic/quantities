@@ -179,7 +179,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"other.dimensions");
         mixin(checkValueType!"Q.valueType");
-        _value = cast(N) other._value;
+        _value = other._value;
     }
 
     // Creates a new dimensionless quantity from a number
