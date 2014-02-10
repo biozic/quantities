@@ -26,7 +26,7 @@ version (unittest)
     import std.math : approxEqual;
 }
 
-mixin MathFunctions!("std.math");
+mixin MathFunctions!(real, "std.math");
 
 /++
 Predefined SI units.

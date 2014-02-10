@@ -13,29 +13,29 @@ module quantities.math;
 import quantities.base;
 
 /++
-Mixin template that introduces math functions operating on a quantity in the
+Mixin template that introduces math functions operating on a quantity of value type N in the
 current scope. Each function imports module_ internally. This module should
-contain the math primitives that can operate on the quantities' value type, such
+contain the math primitives that can operate on the variables of type N, such
 as sqrt, cbrt, pow and fabs.
 +/
-mixin template MathFunctions(string module_ = "std.math")
+mixin template MathFunctions(N, string module_ = "std.math")
 {
     auto square(U)(U unit)
-        if (isQuantity!U)
+        if (isQuantity!U && is(U.valueType == N))
     {
         return pow!2(unit);
     }
 
     /// ditto
     auto cubic(U)(U unit)
-        if (isQuantity!U)
+        if (isQuantity!U && is(U.valueType == N))
     {
         return pow!3(unit);
     }
 
     /// ditto
     auto pow(int n, U)(U unit)
-        if (isQuantity!U)
+        if (isQuantity!U && is(U.valueType == N))
     {
         mixin("import " ~ module_ ~ ";");
         static assert(__traits(compiles, unit.rawValue ^^ n),
@@ -45,7 +45,7 @@ mixin template MathFunctions(string module_ = "std.math")
 
     /// ditto
     auto sqrt(Q)(Q quantity)
-        if (isQuantity!Q)
+        if (isQuantity!Q && is(Q.valueType == N))
     {
         mixin("import " ~ module_ ~ ";");
         static assert(__traits(compiles, sqrt(quantity.rawValue)),
@@ -55,7 +55,7 @@ mixin template MathFunctions(string module_ = "std.math")
 
     /// ditto
     auto cbrt(Q)(Q quantity)
-        if (isQuantity!Q)
+        if (isQuantity!Q && is(Q.valueType == N))
     {
         mixin("import " ~ module_ ~ ";");
         static assert(__traits(compiles, cbrt(quantity.rawValue)),
@@ -65,7 +65,7 @@ mixin template MathFunctions(string module_ = "std.math")
 
     /// ditto
     auto nthRoot(int n, Q)(Q quantity)
-        if (isQuantity!Q)
+        if (isQuantity!Q && is(Q.valueType == N))
     {
         mixin("import " ~ module_ ~ ";");
         static assert(__traits(compiles, pow(quantity.rawValue, 1.0 / n)),
@@ -75,7 +75,7 @@ mixin template MathFunctions(string module_ = "std.math")
 
     /// ditto
     Q abs(Q)(Q quantity)
-        if (isQuantity!Q)
+        if (isQuantity!Q && is(Q.valueType == N))
     {
         mixin("import " ~ module_ ~ ";");
         static assert(__traits(compiles, fabs(quantity.rawValue)),
@@ -90,7 +90,7 @@ unittest
     enum meter = unit!("L");
     enum liter = 0.001 * meter * meter * meter;
 
-    mixin MathFunctions!("std.math");
+    mixin MathFunctions!(real, "std.math");
 
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);
@@ -106,38 +106,38 @@ unittest
 
 
 /// Utility templates to manipulate quantity types.
-template Inverse(Q, N = real)
+template Inverse(Q)
     if (isQuantity!Q)
 {
-    alias Inverse = Quantity!(N, typeof(1 / Q.init).dimensions);
+    alias Inverse = typeof(1 / Q.init);
 }
 
 /// ditto
-template Product(Q1, Q2, N = real)
+template Product(Q1, Q2)
     if (isQuantity!Q1 && isQuantity!Q2)
 {
-    alias Product = Quantity!(N, typeof(Q1.init * Q2.init).dimensions);
+    alias Product = typeof(Q1.init * Q2.init);
 }
 
 /// ditto
-template Quotient(Q1, Q2, N = real)
+template Quotient(Q1, Q2)
     if (isQuantity!Q1 && isQuantity!Q2)
 {
-    alias Quotient = Quantity!(N, typeof(Q1.init / Q2.init).dimensions);
+    alias Quotient = typeof(Q1.init / Q2.init);
 }
 
 /// ditto
-template Square(Q, N = real)
+template Square(Q)
     if (isQuantity!Q)
 {
-    alias Square = Quantity!(N, typeof(Q.init * Q.init).dimensions);
+    alias Square = typeof(Q.init * Q.init);
 }
 
 /// ditto
 template Cubic(Q, N = real)
     if (isQuantity!Q)
 {
-    alias Cubic = Quantity!(N, typeof(Q.init * Q.init * Q.init).dimensions);
+    alias Cubic = typeof(Q.init * Q.init * Q.init);
 }
 
 ///
