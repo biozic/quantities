@@ -14,7 +14,7 @@ Quantities can be parsed from strings at runtime and compile-time.
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.
 
-Tested with DMD 2.065+
+Tested with DMD 2.065
 
 Copyright 2013-2014, Nicolas Sicard.
 
@@ -37,7 +37,7 @@ enum inch = 2.54 * centi(meter);
 enum mile = 1609 * meter;
 
 // Define new units with non-SI dimensions
-enum euro = unit!("C");
+enum euro = unit!("C"); // C for currency...
 enum dollar = euro / 1.35;
 
 // -----------------------
@@ -67,7 +67,7 @@ writefln("Weigh %s of substance", mass.toString);
 // prints: Weigh 0.00029725 [M] of substance
 // Wait! That's not really useful!
 // My scales graduations are in 1/10 milligrams!
-writefln("Weigh %s of substance", mass.toString!"%.1f mg");
+writefln("Weigh %.1f mg of substance", mass.value(si!"mg"));
 // prints: Weigh 297.3 mg of substance
 
 // Extract the value of the quantity expressed in mg
@@ -85,7 +85,7 @@ static assert(!__traits(compiles, concentration = 1 * euro/volume));
 enum ctConcentration = si!"25 mmol⋅L⁻¹";
 enum ctVolume = si!"100 mL";
 enum ctMass = ctConcentration * ctVolume * si!"118.9 g/mol";
-writefln("Weigh %s of substance", mass.toString!"%.1f mg");
+writefln("Weigh %.1f mg of substance", mass.value(si!"mg"));
 // prints: Weigh 297.3 mg of substance
 
 // -----------------------------------

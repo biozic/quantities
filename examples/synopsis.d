@@ -17,7 +17,7 @@ unittest
     enum mile = 1609 * meter;
 
     // Define new units with non-SI dimensions
-    enum euro = unit!("C");
+    enum euro = unit!("C"); // C for currency...
     enum dollar = euro / 1.35;
 
     // -----------------------
