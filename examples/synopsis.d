@@ -1,29 +1,99 @@
-import std.math : approxEqual;
 import quantities;
+import std.math : approxEqual;
+import std.stdio : writeln, writefln;
 
+// Working with predefined units
 unittest
 {
-    import quantities;
- 
-    import std.math : approxEqual;
-    import std.stdio : writeln, writefln;
+    auto distance = 384_400 * kilo(meter);
+    auto speed = 299_792_458  * meter/second;
+    auto time = distance / speed;
+    writefln("Travel time of light from the moon: %s s", time.value(second));
+}
 
-    // ------------------
-    // Working with units
-    // ------------------
+// Dimensional correctness is check at compile-time
+unittest
+{
+    Mass mass;
+    static assert(!__traits(compiles, mass = 15 * meter));
+    static assert(!__traits(compiles, mass = 1.2));
+}
 
-    // Define new units from the predefined ones (in module quantities.si)
+// Calculations can be done at compile-time
+unittest
+{
+    enum distance = 384_400 * kilo(meter);
+    enum speed = 299_792_458  * meter/second;
+    enum time = distance / speed;
+    writefln("Travel time of light from the moon: %s s", time.value(second));
+}
+
+// Type of quantity variables
+unittest
+{
+    // Length is defined as a quantity of dimension L storing a real value
+    static assert(is(Length == Quantity!(real, "L", 1)));
+
+    // Time is defined as a quantity of dimension T
+    static assert(is(Time == Quantity!(real, "T", 1)));
+
+    // Speed is defined as a quantity of dimension L T⁻¹
+    static assert(is(Speed == Quantity!(real, "L", 1, "T", -1)));
+
+    // Quantities that share the same dimensions are of the same type
+    static assert(is(typeof(meter) == Length));
+    static assert(is(typeof(second) == Time));
+    static assert(is(typeof(hour) == Time));
+    static assert(is(typeof(kilo(meter)/hour) == Speed));
+}
+
+// Create a new unit from the predefined ones
+unittest
+{
     enum inch = 2.54 * centi(meter);
     enum mile = 1609 * meter;
+    writefln("There are %s inches in a mile", mile.value(inch));
+}
 
-    // Define new units with non-SI dimensions
-    enum euro = unit!("C"); // C for currency...
-    enum dollar = euro / 1.35;
+// Create a new unit with new dimensions
+unittest
+{
+    // Create a new base unit of currency
+    enum euro = unit!("C"); // C is the chosen dimension symol (for currency...)
 
-    // -----------------------
-    // Working with quantities
-    // -----------------------
+    auto dollar = euro / 1.35;
+    auto price = 2000 * dollar;
+    writefln("This computer costs €%.2f", price.value(euro));
+}
 
+// Compile-time parsing
+unittest
+{
+    enum distance = si!"384_400 km";
+    enum speed = si!"299_792_458 m/s";
+    enum time = distance / speed;
+    writefln("Travel time of light from the moon: %s s", time.value(second));
+
+    static assert(is(typeof(distance) == Length));
+    static assert(is(typeof(speed) == Speed));
+}
+
+// Runtime parsing
+unittest
+{
+    auto data = [
+        "distance-to-the-moon": "384_400 km",
+        "speed-of-light": "299_792_458 m/s"
+    ];
+    auto distance = parseSI!Length(data["distance-to-the-moon"]);
+    auto speed = parseSI!Speed(data["speed-of-light"]);
+    auto time = distance / speed;
+    writefln("Travel time of light from the moon: %s s", time.value(second));
+}
+
+// Chemistry session
+unittest
+{
     // Use the predefined quantity types (in module quantities.si)
     Volume volume;
     Concentration concentration;
@@ -49,35 +119,4 @@ unittest
     // My scales graduations are in 1/10 milligrams!
     writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
     // prints: Weigh 297.3 mg of substance
-
-    // Extract the value of the quantity expressed in mg
-    auto val = mass.value(milli(gram)); 
-    assert(val.approxEqual(297.25));
-
-    // Type checking prevents incorrect assignments and operations
-    static assert(!__traits(compiles, mass = 10 * milli(liter)));
-    static assert(!__traits(compiles, concentration = 1 * euro/volume));
-
-    // ----------------------------------------
-    // Parsing quantities/units at compile-time
-    // ----------------------------------------
-
-    enum ctConcentration = si!"25 mmol⋅L⁻¹";
-    enum ctVolume = si!"100 mL";
-    enum ctMass = ctConcentration * ctVolume * si!"118.9 g/mol";
-    writefln("Weigh %.1f mg of substance", mass.value(si!"mg"));
-    // prints: Weigh 297.3 mg of substance
-
-    // -----------------------------------
-    // Parsing quantities/units at runtime
-    // -----------------------------------
-
-    mass = parseSI!Mass("297.3 mg");
-	volume = parseSI!Volume("100 ml");
-	mm = parseSI!MolarMass("118.9 g/mol");
-	concentration = parseSI!Concentration("2.5 mmol⋅l⁻¹");
-
-    import std.exception;
-	assertThrown!ParsingException(concentration = parseSI!Concentration("10 qGz"));
-	assertThrown!DimensionException(concentration = parseSI!Concentration("2.5 g⋅L⁻¹"));
 }
