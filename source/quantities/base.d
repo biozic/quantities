@@ -131,7 +131,9 @@ A quantity that can be expressed as the product of a number and a set of dimensi
 struct Quantity(N, Dim...)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-
+    static assert(Is!Dim.equalTo!(Sort!Dim), "Dimensions are not sorted correctly: "
+                  ~"the right type is " ~ Quantity!(N, Sort!Dim).stringof);
+      
     /// The type of the underlying numeric value.
     alias valueType = N;
     ///
