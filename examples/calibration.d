@@ -29,11 +29,8 @@ struct LinearCalibration(Quantity, Signal)
 }
 
 unittest
-{
-    alias EPD = QuantityType!volt;
-    alias Time = QuantityType!second;
-    
-    LinearCalibration!(Time, EPD) cal;
+{   
+    LinearCalibration!(Time, ElectricPotential) cal;
     cal.calibrate2Points(10 * minute, 15 * volt, 2 * hour, 91 * volt);
     
     auto unknown = cal.quantityFor(30 * volt);

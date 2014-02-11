@@ -156,7 +156,7 @@ SymbolList!N makeSymbolList(N, Sym...)(Sym list)
 unittest
 {
     enum euro = unit!("C", double);
-    alias Currency = QuantityType!euro;
+    alias Currency = typeof(euro);
     enum dollar = 1.35 * euro;
 
     enum symbolList = makeSymbolList!double(
@@ -228,7 +228,7 @@ unittest
     import std.bigint;
     
     enum bit = unit!("bit", BigInt);
-    alias BinarySize = QuantityType!bit;
+    alias BinarySize = typeof(bit);
 
     SymbolList!BigInt symbolList;
     symbolList.addUnit("bit", bit);
@@ -297,7 +297,7 @@ version (D_Ddoc) // DMD BUG? (Differents symbolLists but same template instantia
 unittest
 {
     enum bit = unit!("bit", ulong);
-    alias BinarySize = QuantityType!bit;
+    alias BinarySize = typeof(bit);
     enum byte_ = 8 * bit;
     
     enum symbolList = makeSymbolList!ulong(

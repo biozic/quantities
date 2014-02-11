@@ -50,7 +50,7 @@ Concentration concentration;
 Mass mass;
 
 // Define a new quantity type
-alias MolarMass = QuantityType!(kilogram/mole);
+alias MolarMass = typeof(kilogram/mole);
 
 // I have to make a new solution at the concentration of 25 mmol/L
 concentration = 25 * milli(mole)/liter;

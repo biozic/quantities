@@ -1,17 +1,12 @@
 import quantities;
 import std.stdio;
 
-alias Frequency = QuantityType!hertz;
-alias Inductance = QuantityType!henry;
-alias Capacity = QuantityType!farad;
-alias Resistance = QuantityType!ohm;
-
-auto freq(Inductance L, Capacity C)
+auto freq(Inductance L, Capacitance C)
 {
     return sqrt(1 / (L * C)) / (2 * PI * radian);
 }
 
-auto quality(Inductance L, Resistance R, Frequency F)
+auto quality(Inductance L, ElectricResistance R, Frequency F)
 {
     return R / (L * F * 2 * PI * radian);
 }
@@ -19,8 +14,8 @@ auto quality(Inductance L, Resistance R, Frequency F)
 unittest
 {
     Inductance L = si!"10 mH";
-    Capacity C = si!"62.5 nF";
-    Resistance R = si!"100 kΩ";
+    Capacitance C = si!"62.5 nF";
+    ElectricResistance R = si!"100 kΩ";
     auto w0 = freq(L, C);
     auto q = cast(real) quality(L, R, w0);
     

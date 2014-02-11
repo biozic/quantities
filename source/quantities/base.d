@@ -62,10 +62,10 @@ those  from the  SI. The  SI quantities  and units  are in  fact defined  in the
 module quantities.si.  When a quantity  that is not  predefined has to  be used,
 instead of instantiating the Quantity template  first, it is preferable to start
 defining a new base unit (with only  one dimension) using the unit template, and
-then the quantity type with the QuantityType template:
+then the quantity type with the typeof operator:
 ---
 enum euro = unit!"C"; // C for currency
-alias Currency = QuantityType!euro;
+alias Currency = typeof(euro);
 assert(is(Currency == Quantity!(real, "C", 1)));
 ---
 This means that all currencies will be defined with respect to euro.
@@ -268,7 +268,7 @@ struct Quantity(N, Dim...)
     unittest
     {
         auto proportion = 12 * gram / (4.5 * kilogram);
-        static assert(is(QuantityType!proportion == Dimensionless));
+        static assert(is(typeof(proportion) == Dimensionless));
         auto prop = cast(real) proportion;
 
         static assert(!__traits(compiles, cast(real) meter));
@@ -471,7 +471,7 @@ unittest // Quantity.baseUnit
 
 unittest // Quantity constructor
 {
-    enum time = QuantityType!second(1 * minute);
+    enum time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
 }
 
@@ -590,8 +590,7 @@ unittest // Quantity.opCmp
 
 unittest // Compilation errors for incompatible dimensions
 {
-    static assert(!__traits(compiles, QuantityType!meter(1 * second)));
-    QuantityType!meter m;
+    Length m;
     static assert(!__traits(compiles, m.value(second)));
     static assert(!__traits(compiles, m = second));
     static assert(!__traits(compiles, m + second));
@@ -636,7 +635,7 @@ template isQuantity(T)
 unittest
 {
     static assert(isQuantity!Time);
-    static assert(isQuantity!(QuantityType!meter));
+    static assert(isQuantity!(typeof(meter)));
     static assert(!isQuantity!real);
 }
 
@@ -659,20 +658,6 @@ unittest
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
     assert((1.35 * dollar).value(euro).approxEqual(1));
-}
-
-
-/// Returns the quantity type of a unit
-template QuantityType(alias unit)
-    if (isQuantity!(typeof(unit)))
-{
-    alias QuantityType = Quantity!(unit.valueType, unit.dimensions);
-}
-///
-unittest // QuantityType example
-{
-    alias Mass = QuantityType!kilogram;
-    Mass mass = 15 * ton;
 }
 
 
@@ -727,8 +712,8 @@ template AreConsistent(Q1, Q2)
 ///
 unittest
 {
-    alias Speed = QuantityType!(meter/second);
-    alias Velocity = QuantityType!((1/second * meter));
+    alias Speed = typeof(meter/second);
+    alias Velocity = typeof((1/second * meter));
     static assert(AreConsistent!(Speed, Velocity));
 }
 

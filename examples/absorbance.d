@@ -6,10 +6,9 @@ import quantities.si;
 import std.math;
 import std.stdio;
 
-alias Absorbance = QuantityType!one;
-alias Flux = QuantityType!lumen;
+alias Absorbance = Dimensionless;
 
-Absorbance absorbance(Flux incident, Flux transmitted)
+Absorbance absorbance(LuminousFlux incident, LuminousFlux transmitted)
 {
     return Absorbance(-log10(transmitted / incident));
 }
