@@ -47,7 +47,7 @@ unittest
     // prints: Weigh 0.00029725 [M] of substance
     // Wait! That's not really useful!
     // My scales graduations are in 1/10 milligrams!
-    writefln("Weigh %.1f mg of substance", mass.value(si!"mg"));
+    writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
     // prints: Weigh 297.3 mg of substance
 
     // Extract the value of the quantity expressed in mg
