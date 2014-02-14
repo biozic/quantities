@@ -243,7 +243,7 @@ unittest
 }
 
 /// Creates a function that parses a string for a SI unit or quantity at compile-time.
-alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string), 1.0L);
+alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string));
 ///
 unittest
 {

@@ -205,8 +205,7 @@ Params:
 template rtQuantityParser(
     N, 
     alias symbolList, 
-    alias parseFun = (ref string s) => parse!N(s),
-    N one = 1
+    alias parseFun = (ref string s) => parse!N(s)
 )
 {
     auto rtQuantityParser(Q, S)(S str)
@@ -214,7 +213,7 @@ template rtQuantityParser(
     {
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
 
-        auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(str, symbolList, one);
+        auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(str, symbolList);
         enforceEx!DimensionException(
             toAA!(Q.dimensions) == rtQuant.dimensions,
             "Dimension error: [%s] is not compatible with [%s]"
@@ -243,7 +242,7 @@ unittest
         return BigInt(m.captures[1]);
     }
     
-    alias parse = rtQuantityParser!(BigInt, symbolList, parseFun, BigInt(1));
+    alias parse = rtQuantityParser!(BigInt, symbolList, parseFun);
 
     auto foo = BigInt("1234567890987654300") * bit;
     foo += BigInt(21) * bit;
@@ -266,8 +265,7 @@ Params:
 template ctQuantityParser(
     N, 
     alias symbolList, 
-    alias parseFun = (ref string s) => parse!N(s),
-    N one = 1
+    alias parseFun = (ref string s) => parse!N(s)
 )
 {
     template ctQuantityParser(string str)
@@ -278,14 +276,14 @@ template ctQuantityParser(
         }
         
         // This is for a nice compile-time error message
-        enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList, one)); }();
+        enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList)); }();
         static if (msg)
         {
             static assert(false, msg);
         }
         else
         {
-            enum q = parseRTQuantity!(N, parseFun)(str, symbolList, one);
+            enum q = parseRTQuantity!(N, parseFun)(str, symbolList);
             enum dimStr = dimTup(q.dimensions);
             mixin("alias dims = TypeTuple!(%s);".format(dimStr));
             enum ctQuantityParser = Quantity!(N, Sort!dims).make(q.value);
@@ -329,16 +327,25 @@ class ParsingException : Exception
 
 package:
 
-RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbolList, N one)
+RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbolList)
 {
     static assert(isForwardRange!S && isSomeChar!(ElementType!S),
                   "input must be a forward range of a character type");
 
     N value;
     try
+    {
         value = parseFun(str);
+    }
     catch
-        value = one;
+    {
+        static if (isNumeric!N)
+            value = 1;
+        else static if (__traits(compiles, N(1)))
+            value = N(1);
+        else
+            static assert(false, "BUG");
+    }
 
     if (str.empty)
         return RTQuantity!N(value, null);
@@ -369,7 +376,7 @@ unittest // Test parsing
 
     static bool checkParse(Q)(string input, Q quantity)
     {
-        return parseRTQuantity!(real, std.conv.parse!(real, string))(input, siSL, 1.0L)
+        return parseRTQuantity!(real, std.conv.parse!(real, string))(input, siSL)
             == quantity.toRT;
     }
 
