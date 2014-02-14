@@ -402,7 +402,7 @@ unittest // Test parsing
     assertThrown!ParsingException(checkParse("1 m ) m", meter * meter));
     assertThrown!ParsingException(checkParse("1 m * m) m", meter * meter * meter));
     assertThrown!ParsingException(checkParse("1 m^²", meter * meter));
-    // FIXME: assertThrown!ParsingException(checkParse("1-⁺⁵", one));
+    assertThrown!ParsingException(checkParse("1-⁺⁵", one));
 }
 
 // Holds a value and a dimensions for parsing
@@ -628,16 +628,23 @@ Token[] lex(string input)
     void pushInteger(Tok type)
     {
         auto slice = original[i .. j];
+
         if (type == Tok.supinteger)
         {
             if (__ctfe)
                 slice = translate(slice, ctSupIntegerMap);
             else
                 slice = translate(slice, supIntegerMap);
-
         }
-        auto n = std.conv.parse!int(slice);
+
+        int n;
+        try
+            n = std.conv.parse!int(slice);
+        catch (Exception)
+            throw new ParsingException("Unexpected integer format: " ~ original[i .. j]);
+
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
+
         tokens ~= Token(type, original[i .. j], n);
         i = j;
         state = State.none;
