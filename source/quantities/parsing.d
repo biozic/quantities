@@ -614,6 +614,9 @@ Token[] lex(string input)
     }
 
     Token[] tokens;
+    if (!__ctfe)
+        tokens.reserve(input.length);
+
     auto original = input;
     size_t i, j;
     State state = State.none;
