@@ -676,8 +676,13 @@ Token[] lex(string input)
         auto len = cur.codeLength!char;
         switch (cur)
         {
+            // Whitespace
             case ' ':
             case '\t':
+            case '\u00A0':
+            case '\u2000': .. case '\u200A':
+            case '\u202F':
+            case '\u205F':
                 push();
                 j += len;
                 i = j;
