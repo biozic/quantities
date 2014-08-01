@@ -99,7 +99,7 @@ template isNumberLike(N)
         && __traits(compiles, { return n1 - n2; })
         && __traits(compiles, { return n1 * n2; })
         && __traits(compiles, { return n1 / n2; })
-        && (__traits(compiles, { n1 = 1; }) || __traits(compiles, { n1 = N(1); }))
+        && __traits(compiles, { n1 = 1; })
         && __traits(compiles, { return cast(const) n1 + n2; } );
 }
 unittest
@@ -167,12 +167,8 @@ struct Quantity(N, Dim...)
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
-        static if (isNumeric!N)
-            return Quantity.make(1);
-        else static if (__traits(compiles, N(1)))
-            return Quantity.make(N(1));
-        else
-            static assert(false, "BUG");
+        N one = 1;
+        return Quantity.make(one);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -646,12 +642,8 @@ unittest
 template unit(string symbol, N = real)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-    static if (isNumeric!N)
-        enum unit = Quantity!(N, symbol, 1).make(1);
-    else static if (__traits(compiles, N(1)))
-        enum unit = Quantity!(N, symbol, 1).make(N(1));
-    else
-        static assert(false, "BUG");
+    enum N one = 1;
+    enum unit = Quantity!(N, symbol, 1).make(one);
 }
 ///
 unittest

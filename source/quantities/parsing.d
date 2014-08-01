@@ -334,18 +334,9 @@ RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbol
 
     N value;
     try
-    {
         value = parseFun(str);
-    }
     catch
-    {
-        static if (isNumeric!N)
-            value = 1;
-        else static if (__traits(compiles, N(1)))
-            value = N(1);
-        else
-            static assert(false, "BUG");
-    }
+        value = 1;
 
     if (str.empty)
         return RTQuantity!N(value, null);
