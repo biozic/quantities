@@ -595,13 +595,13 @@ enum ctSupIntegerMap = [
     '⁺':'+',
     '⁻':'-'
 ];
-static __gshared dchar[dchar] supIntegerMap;
-shared static this()
+static dchar[dchar] supIntegerMap;
+static this()
 {
     supIntegerMap = ctSupIntegerMap;
 }
 
-Token[] lex(string input)
+Token[] lex(string input) @safe
 {
     enum State
     {
@@ -612,8 +612,15 @@ Token[] lex(string input)
     }
 
     Token[] tokens;
-    if (!__ctfe)
-        tokens.reserve(input.length);
+    auto tokapp = appender(tokens); // Only for runtime
+
+    void appendToken(Token token)
+    {
+        if (!__ctfe)
+            tokapp.put(token);
+        else
+            tokens ~= token;
+    }
 
     auto original = input;
     size_t i, j;
@@ -621,7 +628,7 @@ Token[] lex(string input)
 
     void pushToken(Tok type)
     {
-        tokens ~= Token(type, original[i .. j]);
+        appendToken(Token(type, original[i .. j]));
         i = j;
         state = State.none;
     }
@@ -646,7 +653,7 @@ Token[] lex(string input)
 
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
 
-        tokens ~= Token(type, original[i .. j], n);
+        appendToken(Token(type, original[i .. j], n));
         i = j;
         state = State.none;
     }
@@ -750,7 +757,11 @@ Token[] lex(string input)
         input.popFront();
     }
     push();
-    return tokens;
+
+    if (!__ctfe)
+        return tokapp.data;
+    else
+        return tokens;
 }
 
 void advance(Types...)(ref Token[] tokens, Types types)
@@ -833,7 +844,7 @@ int[string] binop(string op)(int[string] dim1, int[string] dim2)
 }
 
 // Raise a dimension array to a integer power (value)
-int[string] exp(int[string] dim, int value)
+int[string] exp(int[string] dim, int value) @safe pure
 {
     if (value == 0)
         return null;
@@ -845,7 +856,7 @@ int[string] exp(int[string] dim, int value)
 }
 
 // Raise a dimension array to a rational power (1/value)
-int[string] expInv(int[string] dim, int value)
+int[string] expInv(int[string] dim, int value) @safe pure
 {
     assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
 
@@ -857,28 +868,3 @@ int[string] expInv(int[string] dim, int value)
     }
     return result;
 }
-
-// Returns the string representation of a dimension array
-string dimstr(int[string] dim)
-{
-    import std.algorithm : filter;
-    import std.array : join;
-    import std.conv : to;
-    
-    static string stringize(string base, int power)
-    {
-        if (power == 0)
-            return null;
-        if (power == 1)
-            return base;
-        return base ~ "^" ~ to!string(power);
-    }
-    
-    string[] dimstrs;
-    foreach (sym, pow; dim)
-        dimstrs ~= stringize(sym, pow);
-
-    return "%-(%s %)".format(dimstrs.filter!"a !is null");
-}
-
-

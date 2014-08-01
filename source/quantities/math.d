@@ -134,7 +134,7 @@ template Square(Q)
 }
 
 /// ditto
-template Cubic(Q, N = real)
+template Cubic(Q)
     if (isQuantity!Q)
 {
     alias Cubic = typeof(Q.init * Q.init * Q.init);

@@ -437,11 +437,11 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T)
     {
         mixin(checkDim!"");
-        if (_value == other)
-            return 0;
         if (_value < other)
             return -1;
-        return 1;
+        if (_value > other)
+            return 1;
+        return 0;
     }
 
     /++
@@ -1051,29 +1051,29 @@ unittest
     static assert(toAA!T == ["a":1, "b":-1]);
 }
 
-string dimstr(Dim...)()
+string dimstr(int[string] dim) @safe pure
 {
     import std.algorithm : filter;
     import std.array : join;
     import std.conv : to;
-
-    static string stringize(string base, int power)
+    
+    static string stringize(string symbol, int power)
     {
         if (power == 0)
             return null;
         if (power == 1)
-            return base;
-        return base ~ "^" ~ to!string(power);
+            return symbol;
+        return symbol ~ "^" ~ to!string(power);
     }
-
+    
     string[] dimstrs;
-    string sym;
-    foreach (i, d; Dim)
-    {
-        static if (i % 2 == 0)
-            sym = d;
-        else
-            dimstrs ~= stringize(sym, d);
-    }
-    return format("%-(%s %)", dimstrs);
+    foreach (sym, pow; dim)
+        dimstrs ~= stringize(sym, pow);
+    
+    return "%-(%s %)".format(dimstrs.filter!"a !is null");
+}
+
+string dimstr(Dim...)()
+{
+    return dimstr(toAA!Dim);
 }
