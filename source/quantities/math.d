@@ -90,7 +90,7 @@ unittest
     enum meter = unit!("L");
     enum liter = 0.001 * meter * meter * meter;
 
-    mixin MathFunctions!(real, "std.math");
+    mixin MathFunctions!(double, "std.math");
 
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);

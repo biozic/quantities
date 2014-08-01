@@ -32,13 +32,13 @@ unittest
 unittest
 {
     // Length is defined as a quantity of dimension L storing a real value
-    static assert(is(Length == Quantity!(real, "L", 1)));
+    static assert(is(Length == Quantity!(double, "L", 1)));
 
     // Time is defined as a quantity of dimension T
-    static assert(is(Time == Quantity!(real, "T", 1)));
+    static assert(is(Time == Quantity!(double, "T", 1)));
 
     // Speed is defined as a quantity of dimension L T⁻¹
-    static assert(is(Speed == Quantity!(real, "L", 1, "T", -1)));
+    static assert(is(Speed == Quantity!(double, "L", 1, "T", -1)));
 
     // Quantities that share the same dimensions are of the same type
     static assert(is(typeof(meter) == Length));

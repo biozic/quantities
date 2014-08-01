@@ -3,8 +3,8 @@
 This module defines the SI units and prefixes.
 
 All the quantities and units defined in this module store a value
-of type real intenally. So the predefined parsers can only parse
-real values.
+of type double intenally. So the predefined parsers can only parse
+double values.
 
 Copyright: Copyright 2013-2014, Nicolas Sicard
 Authors: Nicolas Sicard
@@ -26,6 +26,8 @@ version (unittest)
     import std.math : approxEqual;
 }
 
+mixin MathFunctions!(float, "std.math");
+mixin MathFunctions!(double, "std.math");
 mixin MathFunctions!(real, "std.math");
 
 /++
@@ -77,7 +79,7 @@ enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-enum one = Quantity!real(1); /// The dimensionless unit 'one'
+enum one = Quantity!double(1); /// The dimensionless unit 'one'
 
 alias Length = typeof(meter); /// Predefined quantity type templates for SI quantities
 alias Mass = typeof(kilogram); /// ditto
@@ -188,45 +190,45 @@ private alias siSymbolTuple = TypeTuple!(
     withUnit("t", ton),
     withUnit("eV", electronVolt),
     withUnit("Da", dalton),
-    withPrefix("Y", 1e24L),
-    withPrefix("Z", 1e21L),
-    withPrefix("E", 1e18L),
-    withPrefix("P", 1e15L),
-    withPrefix("T", 1e12L),
-    withPrefix("G", 1e9L),
-    withPrefix("M", 1e6L),
-    withPrefix("k", 1e3L),
-    withPrefix("h", 1e2L),
-    withPrefix("da", 1e1L),
-    withPrefix("d", 1e-1L),
-    withPrefix("c", 1e-2L),
-    withPrefix("m", 1e-3L),
-    withPrefix("µ", 1e-6L),
-    withPrefix("n", 1e-9L),
-    withPrefix("p", 1e-12L),
-    withPrefix("f", 1e-15L),
-    withPrefix("a", 1e-18L),
-    withPrefix("z", 1e-21L),
-    withPrefix("y", 1e-24L),
-    withPrefix("Yi", 1024.0L^^8),
-    withPrefix("Zi", 1024.0L^^7),
-    withPrefix("Ei", 1024.0L^^6),
-    withPrefix("Pi", 1024.0L^^5),
-    withPrefix("Ti", 1024.0L^^4),
-    withPrefix("Gi", 1024.0L^^3),
-    withPrefix("Mi", 1024.0L^^2),
-    withPrefix("Ki", 1024.0L)
+    withPrefix("Y", 1e24),
+    withPrefix("Z", 1e21),
+    withPrefix("E", 1e18),
+    withPrefix("P", 1e15),
+    withPrefix("T", 1e12),
+    withPrefix("G", 1e9),
+    withPrefix("M", 1e6),
+    withPrefix("k", 1e3),
+    withPrefix("h", 1e2),
+    withPrefix("da", 1e1),
+    withPrefix("d", 1e-1),
+    withPrefix("c", 1e-2),
+    withPrefix("m", 1e-3),
+    withPrefix("µ", 1e-6),
+    withPrefix("n", 1e-9),
+    withPrefix("p", 1e-12),
+    withPrefix("f", 1e-15),
+    withPrefix("a", 1e-18),
+    withPrefix("z", 1e-21),
+    withPrefix("y", 1e-24),
+    withPrefix("Yi", 1024.0^^8),
+    withPrefix("Zi", 1024.0^^7),
+    withPrefix("Ei", 1024.0^^6),
+    withPrefix("Pi", 1024.0^^5),
+    withPrefix("Ti", 1024.0^^4),
+    withPrefix("Gi", 1024.0^^3),
+    withPrefix("Mi", 1024.0^^2),
+    withPrefix("Ki", 1024.0)
 );
 
-enum _siSymbolList = makeSymbolList!real(siSymbolTuple);
-static __gshared SymbolList!real siSymbolList;
+enum _siSymbolList = makeSymbolList!double(siSymbolTuple);
+static __gshared SymbolList!double siSymbolList;
 shared static this()
 {
     siSymbolList = _siSymbolList;
 }
 
 /// Creates a function that parses a string for a SI unit or quantity at runtime.
-alias parseSI = rtQuantityParser!(real, siSymbolList);
+alias parseSI = rtQuantityParser!(double, siSymbolList);
 ///
 unittest
 {
@@ -243,7 +245,7 @@ unittest
 }
 
 /// Creates a function that parses a string for a SI unit or quantity at compile-time.
-alias si = ctQuantityParser!(real, _siSymbolList, std.conv.parse!(real, string));
+alias si = ctQuantityParser!(double, _siSymbolList, std.conv.parse!(double, string));
 ///
 unittest
 {

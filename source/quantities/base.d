@@ -10,8 +10,8 @@ list (Dim)  in the  form of a  sequence of string  symbols and  integral powers.
 Dimensionless  quantities have  an  empty  Dim. For  instance  length and  speed
 quantities can be stored as:
 ---
-alias Length = Quantity!(real, "L", 1);
-alias Speed  = Quantity!(real, "L", 1, "T", -1);
+alias Length = Quantity!(double, "L", 1);
+alias Speed  = Quantity!(double, "L", 1, "T", -1);
 ---
 where "L" is the symbol for the length  dimension, "T" is the symbol of the time
 dimensions,  and  1   and  -1  are  the  powers  of   those  dimensions  in  the
@@ -23,7 +23,7 @@ instances of  a Quantity struct  where the number is  1 and the  dimensions only
 contain  one  symbol,  with  the  power  1. For  instance,  the  meter  unit  is
 predefined as something equivalent to:
 ---
-enum meter = Quantity!(real, "L", 1)(1.0);
+enum meter = Quantity!(double, "L", 1)(1.0);
 ---
 (note that  the constructor  used here  has the  package access  protection: new
 units should be defined with the unit template of this module).
@@ -66,7 +66,7 @@ then the quantity type with the typeof operator:
 ---
 enum euro = unit!"C"; // C for currency
 alias Currency = typeof(euro);
-assert(is(Currency == Quantity!(real, "C", 1)));
+assert(is(Currency == Quantity!(double, "C", 1)));
 ---
 This means that all currencies will be defined with respect to euro.
 
@@ -113,18 +113,6 @@ unittest
     static assert(isNumberLike!(RefCounted!real));
 }
 
-template OperatorResultType(T, string op, U)
-{
-    T t;
-    U u;
-    alias OperatorResultType = typeof(mixin("t" ~ op ~ "u"));
-}
-unittest
-{
-    static assert(is(OperatorResultType!(real, "+", int) == real));
-    static assert(is(OperatorResultType!(int, "*", int) == int));
-}
-
 /++
 A quantity that can be expressed as the product of a number and a set of dimensions.
 +/
@@ -139,7 +127,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
-        static assert(is(meter.valueType == real));
+        static assert(is(meter.valueType == double));
     }
 
     // The payload
@@ -267,9 +255,9 @@ struct Quantity(N, Dim...)
     {
         auto proportion = 12 * gram / (4.5 * kilogram);
         static assert(is(typeof(proportion) == Dimensionless));
-        auto prop = cast(real) proportion;
+        auto prop = cast(double) proportion;
 
-        static assert(!__traits(compiles, cast(real) meter));
+        static assert(!__traits(compiles, cast(double) meter));
     }
 
     /// Overloaded operators.
@@ -306,8 +294,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"other.dimensions");
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, op, Q.valueType), dimensions)
-            .make(mixin("_value" ~ op ~ "other._value"));
+        return Quantity.make(mixin("_value" ~ op ~ "other._value"));
     }
 
     // Add (or substract) a dimensionless quantity and a number
@@ -316,8 +303,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"");
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType(N, op, T), dimensions)
-            .make(mixin("_value" ~ op ~ "other"));
+        return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -332,8 +318,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, op, Q.valueType),
-                         OpBinary!(dimensions, op, other.dimensions))
+        return Quantity!(N, OpBinary!(dimensions, op, other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
@@ -342,8 +327,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(N, op, T), dimensions)
-            .make(mixin("_value" ~ op ~ "other"));
+        return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -359,8 +343,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(T, op, N), Invert!dimensions)
-            .make(mixin("other" ~ op ~ "_value"));
+        return Quantity!(N, Invert!dimensions).make(mixin("other" ~ op ~ "_value"));
     }
 
     auto opBinary(string op, T)(T power) const
@@ -547,7 +530,7 @@ unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
     enum x = 258.1 * meter;
     enum y1 = x % (5 * deca(meter));
-    static assert((cast(real) y1).approxEqual(8.1));
+    static assert((cast(double) y1).approxEqual(8.1));
     enum y2 = x % 50;
     static assert(y2.value(meter).approxEqual(8.1));
 }
@@ -634,12 +617,12 @@ unittest
 {
     static assert(isQuantity!Time);
     static assert(isQuantity!(typeof(meter)));
-    static assert(!isQuantity!real);
+    static assert(!isQuantity!double);
 }
 
 
 /// Creates a new monodimensional unit.
-template unit(string symbol, N = real)
+template unit(string symbol, N = double)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
     enum N one = 1;

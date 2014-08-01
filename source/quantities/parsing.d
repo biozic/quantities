@@ -36,7 +36,7 @@ $(DT Quantity:)
     $(DD Number Units)
 $(BR)
 $(DT Number:)
-    $(DD $(I Numeric value parsed by std.conv.parse!real))
+    $(DD $(I Numeric value parsed by std.conv.parse!double))
 $(BR)
 $(DT Units:)
     $(DD Unit)
@@ -357,7 +357,7 @@ unittest // Test parsing
     enum second = unit!"T";
     enum one = meter / meter;
 
-    enum siSL = makeSymbolList!real(
+    enum siSL = makeSymbolList!double(
         withUnit("m", meter),
         withUnit("kg", kilogram),
         withUnit("s", second),
@@ -367,12 +367,12 @@ unittest // Test parsing
 
     static bool checkParse(Q)(string input, Q quantity)
     {
-        return parseRTQuantity!(real, std.conv.parse!(real, string))(input, siSL)
+        return parseRTQuantity!(double, std.conv.parse!(double, string))(input, siSL)
             == quantity.toRT;
     }
 
     assert(checkParse("1    m    ", meter));
-    assert(checkParse("1 mm", 0.001L * meter));
+    assert(checkParse("1 mm", 0.001 * meter));
     assert(checkParse("1 m^-1", 1 / meter));
     assert(checkParse("1 m²", meter * meter));
     assert(checkParse("1 m⁺²", meter * meter));
@@ -390,10 +390,10 @@ unittest // Test parsing
     assert(checkParse("1 m.s", second * meter));
     assert(checkParse("1 m s", second * meter));
     assert(checkParse("1 m*m/m", meter));
-    assert(checkParse("0.8", 0.8L * one));
+    assert(checkParse("0.8", 0.8 * one));
 
     assertThrown!ParsingException(checkParse("1 c m", meter * meter));
-    assertThrown!ParsingException(checkParse("1 c", 0.01L * meter));
+    assertThrown!ParsingException(checkParse("1 c", 0.01 * meter));
     assertThrown!ParsingException(checkParse("1 Qm", meter));
     assertThrown!ParsingException(checkParse("1 m/", meter));
     assertThrown!ParsingException(checkParse("1 m^", meter));
