@@ -310,7 +310,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"other.dimensions");
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, "+", Q.valueType), dimensions)
+        return Quantity!(OperatorResultType!(N, op, Q.valueType), dimensions)
             .make(mixin("_value" ~ op ~ "other._value"));
     }
 
@@ -320,7 +320,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"");
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType(N, "+", T), dimensions)
+        return Quantity!(OperatorResultType(N, op, T), dimensions)
             .make(mixin("_value" ~ op ~ "other"));
     }
 
@@ -336,7 +336,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, "*", Q.valueType),
+        return Quantity!(OperatorResultType!(N, op, Q.valueType),
                          OpBinary!(dimensions, op, other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
@@ -346,7 +346,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(N, "*", T), dimensions)
+        return Quantity!(OperatorResultType!(N, op, T), dimensions)
             .make(mixin("_value" ~ op ~ "other"));
     }
 
@@ -363,7 +363,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(T, "/", N), Invert!dimensions)
+        return Quantity!(OperatorResultType!(T, op, N), Invert!dimensions)
             .make(mixin("other" ~ op ~ "_value"));
     }
 
