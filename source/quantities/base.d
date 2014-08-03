@@ -287,6 +287,13 @@ struct Quantity(N, Dim...)
     {
         return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
     }
+    
+    // Unary ++ and --
+    auto opUnary(string op)() /// ditto
+        if (op == "++" || op == "--")
+    {
+        return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
+    }
 
     // Add (or substract) two quantities if they share the same dimensions
     auto opBinary(string op, Q)(Q other) const /// ditto
@@ -475,12 +482,19 @@ unittest // Quantity.opAssign Q = Q
     assert(length.value(meter).approxEqual(0.0254));
 }
 
-unittest // Quantity.opUnary +Q -Q
+unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
     enum length = + meter;
     static assert(length == 1 * meter);
     enum length2 = - meter;
     static assert(length2 == -1 * meter);
+    
+    auto len = ++meter;
+    assert(len.value(meter).approxEqual(2));
+    len = --meter;
+    assert(len.value(meter).approxEqual(0));
+    len++;
+    assert(len.value(meter).approxEqual(1));    
 }
 
 unittest // Quantity.opBinary Q*N Q/N
