@@ -10,8 +10,8 @@ list (Dim)  in the  form of a  sequence of string  symbols and  integral powers.
 Dimensionless  quantities have  an  empty  Dim. For  instance  length and  speed
 quantities can be stored as:
 ---
-alias Length = Quantity!(real, "L", 1);
-alias Speed  = Quantity!(real, "L", 1, "T", -1);
+alias Length = Quantity!(double, "L", 1);
+alias Speed  = Quantity!(double, "L", 1, "T", -1);
 ---
 where "L" is the symbol for the length  dimension, "T" is the symbol of the time
 dimensions,  and  1   and  -1  are  the  powers  of   those  dimensions  in  the
@@ -23,7 +23,7 @@ instances of  a Quantity struct  where the number is  1 and the  dimensions only
 contain  one  symbol,  with  the  power  1. For  instance,  the  meter  unit  is
 predefined as something equivalent to:
 ---
-enum meter = Quantity!(real, "L", 1)(1.0);
+enum meter = Quantity!(double, "L", 1)(1.0);
 ---
 (note that  the constructor  used here  has the  package access  protection: new
 units should be defined with the unit template of this module).
@@ -66,7 +66,7 @@ then the quantity type with the typeof operator:
 ---
 enum euro = unit!"C"; // C for currency
 alias Currency = typeof(euro);
-assert(is(Currency == Quantity!(real, "C", 1)));
+assert(is(Currency == Quantity!(double, "C", 1)));
 ---
 This means that all currencies will be defined with respect to euro.
 
@@ -99,7 +99,7 @@ template isNumberLike(N)
         && __traits(compiles, { return n1 - n2; })
         && __traits(compiles, { return n1 * n2; })
         && __traits(compiles, { return n1 / n2; })
-        && (__traits(compiles, { n1 = 1; }) || __traits(compiles, { n1 = N(1); }))
+        && __traits(compiles, { n1 = 1; })
         && __traits(compiles, { return cast(const) n1 + n2; } );
 }
 unittest
@@ -111,18 +111,6 @@ unittest
     import std.bigint, std.typecons;
     static assert(isNumberLike!BigInt);
     static assert(isNumberLike!(RefCounted!real));
-}
-
-template OperatorResultType(T, string op, U)
-{
-    T t;
-    U u;
-    alias OperatorResultType = typeof(mixin("t" ~ op ~ "u"));
-}
-unittest
-{
-    static assert(is(OperatorResultType!(real, "+", int) == real));
-    static assert(is(OperatorResultType!(int, "*", int) == int));
 }
 
 /++
@@ -139,7 +127,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
-        static assert(is(meter.valueType == real));
+        static assert(is(meter.valueType == double));
     }
 
     // The payload
@@ -167,12 +155,8 @@ struct Quantity(N, Dim...)
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
     {
-        static if (isNumeric!N)
-            return Quantity.make(1);
-        else static if (__traits(compiles, N(1)))
-            return Quantity.make(N(1));
-        else
-            static assert(false, "BUG");
+        N one = 1;
+        return Quantity.make(one);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -271,9 +255,9 @@ struct Quantity(N, Dim...)
     {
         auto proportion = 12 * gram / (4.5 * kilogram);
         static assert(is(typeof(proportion) == Dimensionless));
-        auto prop = cast(real) proportion;
+        auto prop = cast(double) proportion;
 
-        static assert(!__traits(compiles, cast(real) meter));
+        static assert(!__traits(compiles, cast(double) meter));
     }
 
     /// Overloaded operators.
@@ -303,6 +287,13 @@ struct Quantity(N, Dim...)
     {
         return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
     }
+    
+    // Unary ++ and --
+    auto opUnary(string op)() /// ditto
+        if (op == "++" || op == "--")
+    {
+        return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
+    }
 
     // Add (or substract) two quantities if they share the same dimensions
     auto opBinary(string op, Q)(Q other) const /// ditto
@@ -310,8 +301,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"other.dimensions");
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, "+", Q.valueType), dimensions)
-            .make(mixin("_value" ~ op ~ "other._value"));
+        return Quantity.make(mixin("_value" ~ op ~ "other._value"));
     }
 
     // Add (or substract) a dimensionless quantity and a number
@@ -320,8 +310,7 @@ struct Quantity(N, Dim...)
     {
         mixin(checkDim!"");
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType(N, "+", T), dimensions)
-            .make(mixin("_value" ~ op ~ "other"));
+        return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -336,8 +325,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(OperatorResultType!(N, "*", Q.valueType),
-                         OpBinary!(dimensions, op, other.dimensions))
+        return Quantity!(N, OpBinary!(dimensions, op, other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
@@ -346,8 +334,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(N, "*", T), dimensions)
-            .make(mixin("_value" ~ op ~ "other"));
+        return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
     // ditto
@@ -363,8 +350,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(OperatorResultType!(T, "/", N), Invert!dimensions)
-            .make(mixin("other" ~ op ~ "_value"));
+        return Quantity!(N, Invert!dimensions).make(mixin("other" ~ op ~ "_value"));
     }
 
     auto opBinary(string op, T)(T power) const
@@ -441,11 +427,11 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T)
     {
         mixin(checkDim!"");
-        if (_value == other)
-            return 0;
         if (_value < other)
             return -1;
-        return 1;
+        if (_value > other)
+            return 1;
+        return 0;
     }
 
     /++
@@ -496,12 +482,19 @@ unittest // Quantity.opAssign Q = Q
     assert(length.value(meter).approxEqual(0.0254));
 }
 
-unittest // Quantity.opUnary +Q -Q
+unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
     enum length = + meter;
     static assert(length == 1 * meter);
     enum length2 = - meter;
     static assert(length2 == -1 * meter);
+    
+    auto len = ++meter;
+    assert(len.value(meter).approxEqual(2));
+    len = --meter;
+    assert(len.value(meter).approxEqual(0));
+    len++;
+    assert(len.value(meter).approxEqual(1));    
 }
 
 unittest // Quantity.opBinary Q*N Q/N
@@ -551,7 +544,7 @@ unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
     enum x = 258.1 * meter;
     enum y1 = x % (5 * deca(meter));
-    static assert((cast(real) y1).approxEqual(8.1));
+    static assert((cast(double) y1).approxEqual(8.1));
     enum y2 = x % 50;
     static assert(y2.value(meter).approxEqual(8.1));
 }
@@ -638,20 +631,16 @@ unittest
 {
     static assert(isQuantity!Time);
     static assert(isQuantity!(typeof(meter)));
-    static assert(!isQuantity!real);
+    static assert(!isQuantity!double);
 }
 
 
 /// Creates a new monodimensional unit.
-template unit(string symbol, N = real)
+template unit(string symbol, N = double)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-    static if (isNumeric!N)
-        enum unit = Quantity!(N, symbol, 1).make(1);
-    else static if (__traits(compiles, N(1)))
-        enum unit = Quantity!(N, symbol, 1).make(N(1));
-    else
-        static assert(false, "BUG");
+    enum N one = 1;
+    enum unit = Quantity!(N, symbol, 1).make(one);
 }
 ///
 unittest
@@ -1059,29 +1048,29 @@ unittest
     static assert(toAA!T == ["a":1, "b":-1]);
 }
 
-string dimstr(Dim...)()
+string dimstr(int[string] dim) @safe pure
 {
     import std.algorithm : filter;
     import std.array : join;
     import std.conv : to;
-
-    static string stringize(string base, int power)
+    
+    static string stringize(string symbol, int power)
     {
         if (power == 0)
             return null;
         if (power == 1)
-            return base;
-        return base ~ "^" ~ to!string(power);
+            return symbol;
+        return symbol ~ "^" ~ to!string(power);
     }
-
+    
     string[] dimstrs;
-    string sym;
-    foreach (i, d; Dim)
-    {
-        static if (i % 2 == 0)
-            sym = d;
-        else
-            dimstrs ~= stringize(sym, d);
-    }
-    return format("%-(%s %)", dimstrs);
+    foreach (sym, pow; dim)
+        dimstrs ~= stringize(sym, pow);
+    
+    return "%-(%s %)".format(dimstrs.filter!"a !is null");
+}
+
+string dimstr(Dim...)()
+{
+    return dimstr(toAA!Dim);
 }

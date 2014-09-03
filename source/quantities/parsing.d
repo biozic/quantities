@@ -36,7 +36,7 @@ $(DT Quantity:)
     $(DD Number Units)
 $(BR)
 $(DT Number:)
-    $(DD $(I Numeric value parsed by std.conv.parse!real))
+    $(DD $(I Numeric value parsed by std.conv.parse!double))
 $(BR)
 $(DT Units:)
     $(DD Unit)
@@ -334,18 +334,9 @@ RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbol
 
     N value;
     try
-    {
         value = parseFun(str);
-    }
     catch
-    {
-        static if (isNumeric!N)
-            value = 1;
-        else static if (__traits(compiles, N(1)))
-            value = N(1);
-        else
-            static assert(false, "BUG");
-    }
+        value = 1;
 
     if (str.empty)
         return RTQuantity!N(value, null);
@@ -366,7 +357,7 @@ unittest // Test parsing
     enum second = unit!"T";
     enum one = meter / meter;
 
-    enum siSL = makeSymbolList!real(
+    enum siSL = makeSymbolList!double(
         withUnit("m", meter),
         withUnit("kg", kilogram),
         withUnit("s", second),
@@ -376,12 +367,12 @@ unittest // Test parsing
 
     static bool checkParse(Q)(string input, Q quantity)
     {
-        return parseRTQuantity!(real, std.conv.parse!(real, string))(input, siSL)
+        return parseRTQuantity!(double, std.conv.parse!(double, string))(input, siSL)
             == quantity.toRT;
     }
 
     assert(checkParse("1    m    ", meter));
-    assert(checkParse("1 mm", 0.001L * meter));
+    assert(checkParse("1 mm", 0.001 * meter));
     assert(checkParse("1 m^-1", 1 / meter));
     assert(checkParse("1 m²", meter * meter));
     assert(checkParse("1 m⁺²", meter * meter));
@@ -399,10 +390,10 @@ unittest // Test parsing
     assert(checkParse("1 m.s", second * meter));
     assert(checkParse("1 m s", second * meter));
     assert(checkParse("1 m*m/m", meter));
-    assert(checkParse("0.8", 0.8L * one));
+    assert(checkParse("0.8", 0.8 * one));
 
     assertThrown!ParsingException(checkParse("1 c m", meter * meter));
-    assertThrown!ParsingException(checkParse("1 c", 0.01L * meter));
+    assertThrown!ParsingException(checkParse("1 c", 0.01 * meter));
     assertThrown!ParsingException(checkParse("1 Qm", meter));
     assertThrown!ParsingException(checkParse("1 m/", meter));
     assertThrown!ParsingException(checkParse("1 m^", meter));
@@ -604,13 +595,13 @@ enum ctSupIntegerMap = [
     '⁺':'+',
     '⁻':'-'
 ];
-static __gshared dchar[dchar] supIntegerMap;
-shared static this()
+static dchar[dchar] supIntegerMap;
+static this()
 {
     supIntegerMap = ctSupIntegerMap;
 }
 
-Token[] lex(string input)
+Token[] lex(string input) @safe
 {
     enum State
     {
@@ -621,8 +612,15 @@ Token[] lex(string input)
     }
 
     Token[] tokens;
-    if (!__ctfe)
-        tokens.reserve(input.length);
+    auto tokapp = appender(tokens); // Only for runtime
+
+    void appendToken(Token token)
+    {
+        if (!__ctfe)
+            tokapp.put(token);
+        else
+            tokens ~= token;
+    }
 
     auto original = input;
     size_t i, j;
@@ -630,7 +628,7 @@ Token[] lex(string input)
 
     void pushToken(Tok type)
     {
-        tokens ~= Token(type, original[i .. j]);
+        appendToken(Token(type, original[i .. j]));
         i = j;
         state = State.none;
     }
@@ -655,7 +653,7 @@ Token[] lex(string input)
 
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
 
-        tokens ~= Token(type, original[i .. j], n);
+        appendToken(Token(type, original[i .. j], n));
         i = j;
         state = State.none;
     }
@@ -759,7 +757,11 @@ Token[] lex(string input)
         input.popFront();
     }
     push();
-    return tokens;
+
+    if (!__ctfe)
+        return tokapp.data;
+    else
+        return tokens;
 }
 
 void advance(Types...)(ref Token[] tokens, Types types)
@@ -842,7 +844,7 @@ int[string] binop(string op)(int[string] dim1, int[string] dim2)
 }
 
 // Raise a dimension array to a integer power (value)
-int[string] exp(int[string] dim, int value)
+int[string] exp(int[string] dim, int value) @safe pure
 {
     if (value == 0)
         return null;
@@ -854,7 +856,7 @@ int[string] exp(int[string] dim, int value)
 }
 
 // Raise a dimension array to a rational power (1/value)
-int[string] expInv(int[string] dim, int value)
+int[string] expInv(int[string] dim, int value) @safe pure
 {
     assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
 
@@ -866,28 +868,3 @@ int[string] expInv(int[string] dim, int value)
     }
     return result;
 }
-
-// Returns the string representation of a dimension array
-string dimstr(int[string] dim)
-{
-    import std.algorithm : filter;
-    import std.array : join;
-    import std.conv : to;
-    
-    static string stringize(string base, int power)
-    {
-        if (power == 0)
-            return null;
-        if (power == 1)
-            return base;
-        return base ~ "^" ~ to!string(power);
-    }
-    
-    string[] dimstrs;
-    foreach (sym, pow; dim)
-        dimstrs ~= stringize(sym, pow);
-
-    return "%-(%s %)".format(dimstrs.filter!"a !is null");
-}
-
-
