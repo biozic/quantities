@@ -11,7 +11,7 @@ auto quality(Inductance L, ElectricResistance R, Frequency F)
     return R / (L * F * 2 * PI * radian);
 }
 
-unittest
+void main()
 {
     Inductance L = si!"10 mH";
     Capacitance C = si!"62.5 nF";
