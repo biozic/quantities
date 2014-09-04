@@ -13,9 +13,9 @@ Absorbance absorbance(LuminousFlux incident, LuminousFlux transmitted)
     return Absorbance(-log10(transmitted / incident));
 }
 
-unittest
+void main()
 {
     Absorbance a;
     a = absorbance(si!"4.23 lm", si!"2.87 lm");
-    writefln("Absorbance: %.3f", cast(real) a);
+    writefln("Absorbance: %.3f", cast(double) a);
 }

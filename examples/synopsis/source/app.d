@@ -7,8 +7,13 @@ unittest
 {
     auto distance = 384_400 * kilo(meter);
     auto speed = 299_792_458  * meter/second;
-    auto time = distance / speed;
+    
+    Time time;
+    time = distance / speed;
     writefln("Travel time of light from the moon: %s s", time.value(second));
+
+    static assert(is(typeof(distance) == Length));
+    static assert(is(Speed == Quantity!(double, "L", 1, "T", -1)));
 }
 
 // Dimensional correctness is check at compile-time
@@ -26,25 +31,6 @@ unittest
     enum speed = 299_792_458  * meter/second;
     enum time = distance / speed;
     writefln("Travel time of light from the moon: %s s", time.value(second));
-}
-
-// Type of quantity variables
-unittest
-{
-    // Length is defined as a quantity of dimension L storing a real value
-    static assert(is(Length == Quantity!(double, "L", 1)));
-
-    // Time is defined as a quantity of dimension T
-    static assert(is(Time == Quantity!(double, "T", 1)));
-
-    // Speed is defined as a quantity of dimension L T⁻¹
-    static assert(is(Speed == Quantity!(double, "L", 1, "T", -1)));
-
-    // Quantities that share the same dimensions are of the same type
-    static assert(is(typeof(meter) == Length));
-    static assert(is(typeof(second) == Time));
-    static assert(is(typeof(hour) == Time));
-    static assert(is(typeof(kilo(meter)/hour) == Speed));
 }
 
 // Create a new unit from the predefined ones
@@ -119,4 +105,12 @@ unittest
     // My scales graduations are in 1/10 milligrams!
     writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
     // prints: Weigh 297.3 mg of substance
+}
+
+void main()
+{
+    version(unittest)
+        writeln("ALL TESTS PASSED");
+    else
+        writeln("Run with -unittest or use 'dub test'.");
 }

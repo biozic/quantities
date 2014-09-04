@@ -28,16 +28,7 @@ struct LinearCalibration(Quantity, Signal)
     }
 }
 
-unittest
-{   
-    LinearCalibration!(Time, ElectricPotential) cal;
-    cal.calibrate2Points(10 * minute, 15 * volt, 2 * hour, 91 * volt);
-    
-    auto unknown = cal.quantityFor(30 * volt);
-    writefln("Time: %.2f min", unknown.value(minute));
-}
-
-unittest
+void main()
 {
     alias C = Concentration;
     alias A = Dimensionless;

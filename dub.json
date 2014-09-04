@@ -1,29 +1,9 @@
 {
     "name": "quantities",
-    "description": "Dimensional analysis of units and quantities at compile time or at runtime",
-    "copyright": "Copyright © 2013, Nicolas Sicard",
+    "description": "Dimensional analysis of units and quantities at compile time",
+    "copyright": "Copyright © 2013-2014, Nicolas Sicard",
     "authors": ["Nicolas Sicard"],
     "homepage": "https://github.com/biozic/quantities",
     "license": "BSL-1.0",
-    "configurations": [
-        {
-            "name": "library",
-            "targetType": "sourceLibrary",
-            "importPaths": ["source"],
-            "sourcePaths": ["source"]
-        },
-        {
-            "name": "examples",
-            "targetType": "library",
-            "importPaths": ["examples", "source"],
-            "sourcePaths": ["examples"]
-        },
-        {
-            "name": "benchmark",
-            "targetName": "bench",
-            "targetType": "executable",
-            "importPaths": ["benchmark"],
-            "sourcePaths": ["benchmark"]
-        }
-    ]
+    "targetType": "library"
 }
