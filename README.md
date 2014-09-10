@@ -74,7 +74,7 @@ writefln("There are %s inches in a mile", mile.value(inch));
 
 ```d
 // Create a new base unit of currency
-enum euro = unit!("C"); // C is the chosen dimension symol (for currency...)
+enum euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
 
 auto dollar = euro / 1.35;
 auto price = 2000 * dollar;

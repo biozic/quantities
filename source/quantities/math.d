@@ -65,7 +65,7 @@ auto pow(int n, Q)(Q quantity)
 ///
 unittest
 {
-    enum meter = unit!("L");
+    enum meter = unit!(double, "L");
     enum liter = 0.001 * meter * meter * meter;
 
     auto surface = 25 * square(meter);

@@ -155,7 +155,7 @@ SymbolList!N makeSymbolList(N, Sym...)(Sym list)
 ///
 unittest
 {
-    enum euro = unit!("C", double);
+    enum euro = unit!(double, "C");
     alias Currency = typeof(euro);
     enum dollar = 1.35 * euro;
 
@@ -352,9 +352,9 @@ RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbol
 
 unittest // Test parsing
 {
-    enum meter = unit!"L";
-    enum kilogram = unit!"M";
-    enum second = unit!"T";
+    enum meter = unit!(double, "L");
+    enum kilogram = unit!(double, "M");
+    enum second = unit!(double, "T");
     enum one = meter / meter;
 
     enum siSL = makeSymbolList!double(

@@ -628,7 +628,7 @@ unittest
 
 
 /// Creates a new monodimensional unit.
-template unit(string symbol, N = double)
+template unit(N, string symbol)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
     enum N one = 1;
@@ -637,7 +637,7 @@ template unit(string symbol, N = double)
 ///
 unittest
 {
-    enum euro = unit!"C"; // C for Currency
+    enum euro = unit!(double, "C"); // C for Currency
     static assert(isQuantity!(typeof(euro)));
     enum dollar = euro / 1.35;
     assert((1.35 * dollar).value(euro).approxEqual(1));

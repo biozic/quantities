@@ -29,14 +29,14 @@ version (unittest)
 /++
 Predefined SI units.
 +/
-enum meter = unit!"L";
+enum meter = unit!(double, "L");
 alias metre = meter; /// ditto
-enum kilogram = unit!"M"; /// ditto
-enum second = unit!"T"; /// ditto
-enum ampere = unit!"I"; /// ditto
-enum kelvin = unit!"Θ"; /// ditto
-enum mole = unit!"N"; /// ditto
-enum candela = unit!"J"; /// ditto
+enum kilogram = unit!(double, "M"); /// ditto
+enum second = unit!(double, "T"); /// ditto
+enum ampere = unit!(double, "I"); /// ditto
+enum kelvin = unit!(double, "Θ"); /// ditto
+enum mole = unit!(double, "N"); /// ditto
+enum candela = unit!(double, "J"); /// ditto
 
 enum radian = meter / meter; // ditto
 enum steradian = square(meter) / square(meter); /// ditto
