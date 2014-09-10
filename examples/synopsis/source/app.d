@@ -99,7 +99,7 @@ unittest
 
     // What mass should I weigh?
     mass = concentration * volume * mm;
-    writefln("Weigh %s of substance", mass.toString); 
+    writefln("Weigh %s of substance", mass); 
     // prints: Weigh 0.00029725 [M] of substance
     // Wait! That's not really useful!
     // My scales graduations are in 1/10 milligrams!

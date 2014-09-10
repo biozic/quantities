@@ -78,6 +78,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import std.exception;
+import std.format;
 import std.string;
 import std.traits;
 import std.typetuple;
@@ -434,21 +435,12 @@ struct Quantity(N, Dim...)
         return 0;
     }
 
-    /++
-    Returns the default string representation of the quantity.
-
-    By default, a quantity is represented as a string by a number
-    followed by the set of dimensions between brackets.
-    +/
-    string toString() const
+    // String formatting function
+    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
     {
-        return "%s [%s]".format(_value, dimstr!dimensions);
-    }
-    ///
-    unittest
-    {
-        enum inch = 2.54 * centi(meter);
-        assert(inch.toString == "0.0254 [L]", inch.toString);
+        sink.formatValue(_value, fmt);
+        sink(" ");
+        sink(dimstr!dimensions);
     }
 }
 
