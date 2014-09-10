@@ -226,12 +226,12 @@ unittest
 {
     import std.bigint;
     
-    enum bit = unit!("bit", BigInt);
+    enum bit = unit!(BigInt, "bit");
     alias BinarySize = typeof(bit);
 
     SymbolList!BigInt symbolList;
     symbolList.addUnit("bit", bit);
-    symbolList.addPrefix("or", BigInt("1234567890987654321"));
+    symbolList.addPrefix("hob", BigInt("1234567890987654321"));
     
     static BigInt parseFun(ref string input)
     {
@@ -246,7 +246,7 @@ unittest
 
     auto foo = BigInt("1234567890987654300") * bit;
     foo += BigInt(21) * bit;
-    assert(foo == parse!BinarySize("1 orbit"));
+    assert(foo == parse!BinarySize("1 hobbit"));
 }
 
 /++
