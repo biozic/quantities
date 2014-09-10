@@ -11,77 +11,55 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.math;
 
 import quantities.base;
+import std.math;
+import std.traits;
 
-/++
-Mixin template that introduces math functions operating on a quantity of value type N in the
-current scope. Each function imports module_ internally. This module should
-contain the math primitives that can operate on the variables of type N, such
-as sqrt, cbrt, pow and fabs.
-+/
-mixin template MathFunctions(N, string module_ = "std.math")
+/// Basic math functions that work with Quantities where N is a builtin floating point type.
+auto square(Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    auto square(U)(U unit)
-        if (isQuantity!U && is(U.valueType == N))
-    {
-        return pow!2(unit);
-    }
+    return pow!2(quantity);
+}
 
-    /// ditto
-    auto cubic(U)(U unit)
-        if (isQuantity!U && is(U.valueType == N))
-    {
-        return pow!3(unit);
-    }
+/// ditto
+auto cubic(Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return pow!3(quantity);
+}
 
-    /// ditto
-    auto pow(int n, U)(U unit)
-        if (isQuantity!U && is(U.valueType == N))
-    {
-        mixin("import " ~ module_ ~ ";");
-        static assert(__traits(compiles, unit.rawValue ^^ n),
-                      U.valueType.stringof ~ " doesn't overload operator ^^");
-        return Quantity!(U.valueType, Pow!(n, U.dimensions)).make(unit.rawValue ^^ n);
-    }
+/// ditto
+auto sqrt(Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(std.math.sqrt(quantity.rawValue));
+}
 
-    /// ditto
-    auto sqrt(Q)(Q quantity)
-        if (isQuantity!Q && is(Q.valueType == N))
-    {
-        mixin("import " ~ module_ ~ ";");
-        static assert(__traits(compiles, sqrt(quantity.rawValue)),
-                      "No overload of sqrt for an argument of type " ~ Q.valueType.stringof);
-        return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(sqrt(quantity.rawValue));
-    }
+/// ditto
+auto cbrt(Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(std.math.cbrt(quantity.rawValue));
+}
 
-    /// ditto
-    auto cbrt(Q)(Q quantity)
-        if (isQuantity!Q && is(Q.valueType == N))
-    {
-        mixin("import " ~ module_ ~ ";");
-        static assert(__traits(compiles, cbrt(quantity.rawValue)),
-                      "No overload of cbrt for an argument of type " ~ Q.valueType.stringof);
-        return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(cbrt(quantity.rawValue));
-    }
+/// ditto
+auto nthRoot(int n, Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(std.math.pow(quantity.rawValue, 1.0 / n));
+}
 
-    /// ditto
-    auto nthRoot(int n, Q)(Q quantity)
-        if (isQuantity!Q && is(Q.valueType == N))
-    {
-        mixin("import " ~ module_ ~ ";");
-        static assert(__traits(compiles, pow(quantity.rawValue, 1.0 / n)),
-                      "No overload of pow for an argument of type " ~ Q.valueType.stringof);
-        return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(pow(quantity.rawValue, 1.0 / n));
-    }
+/// ditto
+Q abs(Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return Q.make(std.math.fabs(quantity.rawValue));
+}
 
-    /// ditto
-    Q abs(Q)(Q quantity)
-        if (isQuantity!Q && is(Q.valueType == N))
-    {
-        mixin("import " ~ module_ ~ ";");
-        static assert(__traits(compiles, fabs(quantity.rawValue)),
-                      "No overload of fabs for an argument of type " ~ Q.valueType.stringof);
-        return Q.make(fabs(quantity.rawValue));
-    }
+auto pow(int n, Q)(Q quantity)
+    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+{
+    return Quantity!(Q.valueType, Pow!(n, Q.dimensions)).make(quantity.rawValue ^^ n);
 }
 
 ///
@@ -89,8 +67,6 @@ unittest
 {
     enum meter = unit!("L");
     enum liter = 0.001 * meter * meter * meter;
-
-    mixin MathFunctions!(double, "std.math");
 
     auto surface = 25 * square(meter);
     auto side = sqrt(surface);
