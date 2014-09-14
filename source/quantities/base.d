@@ -83,12 +83,7 @@ import std.string;
 import std.traits;
 import std.typetuple;
 
-version (unittest)
-{
-    import quantities.math;
-    import quantities.si;
-    import std.math : approxEqual;
-}
+version (unittest) import std.math : approxEqual;
 
 template isNumberLike(N)
 {
@@ -128,6 +123,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
+        import quantities.si : meter;
         static assert(is(meter.valueType == double));
     }
 
@@ -212,6 +208,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
+        import quantities.si : minute, hour;
         auto time = 120 * minute;
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
@@ -228,6 +225,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
+        import quantities.si : newton, centi, meter, kilo, watt, hour, second;
         auto nm = (1.4 * newton) * (0.5 * centi(meter));
         auto kWh = (4000 * kilo(watt)) * (1200 * hour);
         assert(nm.isConsistentWith(kWh)); // Energy in both cases
@@ -254,6 +252,8 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
+        import quantities.si : gram, kilogram, Dimensionless, meter;
+
         auto proportion = 12 * gram / (4.5 * kilogram);
         static assert(is(typeof(proportion) == Dimensionless));
         auto prop = cast(double) proportion;
@@ -446,29 +446,34 @@ struct Quantity(N, Dim...)
 
 unittest // Quantity.baseUnit
 {
+    import quantities.si : minute, second;
     static assert(minute.baseUnit == second);
 }
 
 unittest // Quantity constructor
 {
+    import quantities.si : minute, second;
     enum time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
 }
 
 unittest // Quantity.value
 {
+    import quantities.si : meter, second;
     enum speed = 100 * meter / (5 * second);
     static assert(speed.value(meter / second) == 20);
 }
 
 unittest // Quantity.opCast
 {
+    import quantities.si : radian;
     enum angle = 12 * radian;
     static assert(cast(double) angle == 12);
 }
 
 unittest // Quantity.opAssign Q = Q
 {
+    import quantities.si : meter, centi;
     auto length = meter;
     length = 2.54 * centi(meter);
     assert(length.value(meter).approxEqual(0.0254));
@@ -476,6 +481,8 @@ unittest // Quantity.opAssign Q = Q
 
 unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
+    import quantities.si : meter;
+
     enum length = + meter;
     static assert(length == 1 * meter);
     enum length2 = - meter;
@@ -491,6 +498,7 @@ unittest // Quantity.opUnary +Q -Q ++Q --Q
 
 unittest // Quantity.opBinary Q*N Q/N
 {
+    import quantities.si : second;
     enum time = second * 60;
     static assert(time.value(second) == 60);
     enum time2 = second / 2;
@@ -499,6 +507,7 @@ unittest // Quantity.opBinary Q*N Q/N
 
 unittest // Quantity.opBinary Q+Q Q-Q
 {
+    import quantities.si : meter;
     enum length = meter + meter;
     static assert(length.value(meter) == 2);
     enum length2 = length - meter;
@@ -507,6 +516,9 @@ unittest // Quantity.opBinary Q+Q Q-Q
 
 unittest // Quantity.opBinary Q*Q Q/Q
 {
+    import quantities.si : meter, minute, second, hertz;
+    import quantities.math :square;
+
     enum length = meter * 5;
     enum surface = length * length;
     static assert(surface.value(square(meter)) == 5*5);
@@ -522,18 +534,21 @@ unittest // Quantity.opBinary Q*Q Q/Q
 
 unittest // Quantity.opBinaryRight N*Q
 {
+    import quantities.si : meter;
     enum length = 100 * meter;
     static assert(length == meter * 100);
 }
 
 unittest // Quantity.opBinaryRight N/Q
 {
+    import quantities.si : meter;
     enum x = 1 / (2 * meter);
     static assert(x.value(1/meter) == 1.0/2);
 }
 
 unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
+    import quantities.si : meter, deca;
     enum x = 258.1 * meter;
     enum y1 = x % (5 * deca(meter));
     static assert((cast(double) y1).approxEqual(8.1));
@@ -543,6 +558,7 @@ unittest // Quantity.opBinary Q%Q Q%N N%Q
 
 unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
+    import quantities.si : second;
     auto time = 10 * second;
     time += 50 * second;
     assert(time.value(second).approxEqual(60));
@@ -552,6 +568,7 @@ unittest // Quantity.opOpAssign Q+=Q Q-=Q
 
 unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
+    import quantities.si : second;
     auto time = 20 * second;
     time *= 2;
     assert(time.value(second).approxEqual(40));
@@ -563,12 +580,14 @@ unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 
 unittest // Quantity.opEquals
 {
+    import quantities.si : meter, minute, second;
     static assert(1 * minute == 60 * second);
     static assert((1 / second) * meter == meter / second);
 }
 
 unittest // Quantity.opCmp
 {
+    import quantities.si : second, minute, hour;
     static assert(second < minute);
     static assert(minute <= minute);
     static assert(hour > minute);
@@ -577,6 +596,7 @@ unittest // Quantity.opCmp
 
 unittest // Compilation errors for incompatible dimensions
 {
+    import quantities.si : Length, meter, second;
     Length m;
     static assert(!__traits(compiles, m.value(second)));
     static assert(!__traits(compiles, m = second));
@@ -602,6 +622,7 @@ unittest // Compilation errors for incompatible dimensions
 
 unittest // immutable Quantity
 {
+    import quantities.si : meter, second, minute, kilo;
     immutable length = 3e5 * kilo(meter);
     immutable time = 1 * second;
     immutable speedOfLight = length / time;
@@ -621,6 +642,7 @@ template isQuantity(T)
 ///
 unittest
 {
+    import quantities.si : Time, meter;
     static assert(isQuantity!Time);
     static assert(isQuantity!(typeof(meter)));
     static assert(!isQuantity!double);
@@ -653,6 +675,7 @@ template Store(Q, N)
 ///
 unittest
 {
+    import quantities.si : Time;
     alias TimeF = Store!(Time, float);
 }
 
@@ -679,6 +702,7 @@ auto store(T, Q)(Q quantity, T delegate(Q.valueType) convertDelegate = x => cast
 ///
 unittest
 {
+    import quantities.si : meter;
     auto sizeF = meter.store!float;
     static assert(is(sizeF.valueType == float));
     auto sizeI = meter.store!ulong;
@@ -695,6 +719,7 @@ template AreConsistent(Q1, Q2)
 ///
 unittest
 {
+    import quantities.si : meter, second;
     alias Speed = typeof(meter/second);
     alias Velocity = typeof((1/second * meter));
     static assert(AreConsistent!(Speed, Velocity));
@@ -718,6 +743,7 @@ template prefix(alias factor)
 ///
 unittest
 {
+    import quantities.si : meter;
     alias milli = prefix!1e-3;
     assert(milli(meter).value(meter).approxEqual(1e-3));
 }

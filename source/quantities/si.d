@@ -21,10 +21,8 @@ import std.conv;
 import std.math : PI;
 import std.typetuple;
 import core.time : Duration, dur;
-version (unittest)
-{
-    import std.math : approxEqual;
-}
+
+version (unittest) import std.math : approxEqual;
 
 /++
 Predefined SI units.
