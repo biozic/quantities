@@ -276,15 +276,31 @@ Duration toDuration(Q)(Q quantity)
     return dur!"hnsecs"(roundTo!long(hns));
 }
 
-///
-unittest // Durations
+static if (__VERSION__ <= 2065) // Deprecation of Duration.get
 {
-    auto d = 4.dur!"msecs";
-    auto t = fromDuration(d);
-    assert(t.value(milli(second)).approxEqual(4));
+    unittest // Durations
+    {
+        auto d = 4.dur!"msecs";
+        auto t = fromDuration(d);
+        assert(t.value(milli(second)).approxEqual(4));
 
-    auto t2 = 3.5 * minute;
-    auto d2 = t2.toDuration;
-    assert(d2.get!"minutes" == 3 && d2.get!"seconds" == 30);
+        auto t2 = 3.5 * minute;
+        auto d2 = t2.toDuration;
+        assert(d2.get!"minutes" == 3);
+        assert(d2.get!"seconds" == 30);
+    }
 }
-
+else
+{
+    unittest // Durations
+    {
+        auto d = 4.dur!"msecs";
+        auto t = fromDuration(d);
+        assert(t.value(milli(second)).approxEqual(4));
+        
+        auto t2 = 3.5 * minute;
+        auto d2 = t2.toDuration;
+        auto s = d2.split!("minutes", "seconds")();
+        assert(s.minutes == 3 && s.seconds == 30);
+    }
+}
