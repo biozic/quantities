@@ -225,11 +225,9 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
-        import quantities.si : newton, centi, meter, kilo, watt, hour, second;
-        auto nm = (1.4 * newton) * (0.5 * centi(meter));
-        auto kWh = (4000 * kilo(watt)) * (1200 * hour);
-        assert(nm.isConsistentWith(kWh)); // Energy in both cases
-        assert(!nm.isConsistentWith(second));
+        import quantities.si : minute, second, meter;
+        assert(minute.isConsistentWith(second));
+        assert(!meter.isConsistentWith(second));
     }
 
     /// Cast a quantity to another quantity type with the same dimensions
