@@ -16,16 +16,16 @@ import std.traits;
 
 /// Basic math functions that work with Quantities where N is a builtin floating point type.
 auto square(Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+    if (isQuantity!Q)
 {
-    return pow!2(quantity);
+    return quantity * quantity;
 }
 
 /// ditto
 auto cubic(Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+    if (isQuantity!Q)
 {
-    return pow!3(quantity);
+    return quantity * quantity * quantity;
 }
 
 /// ditto
@@ -56,10 +56,11 @@ Q abs(Q)(Q quantity)
     return Q.make(std.math.fabs(quantity.rawValue));
 }
 
+///
 auto pow(int n, Q)(Q quantity)
     if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    return Quantity!(Q.valueType, Pow!(n, Q.dimensions)).make(quantity.rawValue ^^ n);
+    return Quantity!(Q.valueType, Pow!(n, Q.dimensions)).make(std.math.pow(quantity.rawValue, n));
 }
 
 ///
