@@ -32,21 +32,21 @@ auto cubic(Q)(Q quantity)
 auto sqrt(Q)(Q quantity)
     if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    return Quantity!(Q.valueType, PowInverse!(2, Q.dimensions)).make(std.math.sqrt(quantity.rawValue));
+    return Quantity!(Q.valueType, powinverse(Q.dimensions, 2)).make(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
     if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    return Quantity!(Q.valueType, PowInverse!(3, Q.dimensions)).make(std.math.cbrt(quantity.rawValue));
+    return Quantity!(Q.valueType, powinverse(Q.dimensions, 3)).make(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    return Quantity!(Q.valueType, PowInverse!(n, Q.dimensions)).make(std.math.pow(quantity.rawValue, 1.0 / n));
+    return Quantity!(Q.valueType, powinverse(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 /// ditto
@@ -60,7 +60,7 @@ Q abs(Q)(Q quantity)
 auto pow(int n, Q)(Q quantity)
     if (isQuantity!Q && isFloatingPoint!(Q.valueType))
 {
-    return Quantity!(Q.valueType, Pow!(n, Q.dimensions)).make(std.math.pow(quantity.rawValue, n));
+    return Quantity!(Q.valueType, pow(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, n));
 }
 
 ///

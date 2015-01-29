@@ -5,13 +5,12 @@ This module defines the base types for unit and quantity handling.
 Each  quantity can  be represented  as the  product  of a  number and  a set  of
 dimensions,  and  the struct  Quantity  has  this  role.  The number  is  stored
 internally as  a member of type  N, which is  enforced to be a  built-in numeric
-type  (isNumeric!N is  true). The  dimensions are  stored as  template parameter
-list (Dim)  in the  form of a  sequence of string  symbols and  integral powers.
-Dimensionless  quantities have  an  empty  Dim. For  instance  length and  speed
-quantities can be stored as:
+type  (isNumeric!N is  true). The  dimensions are stored as an associative array
+where keys are symbols and values are integral powers.
+For  instance  length and  speed quantities can be stored as:
 ---
-alias Length = Quantity!(double, "L", 1);
-alias Speed  = Quantity!(double, "L", 1, "T", -1);
+alias Length = Quantity!(double, ["L": 1]);
+alias Speed  = Quantity!(double, ["L": 1, "T": -1]);
 ---
 where "L" is the symbol for the length  dimension, "T" is the symbol of the time
 dimensions,  and  1   and  -1  are  the  powers  of   those  dimensions  in  the
@@ -23,7 +22,7 @@ instances of  a Quantity struct  where the number is  1 and the  dimensions only
 contain  one  symbol,  with  the  power  1. For  instance,  the  meter  unit  is
 predefined as something equivalent to:
 ---
-enum meter = Quantity!(double, "L", 1)(1.0);
+enum meter = Quantity!(double, ["L": 1])(1.0);
 ---
 (note that  the constructor  used here  has the  package access  protection: new
 units should be defined with the unit template of this module).
@@ -66,7 +65,7 @@ then the quantity type with the typeof operator:
 ---
 enum euro = unit!"C"; // C for currency
 alias Currency = typeof(euro);
-assert(is(Currency == Quantity!(double, "C", 1)));
+assert(is(Currency == Quantity!(double, ["C": 1])));
 ---
 This means that all currencies will be defined with respect to euro.
 
@@ -83,7 +82,16 @@ import std.string;
 import std.traits;
 import std.typetuple;
 
-version (unittest) import std.math : approxEqual;
+version (unittest)
+{
+	import std.math : approxEqual;
+
+	enum second = unit!(double, "T");
+	enum minute = 60 * second;
+	enum hour = 60 * minute;
+	enum meter = unit!(double, "L");
+	enum radian = Quantity!(double, Dimensions.init).make(1);
+}
 
 template isNumberLike(N)
 {
@@ -109,36 +117,30 @@ unittest
     static assert(isNumberLike!(RefCounted!real));
 }
 
+alias Dimensions = int[string];
+
 /++
 A quantity that can be expressed as the product of a number and a set of dimensions.
 +/
-struct Quantity(N, Dim...)
+struct Quantity(N, Dimensions dims)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-    static assert(Is!Dim.equalTo!(Sort!Dim), "Dimensions are not sorted correctly: "
-                  ~"the right type is " ~ Quantity!(N, Sort!Dim).stringof);
       
     /// The type of the underlying numeric value.
     alias valueType = N;
-    ///
-    unittest
-    {
-        import quantities.si : meter;
-        static assert(is(meter.valueType == double));
-    }
 
     // The payload
     private N _value;
 
     /// The dimension tuple of the quantity.
-    alias dimensions = Dim;
+    enum dimensions = dims;
 
     template checkDim(string dim)
     {
         enum checkDim =
-            `static assert(Is!(` ~ dim ~ `).equivalentTo!dimensions,
+            `static assert(equals(` ~ dim ~ `, dimensions),
                 "Dimension error: [%s] is not compatible with [%s]"
-                .format(dimstr!(` ~ dim ~ `), dimstr!dimensions));`;
+                .format(.toString(` ~ dim ~ `), .toString(dimensions)));`;
     }
 
     template checkValueType(string type)
@@ -167,7 +169,7 @@ struct Quantity(N, Dim...)
 
     // Creates a new dimensionless quantity from a number
     this(T)(T value)
-        if (!isQuantity!T && Dim.length == 0)
+        if (!isQuantity!T && dimensions.length == 0)
     {
         mixin(checkValueType!"T");
         _value = value;
@@ -192,7 +194,7 @@ struct Quantity(N, Dim...)
         return _value;
     }
     // Implicitly convert a dimensionless value to the value type
-    static if (!Dim.length)
+	static if (!dimensions.length)
         alias rawValue this;
 
     /++
@@ -208,7 +210,7 @@ struct Quantity(N, Dim...)
     ///
     unittest
     {
-        import quantities.si : minute, hour;
+        // import quantities.si : minute, hour;
         auto time = 120 * minute;
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
@@ -220,12 +222,13 @@ struct Quantity(N, Dim...)
     bool isConsistentWith(Q)(Q other) const
         if (isQuantity!Q)
     {
-        return AreConsistent!(Quantity, Q);
+        enum ret = equals(dimensions, other.dimensions);
+		return ret;
     }
     ///
     unittest
     {
-        import quantities.si : minute, second, meter;
+        // import quantities.si : minute, second, meter;
         assert(minute.isConsistentWith(second));
         assert(!meter.isConsistentWith(second));
     }
@@ -243,20 +246,9 @@ struct Quantity(N, Dim...)
     T opCast(T)() const
         if (!isQuantity!T)
     {
-        mixin(checkDim!"");
+        mixin(checkDim!"Dimensions.init");
         mixin(checkValueType!"T");
         return _value;
-    }
-    ///
-    unittest
-    {
-        import quantities.si : gram, kilogram, Dimensionless, meter;
-
-        auto proportion = 12 * gram / (4.5 * kilogram);
-        static assert(is(typeof(proportion) == Dimensionless));
-        auto prop = cast(double) proportion;
-
-        static assert(!__traits(compiles, cast(double) meter));
     }
 
     /// Overloaded operators.
@@ -307,7 +299,7 @@ struct Quantity(N, Dim...)
     auto opBinary(string op, T)(T other) const /// ditto
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"");
+        mixin(checkDim!"Dimensions.init");
         mixin(checkValueType!"T");
         return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
@@ -324,7 +316,7 @@ struct Quantity(N, Dim...)
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"Q.valueType");
-        return Quantity!(N, OpBinary!(dimensions, op, other.dimensions))
+        return Quantity!(N, binop!op(dimensions, other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
@@ -349,7 +341,7 @@ struct Quantity(N, Dim...)
         if (!isQuantity!T && (op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
-        return Quantity!(N, Invert!dimensions).make(mixin("other" ~ op ~ "_value"));
+        return Quantity!(N, invert(dimensions)).make(mixin("other" ~ op ~ "_value"));
     }
 
     auto opBinary(string op, T)(T power) const
@@ -371,7 +363,7 @@ struct Quantity(N, Dim...)
     void opOpAssign(string op, T)(T other) /// ditto
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
-        mixin(checkDim!"");
+        mixin(checkDim!"Dimensions.init");
         mixin(checkValueType!"T");
         mixin("_value " ~ op ~ "= other;");
     }
@@ -380,7 +372,7 @@ struct Quantity(N, Dim...)
     void opOpAssign(string op, Q)(Q other) /// ditto
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
-        mixin(checkDim!"");
+        mixin(checkDim!"Dimensions.init");
         mixin(checkValueType!"Q.valueType");
         mixin("_value" ~ op ~ "= other._value;");
     }
@@ -405,7 +397,7 @@ struct Quantity(N, Dim...)
     bool opEquals(T)(T other) const /// ditto
         if (!isQuantity!T)
     {
-        mixin(checkDim!"");
+		mixin(checkDim!"Dimensions.init");
         return _value == other;
     }
 
@@ -425,7 +417,7 @@ struct Quantity(N, Dim...)
     int opCmp(T)(T other) const /// ditto
         if (!isQuantity!T)
     {
-        mixin(checkDim!"");
+		mixin(checkDim!"Dimensions.init");
         if (_value < other)
             return -1;
         if (_value > other)
@@ -438,49 +430,36 @@ struct Quantity(N, Dim...)
     {
         sink.formatValue(_value, fmt);
         sink(" ");
-        sink(dimstr!dimensions);
+        sink(dimensions.toString);
     }
 }
 
 unittest // Quantity.baseUnit
 {
-    import quantities.si : minute, second;
     static assert(minute.baseUnit == second);
 }
 
 unittest // Quantity constructor
 {
-    import quantities.si : minute, second;
     enum time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
 }
 
-unittest // Quantity.value
-{
-    import quantities.si : meter, second;
-    enum speed = 100 * meter / (5 * second);
-    static assert(speed.value(meter / second) == 20);
-}
-
 unittest // Quantity.opCast
 {
-    import quantities.si : radian;
     enum angle = 12 * radian;
     static assert(cast(double) angle == 12);
 }
 
 unittest // Quantity.opAssign Q = Q
 {
-    import quantities.si : meter, centi;
     auto length = meter;
-    length = 2.54 * centi(meter);
-    assert(length.value(meter).approxEqual(0.0254));
+    length = 100 * meter;
+    assert(length.value(meter).approxEqual(100));
 }
 
 unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
-    import quantities.si : meter;
-
     enum length = + meter;
     static assert(length == 1 * meter);
     enum length2 = - meter;
@@ -496,7 +475,6 @@ unittest // Quantity.opUnary +Q -Q ++Q --Q
 
 unittest // Quantity.opBinary Q*N Q/N
 {
-    import quantities.si : second;
     enum time = second * 60;
     static assert(time.value(second) == 60);
     enum time2 = second / 2;
@@ -505,7 +483,6 @@ unittest // Quantity.opBinary Q*N Q/N
 
 unittest // Quantity.opBinary Q+Q Q-Q
 {
-    import quantities.si : meter;
     enum length = meter + meter;
     static assert(length.value(meter) == 2);
     enum length2 = length - meter;
@@ -514,12 +491,11 @@ unittest // Quantity.opBinary Q+Q Q-Q
 
 unittest // Quantity.opBinary Q*Q Q/Q
 {
-    import quantities.si : meter, minute, second, hertz;
-    import quantities.math :square;
+    enum hertz = 1 / second;
 
     enum length = meter * 5;
     enum surface = length * length;
-    static assert(surface.value(square(meter)) == 5*5);
+    static assert(surface.value(meter * meter) == 5*5);
     enum length2 = surface / length;
     static assert(length2.value(meter) == 5);
 
@@ -532,23 +508,20 @@ unittest // Quantity.opBinary Q*Q Q/Q
 
 unittest // Quantity.opBinaryRight N*Q
 {
-    import quantities.si : meter;
     enum length = 100 * meter;
     static assert(length == meter * 100);
 }
 
 unittest // Quantity.opBinaryRight N/Q
 {
-    import quantities.si : meter;
     enum x = 1 / (2 * meter);
     static assert(x.value(1/meter) == 1.0/2);
 }
 
 unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
-    import quantities.si : meter, deca;
     enum x = 258.1 * meter;
-    enum y1 = x % (5 * deca(meter));
+    enum y1 = x % (50 * meter);
     static assert((cast(double) y1).approxEqual(8.1));
     enum y2 = x % 50;
     static assert(y2.value(meter).approxEqual(8.1));
@@ -556,7 +529,6 @@ unittest // Quantity.opBinary Q%Q Q%N N%Q
 
 unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
-    import quantities.si : second;
     auto time = 10 * second;
     time += 50 * second;
     assert(time.value(second).approxEqual(60));
@@ -566,7 +538,6 @@ unittest // Quantity.opOpAssign Q+=Q Q-=Q
 
 unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
-    import quantities.si : second;
     auto time = 20 * second;
     time *= 2;
     assert(time.value(second).approxEqual(40));
@@ -578,14 +549,13 @@ unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 
 unittest // Quantity.opEquals
 {
-    import quantities.si : meter, minute, second;
     static assert(1 * minute == 60 * second);
     static assert((1 / second) * meter == meter / second);
 }
 
 unittest // Quantity.opCmp
 {
-    import quantities.si : second, minute, hour;
+	enum hour = 60 * minute;
     static assert(second < minute);
     static assert(minute <= minute);
     static assert(hour > minute);
@@ -594,8 +564,7 @@ unittest // Quantity.opCmp
 
 unittest // Compilation errors for incompatible dimensions
 {
-    import quantities.si : Length, meter, second;
-    Length m;
+    auto m = meter;
     static assert(!__traits(compiles, m.value(second)));
     static assert(!__traits(compiles, m = second));
     static assert(!__traits(compiles, m + second));
@@ -620,11 +589,10 @@ unittest // Compilation errors for incompatible dimensions
 
 unittest // immutable Quantity
 {
-    import quantities.si : meter, second, minute, kilo;
-    immutable length = 3e5 * kilo(meter);
+    immutable length = 3e8 * meter;
     immutable time = 1 * second;
     immutable speedOfLight = length / time;
-    assert(speedOfLight == 3e5 * kilo(meter) / second);
+    assert(speedOfLight == 3e8 * meter / second);
     assert(speedOfLight > 1 * meter / minute);
 }
 
@@ -637,22 +605,13 @@ template isQuantity(T)
     else
         enum isQuantity = false;
 }
-///
-unittest
-{
-    import quantities.si : Time, meter;
-    static assert(isQuantity!Time);
-    static assert(isQuantity!(typeof(meter)));
-    static assert(!isQuantity!double);
-}
-
 
 /// Creates a new monodimensional unit.
 template unit(N, string symbol)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
     enum N one = 1;
-    enum unit = Quantity!(N, symbol, 1).make(one);
+    enum unit = Quantity!(N, [symbol: 1]).make(one);
 }
 ///
 unittest
@@ -673,7 +632,7 @@ template Store(Q, N)
 ///
 unittest
 {
-    import quantities.si : Time;
+	alias Time = typeof(second);
     alias TimeF = Store!(Time, float);
 }
 
@@ -700,7 +659,7 @@ auto store(T, Q)(Q quantity, T delegate(Q.valueType) convertDelegate = x => cast
 ///
 unittest
 {
-    import quantities.si : meter;
+	// import quantities.si : meter;
     auto sizeF = meter.store!float;
     static assert(is(sizeF.valueType == float));
     auto sizeI = meter.store!ulong;
@@ -712,12 +671,12 @@ unittest
 template AreConsistent(Q1, Q2)
     if (isQuantity!Q1 && isQuantity!Q2)
 {
-    enum AreConsistent = Is!(Q1.dimensions).equivalentTo!(Q2.dimensions);
+    enum AreConsistent = Q1.dimensions == Q2.dimensions;
 }
 ///
 unittest
 {
-    import quantities.si : meter, second;
+    // import quantities.si : meter, second;
     alias Speed = typeof(meter/second);
     alias Velocity = typeof((1/second * meter));
     static assert(AreConsistent!(Speed, Velocity));
@@ -741,7 +700,7 @@ template prefix(alias factor)
 ///
 unittest
 {
-    import quantities.si : meter;
+    // import quantities.si : meter;
     alias milli = prefix!1e-3;
     assert(milli(meter).value(meter).approxEqual(1e-3));
 }
@@ -765,306 +724,129 @@ class DimensionException : Exception
 
 package:
 
-// Inspired from std.typetuple.Pack
-template Is(T...)
+bool equals(Dimensions dim1, Dimensions dim2)
 {
-    static assert(T.length % 2 == 0);
+	if (dim1.length != dim2.length)
+		return false;
 
-    template equalTo(U...)
-    {
-        static if (T.length == U.length)
-        {
-            static if (T.length == 0)
-                enum equalTo = true;
-            else
-                enum equalTo = IsDim!(T[0..2]).equalTo!(U[0..2]) && Is!(T[2..$]).equalTo!(U[2..$]);
-        }
-        else
-            enum equalTo = false;
-    }
-
-    template equivalentTo(U...)
-    {
-        alias equivalentTo = Is!(Sort!T).equalTo!(Sort!U);
-    }
+	foreach (k, v1; dim1)
+	{
+		auto v2 = k in dim2;
+		if (v2 is null || v1 != *v2)
+			return false;
+	}
+	return true;
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "b", -1);
-    alias U = TypeTuple!("a", 1, "b", -1);
-    alias V = TypeTuple!("b", -1, "a", 1);
-    static assert(Is!T.equalTo!U);
-    static assert(!Is!T.equalTo!V);
-    static assert(Is!T.equivalentTo!V);
+	assert(equals(Dimensions.init, Dimensions.init));
+	assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
+	assert(!equals(["a": 1, "b": 1], ["a": 1, "b": 0]));
+	assert(!equals(["a": 1], ["a": 1, "b": 0]));
+	assert(!equals(["a": 1, "b": 0], ["a": 1]));
 }
 
-template IsDim(string d1, int p1)
+Dimensions removeNull(Dimensions dim)
 {
-    template equalTo(string d2, int p2)
-    {
-        enum equalTo = (d1 == d2 && p1 == p2);
-    }
-
-    template dimEqualTo(string d2, int p2)
-    {
-        enum dimEqualTo = (d1 == d2);
-    }
-
-    template dimLessOrEqual(string d2, int p2)
-    {
-        alias siInOrder = TypeTuple!("L", "M", "T", "I", "Θ", "N", "J");
-        enum id1 = staticIndexOf!(d1, siInOrder);
-        enum id2 = staticIndexOf!(d2, siInOrder);
-
-        static if (id1 >= 0 && id2 >= 0) // both SI
-            enum dimLessOrEqual = id1 < id2;
-        else static if (id1 >= 0 && id2 == -1) // SI before non-SI
-            enum dimLessOrEqual = true;
-        else static if (id1 == -1 && id2 >= 0) // non-SI after SI
-            enum dimLessOrEqual = false;
-        else
-            enum dimLessOrEqual = d1 <= d2; // Usual comparison
-    }
-
-    template powEqualTo(string d2, int p2)
-    {
-        enum powEqualTo = (p1 == p2);
-    }
+	Dimensions ret;
+	foreach (k, v; dim)
+		if (v != 0)
+			ret[k] = v;
+	return ret;
 }
 unittest
 {
-    static assert(IsDim!("a", 0).equalTo!("a", 0));
-    static assert(!IsDim!("a", 0).equalTo!("a", 1));
-    static assert(!IsDim!("a", 0).equalTo!("b", 0));
-    static assert(!IsDim!("a", 0).equalTo!("b", 1));
-
-    static assert(IsDim!("a", 0).dimEqualTo!("a", 1));
-    static assert(!IsDim!("a", 0).dimEqualTo!("b", 1));
-
-    static assert(IsDim!("a", 0).powEqualTo!("b", 0));
-    static assert(!IsDim!("a", 0).powEqualTo!("b", 1));
-
-    static assert(IsDim!("L", 0).dimLessOrEqual!("M", 0));
-    static assert(!IsDim!("M", 0).dimLessOrEqual!("L", 1));
-    static assert(IsDim!("L", 0).dimLessOrEqual!("U", 0));
-    static assert(!IsDim!("U", 0).dimLessOrEqual!("M", 0));
-    static assert(IsDim!("U", 0).dimLessOrEqual!("V", 0));
+	auto dim = ["a": 1, "b": 0, "c": 0, "d": 1];
+	assert(dim.removeNull == ["a": 1, "d": 1]);
 }
 
-template FilterPred(alias pred, Dim...)
+Dimensions invert(Dimensions dim)
 {
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length == 0)
-        alias FilterPred = Dim;
-    else static if (pred!(Dim[0], Dim[1]))
-        alias FilterPred = TypeTuple!(Dim[0], Dim[1], FilterPred!(pred, Dim[2 .. $]));
-    else
-        alias FilterPred = FilterPred!(pred, Dim[2 .. $]);
-}
-
-template RemoveNull(Dim...)
-{
-    alias RemoveNull = FilterPred!(templateNot!(IsDim!("_", 0).powEqualTo), Dim);
+	Dimensions ret;
+	foreach (k, v; dim)
+	{
+		assert(v != 0);
+		ret[k] = -v;
+	}
+	return ret;
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "b", 0, "c", -1);
-    static assert(Is!(RemoveNull!T).equalTo!("a", 1, "c", -1));
+	auto dim = ["a": 5, "b": -2];
+	assert(dim.invert == ["a": -5, "b": 2]);
 }
 
-template Filter(string s, Dim...)
+Dimensions binop(string op)(Dimensions dim1, Dimensions dim2)
+	if (op == "*")
 {
-    alias Filter = FilterPred!(IsDim!(s, 0).dimEqualTo, Dim);
+	Dimensions ret = dim1.dup;
+	foreach (k, v2; dim2)
+	{
+		auto v1 = k in ret;
+		if (v1)
+			ret[k] = *v1 + v2;
+		else
+			ret[k] = v2;
+	}
+	return ret.removeNull;
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "b", 0, "a", -1, "c", 2);
-    static assert(Is!(Filter!("a", T)).equalTo!("a", 1, "a", -1));
+	auto dim1 = ["a": 1, "b": -2];
+	auto dim2 = ["a": -1, "c": 2];
+	assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
 }
 
-template FilterOut(string s, Dim...)
+Dimensions binop(string op)(Dimensions dim1, Dimensions dim2)
+	if (op == "/" || op == "%")
 {
-    alias FilterOut = FilterPred!(templateNot!(IsDim!(s, 0).dimEqualTo), Dim);
+	return binop!"*"(dim1, dim2.invert);
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "b", 0, "a", -1, "c", 2);
-    static assert(Is!(FilterOut!("a", T)).equalTo!("b", 0, "c", 2));
+	auto dim1 = ["a": 1, "b": -2];
+	auto dim2 = ["a": 1, "c": 2];
+	assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
 }
 
-template Reduce(int seed, Dim...)
+Dimensions pow(Dimensions dim, int power)
 {
-    static assert(Dim.length >= 2);
-    static assert(Dim.length % 2 == 0);
+	if (dim.length == 0 || power == 0)
+		return Dimensions.init;
 
-    static if (Dim.length == 2)
-        alias Reduce = TypeTuple!(Dim[0], seed + Dim[1]);
-    else
-        alias Reduce = Reduce!(seed + Dim[1], Dim[2 .. $]);
+	Dimensions ret;
+	foreach (k, v; dim)
+	{
+		assert(v != 0);
+		ret[k] = v * power;
+	}
+	return ret;
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "a", 0, "a", -1, "a", 2);
-    static assert(Is!(Reduce!(0, T)).equalTo!("a", 2));
-    alias U = TypeTuple!("a", 1, "a", -1);
-    static assert(Is!(Reduce!(0, U)).equalTo!("a", 0));
+	auto dim = ["a": 5, "b": -2];
+	assert(dim.pow(2) == ["a": 10, "b": -4]);
 }
 
-template Simplify(Dim...)
+Dimensions powinverse(Dimensions dim, int n)
 {
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length == 0)
-        alias Simplify = Dim;
-    else
-    {
-        alias head = Dim[0 .. 2];
-        alias tail = Dim[2 .. $];
-        alias hret = Reduce!(0, head, Filter!(Dim[0], tail));
-        alias tret = FilterOut!(Dim[0], tail);
-        alias Simplify = TypeTuple!(hret, Simplify!tret);
-    }
+	assert(n != 0);
+	Dimensions ret;
+	foreach (k, v; dim)
+	{
+		assert(v != 0);
+		enforce(v % n == 0, "Dimension error: '%s^%s' is not divisible by %s".format(k, v, n));
+		ret[k] = v / n;
+	}
+	return ret;
 }
 unittest
 {
-    alias T = TypeTuple!("a", 1, "b", 2, "a", -1, "b", 1, "c", 4);
-    static assert(Is!(Simplify!T).equalTo!("a", 0, "b", 3, "c", 4));
+	auto dim = ["a": 6, "b": -2];
+	assert(dim.powinverse(2) == ["a": 3, "b": -1]);
 }
 
-template Sort(Dim...)
-{
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length <= 2)
-        alias Sort = Dim;
-    else
-    {
-        enum i = (Dim.length / 4) * 2; // Pivot index
-        alias list = TypeTuple!(Dim[0..i], Dim[i+2..$]);
-        alias less = FilterPred!(templateNot!(IsDim!(Dim[i], 0).dimLessOrEqual), list);
-        alias greater = FilterPred!(IsDim!(Dim[i], 0).dimLessOrEqual, list);
-        alias Sort = TypeTuple!(Sort!less, Dim[i], Dim[i+1], Sort!greater);
-    }
-}
-unittest
-{
-    alias T = TypeTuple!("d", -1, "c", 2, "a", 4, "e", 0, "b", -3);
-    static assert(Is!(Sort!T).equalTo!("a", 4, "b", -3, "c", 2, "d", -1, "e", 0));
-}
-
-template OpBinary(Dim...)
-{
-    static assert(Dim.length % 2 == 1);
-
-    static if (staticIndexOf!("/", Dim) >= 0)
-    {
-        // Division or modulo
-        enum op = staticIndexOf!("/", Dim);
-        alias numerator = Dim[0 .. op];
-        alias denominator = Dim[op+1 .. $];
-        alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
-    }
-    else static if (staticIndexOf!("%", Dim) >= 0)
-    {
-        // Modulo
-        enum op = staticIndexOf!("%", Dim);
-        alias numerator = Dim[0 .. op];
-        alias denominator = Dim[op+1 .. $];
-        alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(numerator, Invert!(denominator)))));
-    }
-    else static if (staticIndexOf!("*", Dim) >= 0)
-    {
-        // Multiplication
-        enum op = staticIndexOf!("*", Dim);
-        alias OpBinary = Sort!(RemoveNull!(Simplify!(TypeTuple!(Dim[0 .. op], Dim[op+1 .. $]))));
-    }
-    else
-        static assert(false, "No valid operator");
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", 2, "c", -1);
-    alias U = TypeTuple!("a", 1, "b", -2, "c", 2);
-    static assert(Is!(OpBinary!(T, "*", U)).equalTo!("a", 2, "c", 1));
-    static assert(Is!(OpBinary!(T, "/", U)).equalTo!("b", 4, "c", -3));
-}
-
-template Invert(Dim...)
-{
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length == 0)
-        alias Invert = Dim;
-    else
-        alias Invert = TypeTuple!(Dim[0], -Dim[1], Invert!(Dim[2 .. $]));
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", -1);
-    static assert(Is!(Invert!T).equalTo!("a", -1, "b", 1));
-}
-
-template Pow(int n, Dim...)
-{
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length == 0)
-        alias Pow = Dim;
-    else
-        alias Pow = TypeTuple!(Dim[0], Dim[1] * n, Pow!(n, Dim[2 .. $]));
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", -1);
-    static assert(Is!(Pow!(2, T)).equalTo!("a", 2, "b", -2));
-}
-
-template PowInverse(int n, Dim...)
-{
-    static assert(Dim.length % 2 == 0);
-
-    static if (Dim.length == 0)
-        alias PowInverse = Dim;
-    else
-    {
-        static assert(Dim[1] % n == 0, "Dimension error: '%s^%s' is not divisible by %s"
-                                       .format(Dim[0], Dim[1], n));
-        alias PowInverse = TypeTuple!(Dim[0], Dim[1] / n, PowInverse!(n, Dim[2 .. $]));
-    }
-}
-unittest
-{
-    alias T = TypeTuple!("a", 4, "b", -2);
-    static assert(Is!(PowInverse!(2, T)).equalTo!("a", 2, "b", -1));
-}
-
-int[string] toAA(Dim...)()
-{
-    static if (Dim.length == 0)
-        return null;
-    else
-    {
-        static assert(Dim.length % 2 == 0);
-        int[string] ret;
-        string sym;
-        foreach (i, d; Dim)
-        {
-            static if (i % 2 == 0)
-                sym = d;
-            else
-                ret[sym] = d;
-        }
-        return ret;
-    }
-}
-unittest
-{
-    alias T = TypeTuple!("a", 1, "b", -1);
-    static assert(toAA!T == ["a":1, "b":-1]);
-}
-
-string dimstr(int[string] dim) @safe pure
+string toString(Dimensions dim) @safe pure
 {
     import std.algorithm : filter;
     import std.array : join;
@@ -1084,9 +866,4 @@ string dimstr(int[string] dim) @safe pure
         dimstrs ~= stringize(sym, pow);
     
     return "%-(%s %)".format(dimstrs.filter!"a !is null");
-}
-
-string dimstr(Dim...)()
-{
-    return dimstr(toAA!Dim);
 }

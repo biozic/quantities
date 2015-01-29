@@ -73,7 +73,7 @@ enum ton = 1e3 * kilogram; /// ditto
 enum electronVolt = 1.60217653e-19 * joule; /// ditto
 enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-enum one = Quantity!double(1); /// The dimensionless unit 'one'
+enum one = Quantity!(double, Dimensions.init)(1); /// The dimensionless unit 'one'
 
 alias Length = typeof(meter); /// Predefined quantity type templates for SI quantities
 alias Mass = typeof(kilogram); /// ditto

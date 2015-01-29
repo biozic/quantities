@@ -216,9 +216,9 @@ template rtQuantityParser(
 
         auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(str, symbolList);
         enforceEx!DimensionException(
-            toAA!(Q.dimensions) == rtQuant.dimensions,
+            equals(Q.dimensions, rtQuant.dimensions),
             "Dimension error: [%s] is not compatible with [%s]"
-            .format(quantities.base.dimstr!(Q.dimensions), dimstr(rtQuant.dimensions)));
+            .format(quantities.base.toString(Q.dimensions), quantities.base.toString(rtQuant.dimensions)));
         return Q.make(rtQuant.value);
     }    
 }
@@ -270,12 +270,7 @@ template ctQuantityParser(
 )
 {
     template ctQuantityParser(string str)
-    {
-        static string dimTup(int[string] dims)
-        {
-            return dims.keys.map!(x => `"%s", %s`.format(x, dims[x])).join(", ");
-        }
-        
+    {        
         // This is for a nice compile-time error message
         enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList)); }();
         static if (msg)
@@ -285,9 +280,7 @@ template ctQuantityParser(
         else
         {
             enum q = parseRTQuantity!(N, parseFun)(str, symbolList);
-            enum dimStr = dimTup(q.dimensions);
-            mixin("alias dims = TypeTuple!(%s);".format(dimStr));
-            enum ctQuantityParser = Quantity!(N, Sort!dims).make(q.value);
+            enum ctQuantityParser = Quantity!(N, removeNull(q.dimensions)).make(q.value);
         }
     }
 }
@@ -559,7 +552,7 @@ struct QuantityParser(N)
 auto toRT(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return RTQuantity!(Q.valueType)(quantity.rawValue, toAA!(Q.dimensions));
+    return RTQuantity!(Q.valueType)(quantity.rawValue, Q.dimensions);
 }
 
 enum Tok
