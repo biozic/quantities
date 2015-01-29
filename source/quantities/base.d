@@ -125,7 +125,7 @@ A quantity that can be expressed as the product of a number and a set of dimensi
 struct Quantity(N, Dimensions dims)
 {
     static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
-      
+
     /// The type of the underlying numeric value.
     alias valueType = N;
 
@@ -135,21 +135,21 @@ struct Quantity(N, Dimensions dims)
     /// The dimension tuple of the quantity.
     enum dimensions = dims;
 
-    template checkDim(string dim)
-    {
-        enum checkDim =
-            `static assert(equals(` ~ dim ~ `, dimensions),
-                "Dimension error: [%s] is not compatible with [%s]"
-                .format(.toString(` ~ dim ~ `), .toString(dimensions)));`;
-    }
+	private {
+	    template checkDim(string dim)
+	    {
+	        enum checkDim = `static assert(equals(` ~ dim ~ `, dimensions),
+	                "Dimension error: [%s] is not compatible with [%s]"
+	                .format(.toString(` ~ dim ~ `), .toString(dimensions)));`;
+	    }
 
-    template checkValueType(string type)
-    {
-        enum checkValueType =
-            `static assert(is(` ~ type ~ ` : N),
-                "%s is not implicitly convertible to %s"
-                .format(` ~ type ~ `.stringof, N.stringof));`;
-    }
+	    template checkValueType(string type)
+	    {
+			enum checkValueType = `static assert(is(` ~ type ~ ` : N),
+	                "%s is not implicitly convertible to %s"
+	                .format(` ~ type ~ `.stringof, N.stringof));`;
+	    }
+	}
 
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
@@ -188,8 +188,8 @@ struct Quantity(N, Dimensions dims)
         return ret;
     }
 
-    // Gets the internal number of this quantity.
-    @property N rawValue() const
+	// Gets the internal number of this quantity.
+    N rawValue() const
     {
         return _value;
     }
@@ -276,14 +276,14 @@ struct Quantity(N, Dimensions dims)
     auto opUnary(string op)() const /// ditto
         if (op == "+" || op == "-")
     {
-        return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
+        return Quantity.make(mixin(op ~ "_value"));
     }
     
     // Unary ++ and --
     auto opUnary(string op)() /// ditto
         if (op == "++" || op == "--")
     {
-        return Quantity!(N, dimensions).make(mixin(op ~ "_value"));
+        return Quantity.make(mixin(op ~ "_value"));
     }
 
     // Add (or substract) two quantities if they share the same dimensions
@@ -317,7 +317,7 @@ struct Quantity(N, Dimensions dims)
     {
         mixin(checkValueType!"Q.valueType");
         return Quantity!(N, binop!op(dimensions, other.dimensions))
-            .make(mixin("(_value" ~ op ~ "other._value)"));
+			.make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
     // Multiply or divide a quantity by a number
@@ -724,7 +724,7 @@ class DimensionException : Exception
 
 package:
 
-bool equals(Dimensions dim1, Dimensions dim2)
+bool equals(const Dimensions dim1, const Dimensions dim2)
 {
 	if (dim1.length != dim2.length)
 		return false;
@@ -746,7 +746,7 @@ unittest
 	assert(!equals(["a": 1, "b": 0], ["a": 1]));
 }
 
-Dimensions removeNull(Dimensions dim)
+Dimensions removeNull(const Dimensions dim)
 {
 	Dimensions ret;
 	foreach (k, v; dim)
@@ -760,7 +760,7 @@ unittest
 	assert(dim.removeNull == ["a": 1, "d": 1]);
 }
 
-Dimensions invert(Dimensions dim)
+Dimensions invert(const Dimensions dim)
 {
 	Dimensions ret;
 	foreach (k, v; dim)
@@ -776,10 +776,10 @@ unittest
 	assert(dim.invert == ["a": -5, "b": 2]);
 }
 
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2)
+Dimensions binop(string op)(const Dimensions dim1, const Dimensions dim2)
 	if (op == "*")
 {
-	Dimensions ret = dim1.dup;
+	auto ret = cast(Dimensions) dim1.dup;
 	foreach (k, v2; dim2)
 	{
 		auto v1 = k in ret;
@@ -797,7 +797,7 @@ unittest
 	assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
 }
 
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2)
+Dimensions binop(string op)(const Dimensions dim1, const Dimensions dim2)
 	if (op == "/" || op == "%")
 {
 	return binop!"*"(dim1, dim2.invert);
@@ -809,7 +809,7 @@ unittest
 	assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
 }
 
-Dimensions pow(Dimensions dim, int power)
+Dimensions pow(const Dimensions dim, int power)
 {
 	if (dim.length == 0 || power == 0)
 		return Dimensions.init;
@@ -828,7 +828,7 @@ unittest
 	assert(dim.pow(2) == ["a": 10, "b": -4]);
 }
 
-Dimensions powinverse(Dimensions dim, int n)
+Dimensions powinverse(const Dimensions dim, int n)
 {
 	assert(n != 0);
 	Dimensions ret;
@@ -846,7 +846,7 @@ unittest
 	assert(dim.powinverse(2) == ["a": 3, "b": -1]);
 }
 
-string toString(Dimensions dim) @safe pure
+string toString(const Dimensions dim) @safe pure
 {
     import std.algorithm : filter;
     import std.array : join;
