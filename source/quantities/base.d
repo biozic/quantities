@@ -1070,7 +1070,7 @@ string dimstr(int[string] dim) @safe pure
     import std.array : join;
     import std.conv : to;
     
-    static string stringize(string symbol, int power)
+    static string stringize(string symbol, int power) pure
     {
         if (power == 0)
             return null;

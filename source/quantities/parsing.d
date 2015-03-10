@@ -90,6 +90,7 @@ import std.math;
 import std.range;
 import std.string;
 import std.traits;
+import std.typetuple;
 import std.utf;
 
 /++
