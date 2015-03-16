@@ -201,7 +201,6 @@ Params:
     symbolList = A prefilled SymbolList struct that contains all units and prefixes.
     parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
         After this function returns, it must have consumed the numeric part and leave only the unit part.
-    one = The value of type N that is equivalent to 1.
 +/
 template rtQuantityParser(
     N, 
@@ -261,7 +260,6 @@ Params:
     symbolList = A prefilled SymbolList struct that contains all units and prefixes.
     parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
         After this function returns, it must have consumed the numeric part and leave only the unit part.
-    one = The value of type N that is equivalent to 1.
 +/
 template ctQuantityParser(
     N, 

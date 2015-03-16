@@ -84,13 +84,13 @@ import std.typetuple;
 
 version (unittest)
 {
-	import std.math : approxEqual;
+    import std.math : approxEqual;
 
-	enum second = unit!(double, "T");
-	enum minute = 60 * second;
-	enum hour = 60 * minute;
-	enum meter = unit!(double, "L");
-	enum radian = Quantity!(double, Dimensions.init).make(1);
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum hour = 60 * minute;
+    enum meter = unit!(double, "L");
+    enum radian = Quantity!(double, Dimensions.init).make(1);
 }
 
 template isNumberLike(N)
@@ -135,21 +135,21 @@ struct Quantity(N, Dimensions dims)
     /// The dimension tuple of the quantity.
     enum dimensions = dims;
 
-	private {
-	    template checkDim(string dim)
-	    {
-	        enum checkDim = `static assert(equals(` ~ dim ~ `, dimensions),
-	                "Dimension error: [%s] is not compatible with [%s]"
-	                .format(.toString(` ~ dim ~ `), .toString(dimensions)));`;
-	    }
+    private {
+        template checkDim(string dim)
+        {
+            enum checkDim = `static assert(equals(` ~ dim ~ `, dimensions),
+                    "Dimension error: [%s] is not compatible with [%s]"
+                    .format(.toString(` ~ dim ~ `), .toString(dimensions)));`;
+        }
 
-	    template checkValueType(string type)
-	    {
-			enum checkValueType = `static assert(is(` ~ type ~ ` : N),
-	                "%s is not implicitly convertible to %s"
-	                .format(` ~ type ~ `.stringof, N.stringof));`;
-	    }
-	}
+        template checkValueType(string type)
+        {
+            enum checkValueType = `static assert(is(` ~ type ~ ` : N),
+                    "%s is not implicitly convertible to %s"
+                    .format(` ~ type ~ `.stringof, N.stringof));`;
+        }
+    }
 
     /// Gets the base unit of this quantity.
     static @property Quantity baseUnit()
@@ -188,13 +188,13 @@ struct Quantity(N, Dimensions dims)
         return ret;
     }
 
-	// Gets the internal number of this quantity.
+    // Gets the internal number of this quantity.
     N rawValue() const
     {
         return _value;
     }
     // Implicitly convert a dimensionless value to the value type
-	static if (!dimensions.length)
+    static if (!dimensions.length)
         alias rawValue this;
 
     /++
@@ -223,7 +223,7 @@ struct Quantity(N, Dimensions dims)
         if (isQuantity!Q)
     {
         enum ret = equals(dimensions, other.dimensions);
-		return ret;
+        return ret;
     }
     ///
     unittest
@@ -264,7 +264,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Assign from a numeric value if this quantity is dimensionless
-    void opAssign(T)(T other) /// ditto
+    /// ditto
+    void opAssign(T)(T other)
         if (!isQuantity!T)
     {
         mixin(checkDim!"");
@@ -273,21 +274,24 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Unary + and -
-    auto opUnary(string op)() const /// ditto
+    /// ditto
+    auto opUnary(string op)() const
         if (op == "+" || op == "-")
     {
         return Quantity.make(mixin(op ~ "_value"));
     }
     
     // Unary ++ and --
-    auto opUnary(string op)() /// ditto
+    /// ditto
+    auto opUnary(string op)()
         if (op == "++" || op == "--")
     {
         return Quantity.make(mixin(op ~ "_value"));
     }
 
     // Add (or substract) two quantities if they share the same dimensions
-    auto opBinary(string op, Q)(Q other) const /// ditto
+    /// ditto
+    auto opBinary(string op, Q)(Q other) const
         if (isQuantity!Q && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
@@ -296,7 +300,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Add (or substract) a dimensionless quantity and a number
-    auto opBinary(string op, T)(T other) const /// ditto
+    /// ditto
+    auto opBinary(string op, T)(T other) const
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"Dimensions.init");
@@ -304,40 +309,42 @@ struct Quantity(N, Dimensions dims)
         return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
-    // ditto
-    auto opBinaryRight(string op, T)(T other) const /// ditto
+    /// ditto
+    auto opBinaryRight(string op, T)(T other) const
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
 
     // Multiply or divide two quantities
-    auto opBinary(string op, Q)(Q other) const /// ditto
+    /// ditto
+    auto opBinary(string op, Q)(Q other) const
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"Q.valueType");
         return Quantity!(N, binop!op(dimensions, other.dimensions))
-			.make(mixin("(_value" ~ op ~ "other._value)"));
+            .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
     // Multiply or divide a quantity by a number
-    auto opBinary(string op, T)(T other) const /// ditto
+    /// ditto
+    auto opBinary(string op, T)(T other) const
         if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
         return Quantity.make(mixin("_value" ~ op ~ "other"));
     }
 
-    // ditto
-    auto opBinaryRight(string op, T)(T other) const /// ditto
+    /// ditto
+    auto opBinaryRight(string op, T)(T other) const
         if (!isQuantity!T && op == "*")
     {
         mixin(checkValueType!"T");
         return this * other;
     }
 
-    // ditto
-    auto opBinaryRight(string op, T)(T other) const /// ditto
+    /// ditto
+    auto opBinaryRight(string op, T)(T other) const
         if (!isQuantity!T && (op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
@@ -351,7 +358,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
-    void opOpAssign(string op, Q)(Q other) /// ditto
+    /// ditto
+    void opOpAssign(string op, Q)(Q other)
         if (isQuantity!Q && (op == "+" || op == "-"))
     {
         mixin(checkDim!"other.dimensions");
@@ -360,7 +368,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Add/sub assign a number to a dimensionless quantity
-    void opOpAssign(string op, T)(T other) /// ditto
+    /// ditto
+    void opOpAssign(string op, T)(T other)
         if (!isQuantity!T && (op == "+" || op == "-"))
     {
         mixin(checkDim!"Dimensions.init");
@@ -369,7 +378,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Mul/div assign with a dimensionless quantity
-    void opOpAssign(string op, Q)(Q other) /// ditto
+    /// ditto
+    void opOpAssign(string op, Q)(Q other)
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkDim!"Dimensions.init");
@@ -378,7 +388,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Mul/div assign with a number
-    void opOpAssign(string op, T)(T other) /// ditto
+    /// ditto
+    void opOpAssign(string op, T)(T other)
         if (!isQuantity!T && (op == "*" || op == "/" || op == "%"))
     {
         mixin(checkValueType!"T");
@@ -386,7 +397,8 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Exact equality between quantities
-    bool opEquals(Q)(Q other) const /// ditto
+    /// ditto
+    bool opEquals(Q)(Q other) const
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
@@ -394,15 +406,17 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Exact equality between a dimensionless quantity and a number
-    bool opEquals(T)(T other) const /// ditto
+    /// ditto
+    bool opEquals(T)(T other) const
         if (!isQuantity!T)
     {
-		mixin(checkDim!"Dimensions.init");
+        mixin(checkDim!"Dimensions.init");
         return _value == other;
     }
 
     // Comparison between two quantities
-    int opCmp(Q)(Q other) const /// ditto
+    /// ditto
+    int opCmp(Q)(Q other) const
         if (isQuantity!Q)
     {
         mixin(checkDim!"other.dimensions");
@@ -414,10 +428,11 @@ struct Quantity(N, Dimensions dims)
     }
 
     // Comparison between a dimensionless quantity and a number
-    int opCmp(T)(T other) const /// ditto
+    /// ditto
+    int opCmp(T)(T other) const
         if (!isQuantity!T)
     {
-		mixin(checkDim!"Dimensions.init");
+        mixin(checkDim!"Dimensions.init");
         if (_value < other)
             return -1;
         if (_value > other)
@@ -555,7 +570,7 @@ unittest // Quantity.opEquals
 
 unittest // Quantity.opCmp
 {
-	enum hour = 60 * minute;
+    enum hour = 60 * minute;
     static assert(second < minute);
     static assert(minute <= minute);
     static assert(hour > minute);
@@ -632,7 +647,7 @@ template Store(Q, N)
 ///
 unittest
 {
-	alias Time = typeof(second);
+    alias Time = typeof(second);
     alias TimeF = Store!(Time, float);
 }
 
@@ -659,7 +674,7 @@ auto store(T, Q)(Q quantity, T delegate(Q.valueType) convertDelegate = x => cast
 ///
 unittest
 {
-	// import quantities.si : meter;
+    // import quantities.si : meter;
     auto sizeF = meter.store!float;
     static assert(is(sizeF.valueType == float));
     auto sizeI = meter.store!ulong;
@@ -726,124 +741,124 @@ package:
 
 bool equals(const Dimensions dim1, const Dimensions dim2)
 {
-	if (dim1.length != dim2.length)
-		return false;
+    if (dim1.length != dim2.length)
+        return false;
 
-	foreach (k, v1; dim1)
-	{
-		auto v2 = k in dim2;
-		if (v2 is null || v1 != *v2)
-			return false;
-	}
-	return true;
+    foreach (k, v1; dim1)
+    {
+        auto v2 = k in dim2;
+        if (v2 is null || v1 != *v2)
+            return false;
+    }
+    return true;
 }
 unittest
 {
-	assert(equals(Dimensions.init, Dimensions.init));
-	assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
-	assert(!equals(["a": 1, "b": 1], ["a": 1, "b": 0]));
-	assert(!equals(["a": 1], ["a": 1, "b": 0]));
-	assert(!equals(["a": 1, "b": 0], ["a": 1]));
+    assert(equals(Dimensions.init, Dimensions.init));
+    assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
+    assert(!equals(["a": 1, "b": 1], ["a": 1, "b": 0]));
+    assert(!equals(["a": 1], ["a": 1, "b": 0]));
+    assert(!equals(["a": 1, "b": 0], ["a": 1]));
 }
 
 Dimensions removeNull(const Dimensions dim)
 {
-	Dimensions ret;
-	foreach (k, v; dim)
-		if (v != 0)
-			ret[k] = v;
-	return ret;
+    Dimensions ret;
+    foreach (k, v; dim)
+        if (v != 0)
+            ret[k] = v;
+    return ret;
 }
 unittest
 {
-	auto dim = ["a": 1, "b": 0, "c": 0, "d": 1];
-	assert(dim.removeNull == ["a": 1, "d": 1]);
+    auto dim = ["a": 1, "b": 0, "c": 0, "d": 1];
+    assert(dim.removeNull == ["a": 1, "d": 1]);
 }
 
 Dimensions invert(const Dimensions dim)
 {
-	Dimensions ret;
-	foreach (k, v; dim)
-	{
-		assert(v != 0);
-		ret[k] = -v;
-	}
-	return ret;
+    Dimensions ret;
+    foreach (k, v; dim)
+    {
+        assert(v != 0);
+        ret[k] = -v;
+    }
+    return ret;
 }
 unittest
 {
-	auto dim = ["a": 5, "b": -2];
-	assert(dim.invert == ["a": -5, "b": 2]);
+    auto dim = ["a": 5, "b": -2];
+    assert(dim.invert == ["a": -5, "b": 2]);
 }
 
 Dimensions binop(string op)(const Dimensions dim1, const Dimensions dim2)
-	if (op == "*")
+    if (op == "*")
 {
-	auto ret = cast(Dimensions) dim1.dup;
-	foreach (k, v2; dim2)
-	{
-		auto v1 = k in ret;
-		if (v1)
-			ret[k] = *v1 + v2;
-		else
-			ret[k] = v2;
-	}
-	return ret.removeNull;
+    auto ret = cast(Dimensions) dim1.dup;
+    foreach (k, v2; dim2)
+    {
+        auto v1 = k in ret;
+        if (v1)
+            ret[k] = *v1 + v2;
+        else
+            ret[k] = v2;
+    }
+    return ret.removeNull;
 }
 unittest
 {
-	auto dim1 = ["a": 1, "b": -2];
-	auto dim2 = ["a": -1, "c": 2];
-	assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
+    auto dim1 = ["a": 1, "b": -2];
+    auto dim2 = ["a": -1, "c": 2];
+    assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
 }
 
 Dimensions binop(string op)(const Dimensions dim1, const Dimensions dim2)
-	if (op == "/" || op == "%")
+    if (op == "/" || op == "%")
 {
-	return binop!"*"(dim1, dim2.invert);
+    return binop!"*"(dim1, dim2.invert);
 }
 unittest
 {
-	auto dim1 = ["a": 1, "b": -2];
-	auto dim2 = ["a": 1, "c": 2];
-	assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
+    auto dim1 = ["a": 1, "b": -2];
+    auto dim2 = ["a": 1, "c": 2];
+    assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
 }
 
 Dimensions pow(const Dimensions dim, int power)
 {
-	if (dim.length == 0 || power == 0)
-		return Dimensions.init;
+    if (dim.length == 0 || power == 0)
+        return Dimensions.init;
 
-	Dimensions ret;
-	foreach (k, v; dim)
-	{
-		assert(v != 0);
-		ret[k] = v * power;
-	}
-	return ret;
+    Dimensions ret;
+    foreach (k, v; dim)
+    {
+        assert(v != 0);
+        ret[k] = v * power;
+    }
+    return ret;
 }
 unittest
 {
-	auto dim = ["a": 5, "b": -2];
-	assert(dim.pow(2) == ["a": 10, "b": -4]);
+    auto dim = ["a": 5, "b": -2];
+    assert(dim.pow(2) == ["a": 10, "b": -4]);
 }
 
 Dimensions powinverse(const Dimensions dim, int n)
 {
-	assert(n != 0);
-	Dimensions ret;
-	foreach (k, v; dim)
-	{
-		assert(v != 0);
-		enforce(v % n == 0, "Dimension error: '%s^%s' is not divisible by %s".format(k, v, n));
-		ret[k] = v / n;
-	}
-	return ret;
+    assert(n != 0);
+    Dimensions ret;
+    foreach (k, v; dim)
+    {
+        assert(v != 0);
+        enforce(v % n == 0, "Dimension error: '%s^%s' is not divisible by %s".format(k, v, n));
+        ret[k] = v / n;
+    }
+    return ret;
 }
 unittest
 {
-	auto dim = ["a": 6, "b": -2];
-	assert(dim.powinverse(2) == ["a": 3, "b": -1]);
+    auto dim = ["a": 6, "b": -2];
+    assert(dim.powinverse(2) == ["a": 3, "b": -1]);
 }
 
 string toString(const Dimensions dim) @safe pure
