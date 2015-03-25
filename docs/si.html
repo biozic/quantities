@@ -7,8 +7,11 @@
 This module defines the SI units and prefixes.
 <br><br>
 All the quantities and units defined in this module store a value
-of type double intenally. So the predefined parsers can only parse
-double values.
+of a numeric type that defaults to <pre style="display:inline;" class="d_inline_code">double</pre>. To change this default,
+compile the module with one of these version flags:
+<pre style="display:inline;" class="d_inline_code">-version=SIReal</pre>,
+<pre style="display:inline;" class="d_inline_code">-version=SIDouble</pre>, or
+<pre style="display:inline;" class="d_inline_code">-version=SIFloat</pre>.
 
 <br><br>
 <b>Authors:</b><br>
@@ -67,11 +70,6 @@ Nicolas Sicard
 <br><a name="dalton"></a>Quantity!(double, ["M":1]) <u>dalton</u>;
 </big></dt>
 <dd>Predefined SI units.<br><br>
-
-</dd>
-<dt><big><a name="one"></a>Quantity!(double, null) <u>one</u>;
-</big></dt>
-<dd>The dimensionless unit '<u>one</u>'<br><br>
 
 </dd>
 <dt><big><a name="Length"></a>alias <u>Length</u> = quantities.base.Quantity!(double, ["L":1]).Quantity;
@@ -150,43 +148,40 @@ Nicolas Sicard
 <dd>SI prefixes.<br><br>
 
 </dd>
-<dt><big><a name="parseSI"></a>alias <u>parseSI</u> = quantities.parsing.rtQuantityParser!(double, siSymbolList, __lambda32).rtQuantityParser(Q, S)(S str) if (isQuantity!Q);
+<dt><big><a name="parseSI"></a>Q <u>parseSI</u>(Q)(string <i>str</i>) if (isQuantity!Q);
 </big></dt>
-<dd>Creates a function that parses a string for a SI unit or quantity at runtime.<br><br>
+<dd>Parses a string for a quantity of type Q.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>auto</font> t = <u>parseSI</u>!Time(<font color=red>"90 min"</font>);
 <font color=blue>assert</font>(t == 90 * minute);
 t = <u>parseSI</u>!Time(<font color=red>"h"</font>);
 <font color=blue>assert</font>(t == 1 * hour);
+
+<font color=blue>auto</font> v = <u>parseSI</u>!Dimensionless(<font color=red>"2"</font>);
+<font color=blue>assert</font>(v == (2 * meter) / meter);
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.ctQuantityParser!(double, SymbolList(["m":RTQuantity(1.00000, ["L":1]), "kg":RTQuantity(1.00000, ["M":1]), "s":RTQuantity(1.00000, ["T":1]), "A":RTQuantity(1.00000, ["I":1]), "K":RTQuantity(1.00000, ["\xce\x98":1]), "mol":RTQuantity(1.00000, ["N":1]), "cd":RTQuantity(1.00000, ["J":1]), "rad":RTQuantity(1.00000, null), "sr":RTQuantity(1.00000, null), "Hz":RTQuantity(1.00000, ["T":-1]), "N":RTQuantity(1.00000, ["M":1, "L":1, "T":-2]), "Pa":RTQuantity(1.00000, ["M":1, "L":-1, "T":-2]), "J":RTQuantity(1.00000, ["M":1, "L":2, "T":-2]), "W":RTQuantity(1.00000, ["M":1, "L":2, "T":-3]), "C":RTQuantity(1.00000, ["T":1, "I":1]), "V":RTQuantity(1.00000, ["M":1, "L":2, "T":-3, "I":-1]), "F":RTQuantity(1.00000, ["T":4, "I":2, "M":-1, "L":-2]), "\xce\xa9":RTQuantity(1.00000, ["M":1, "L":2, "T":-3, "I":-2]), "S":RTQuantity(1.00000, ["I":2, "M":-1, "L":-2, "T":3]), "Wb":RTQuantity(1.00000, ["M":1, "L":2, "T":-2, "I":-1]), "T":RTQuantity(1.00000, ["M":1, "T":-2, "I":-1]), "H":RTQuantity(1.00000, ["M":1, "L":2, "T":-2, "I":-2]), "lm":RTQuantity(1.00000, ["J":1]), "lx":RTQuantity(1.00000, ["J":1, "L":-2]), "Bq":RTQuantity(1.00000, ["T":-1]), "Gy":RTQuantity(1.00000, ["L":2, "T":-2]), "Sv":RTQuantity(1.00000, ["L":2, "T":-2]), "kat":RTQuantity(1.00000, ["N":1, "T":-1]), "g":RTQuantity(0.001, ["M":1]), "min":RTQuantity(60.0000, ["T":1]), "h":RTQuantity(3600.00, ["T":1]), "d":RTQuantity(86400.0, ["T":1]), "l":RTQuantity(0.001, ["L":3]), "L":RTQuantity(0.001, ["L":3]), "t":RTQuantity(1000.00, ["M":1]), "eV":RTQuantity(1.60218e-19, ["M":1, "L":2, "T":-2]), "Da":RTQuantity(1.66054e-27, ["M":1])], ["Y":1e+24, "Z":1e+21, "E":1.00000e+18, "P":1.00000e+15, "T":1.00000e+12, "G":1.00000e+09, "M":1.00000e+06, "k":1000.00, "h":100.000, "da":10.0000, "d":0.1, "c":0.01, "m":0.001, "\xc2\xb5":1e-06, "n":1e-09, "p":1e-12, "f":1e-15, "a":1e-18, "z":1e-21, "y":1e-24, "Yi":1.20893e+24, "Zi":1.18059e+21, "Ei":1.15292e+18, "Pi":1.12590e+15, "Ti":1.09951e+12, "Gi":1.07374e+09, "Mi":1.04858e+06, "Ki":1024.00], 2LU), parse).ctQuantityParser(string str);
+<dt><big><a name="si"></a>alias <u>si</u> = quantities.parsing.compileTimeParser!(double, SymbolList(["m":QuantityParams(1.00000, ["L":1]), "kg":QuantityParams(1.00000, ["M":1]), "s":QuantityParams(1.00000, ["T":1]), "A":QuantityParams(1.00000, ["I":1]), "K":QuantityParams(1.00000, ["\xce\x98":1]), "mol":QuantityParams(1.00000, ["N":1]), "cd":QuantityParams(1.00000, ["J":1]), "rad":QuantityParams(1.00000, null), "sr":QuantityParams(1.00000, null), "Hz":QuantityParams(1.00000, ["T":-1]), "N":QuantityParams(1.00000, ["M":1, "L":1, "T":-2]), "Pa":QuantityParams(1.00000, ["M":1, "L":-1, "T":-2]), "J":QuantityParams(1.00000, ["M":1, "L":2, "T":-2]), "W":QuantityParams(1.00000, ["M":1, "L":2, "T":-3]), "C":QuantityParams(1.00000, ["T":1, "I":1]), "V":QuantityParams(1.00000, ["M":1, "L":2, "T":-3, "I":-1]), "F":QuantityParams(1.00000, ["T":4, "I":2, "M":-1, "L":-2]), "\xce\xa9":QuantityParams(1.00000, ["M":1, "L":2, "T":-3, "I":-2]), "S":QuantityParams(1.00000, ["I":2, "M":-1, "L":-2, "T":3]), "Wb":QuantityParams(1.00000, ["M":1, "L":2, "T":-2, "I":-1]), "T":QuantityParams(1.00000, ["M":1, "T":-2, "I":-1]), "H":QuantityParams(1.00000, ["M":1, "L":2, "T":-2, "I":-2]), "lm":QuantityParams(1.00000, ["J":1]), "lx":QuantityParams(1.00000, ["J":1, "L":-2]), "Bq":QuantityParams(1.00000, ["T":-1]), "Gy":QuantityParams(1.00000, ["L":2, "T":-2]), "Sv":QuantityParams(1.00000, ["L":2, "T":-2]), "kat":QuantityParams(1.00000, ["N":1, "T":-1]), "g":QuantityParams(0.001, ["M":1]), "min":QuantityParams(60.0000, ["T":1]), "h":QuantityParams(3600.00, ["T":1]), "d":QuantityParams(86400.0, ["T":1]), "l":QuantityParams(0.001, ["L":3]), "L":QuantityParams(0.001, ["L":3]), "t":QuantityParams(1000.00, ["M":1]), "eV":QuantityParams(1.60218e-19, ["M":1, "L":2, "T":-2]), "Da":QuantityParams(1.66054e-27, ["M":1])], ["Y":1e+24, "Z":1e+21, "E":1.00000e+18, "P":1.00000e+15, "T":1.00000e+12, "G":1.00000e+09, "M":1.00000e+06, "k":1000.00, "h":100.000, "da":10.0000, "d":0.1, "c":0.01, "m":0.001, "\xc2\xb5":1e-06, "n":1e-09, "p":1e-12, "f":1e-15, "a":1e-18, "z":1e-21, "y":1e-24, "Yi":1.20893e+24, "Zi":1.18059e+21, "Ei":1.15292e+18, "Pi":1.12590e+15, "Ti":1.09951e+12, "Gi":1.07374e+09, "Mi":1.04858e+06, "Ki":1024.00], 2LU), parse).compileTimeParser(string str);
 </big></dt>
-<dd>Creates a function that parses a string for a SI unit or quantity at compile-time.<br><br>
+<dd>A compile-time parser with automatic type deduction for SI quantities.<br><br>
 <b>Examples:</b><br>
 <pre class="d_code">
 <font color=blue>enum</font> min = <u>si</u>!<font color=red>"min"</font>;
 <font color=blue>enum</font> inch = <u>si</u>!<font color=red>"2.54 cm"</font>;
-
 <font color=blue>auto</font> conc = <u>si</u>!<font color=red>"1 µmol/L"</font>;
 <font color=blue>auto</font> speed = <u>si</u>!<font color=red>"m s^-1"</font>;
 <font color=blue>auto</font> value = <u>si</u>!<font color=red>"0.5"</font>;
 
+<font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(inch) == Length));
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(conc) == Concentration));
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(speed) == Speed));
 <font color=blue>static</font> <font color=blue>assert</font>(<font color=blue>is</font>(<font color=blue>typeof</font>(value) == Dimensionless));
 </pre>
 <br><br>
 </dd>
-<dt><big><a name="withAllSI"></a>alias <u>withAllSI</u> = TList;
-</big></dt>
-<dd>Helper template that can be used to add all SI units and prefixes when
-building a symbol list with makeSymbolList.<br><br>
-
-</dd>
-<dt><big><a name="fromDuration"></a>Time <u>fromDuration</u>(Duration <i>d</i>);
+<dt><big><a name="fromDuration"></a>pure @safe Time <u>fromDuration</u>(Duration <i>d</i>);
 <br><a name="toDuration"></a>Duration <u>toDuration</u>(Q)(Q <i>quantity</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Converts a quantity of time to or from a core.time.Duration<br><br>

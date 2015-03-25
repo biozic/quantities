@@ -1,4 +1,3 @@
-// Written in the D programming language
 /++
 This module defines functions to parse units and quantities. The text
 input is parsed according to the following grammar. For example:
@@ -74,7 +73,7 @@ $(DT SupInteger:)
     $(DD $(I Superscript version of Integer))
 )
 
-Copyright: Copyright 2013-2014, Nicolas Sicard
+Copyright: Copyright 2013-2015, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
@@ -93,6 +92,23 @@ import std.traits;
 import std.typetuple;
 import std.utf;
 
+
+/// Exception thrown when operating on two units that are not interconvertible.
+class DimensionException : Exception
+{
+    @safe pure nothrow
+    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
+    {
+        super(msg, file, line, next);
+    }
+    
+    @safe pure nothrow
+    this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
+    {
+        super(msg, file, line, next);
+    }
+}
+
 /++
 Contains the symbols of the units and the prefixes that a parser can handle.
 +/
@@ -102,203 +118,115 @@ struct SymbolList(N)
 
     package
     {
-        RTQuantity!N[string] units;
+        QuantityParams!N[string] units;
         N[string] prefixes;
         size_t maxPrefixLength;
     }
 
     /// Adds (or replaces) a unit in the list
-    void addUnit(Q)(string symbol, Q unit)
+    auto addUnit(Q)(string symbol, Q unit)
         if (isQuantity!Q)
     {
         units[symbol] = unit.toRT;
+        return this;
     }
 
     /// Adds (or replaces) a prefix in the list
-    void addPrefix(N)(string symbol, N factor)
+    auto addPrefix(N)(string symbol, N factor)
         if (isNumberLike!N)
     {
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)
             maxPrefixLength = symbol.length;
+        return this;
     }
 }
 
-/++
-Helps build a SymbolList at compile-time.
+/// Type of a function that can parse a string for a numeric value of type N.
+alias NumberParser(N) = N function(ref string s) @safe pure;
 
-Use with the global addUnit and addPrefix functions.
-+/
-SymbolList!N makeSymbolList(N, Sym...)(Sym list)
+/// Holds a value and dimensions
+struct QuantityParams(N)
 {
-    SymbolList!N ret;
-    foreach (sym; list)
-    {
-        static if (is(typeof(sym) == WithUnit!Q, Q))
-        {
-            static assert(is(Q.valueType : N), "Incompatible value types: %s and %s" 
-                          .format(Q.valueType.stringof, N.stringof));
-            ret.units[sym.symbol] = sym.unit;
-        }
-        else static if (is(typeof(sym) == WithPrefix!T, T))
-        {
-            static assert(is(T : N), "Incompatible value types: %s and %s" 
-                          .format(T.stringof, N.stringof));
-            ret.prefixes[sym.symbol] = sym.factor;
-            if (sym.symbol.length > ret.maxPrefixLength)
-                ret.maxPrefixLength = sym.symbol.length;
-        }
-        else
-            static assert(false, "Unexpected symbol: " ~ sym.stringof);
-    }
-    return ret;
-}
-///
-unittest
-{
-    enum euro = unit!(double, "C");
-    alias Currency = typeof(euro);
-    enum dollar = 1.35 * euro;
-
-    enum symbolList = makeSymbolList!double(
-        withUnit("€", euro),
-        withUnit("$", dollar),
-        withPrefix("doz", 12)
-    );
+    N value; /// The parsed value
+    int[string] dimensions; /// The parsed dimensions
 }
 
-package struct WithUnit(Q)
+/// A quantity parser
+struct Parser(N)
 {
-    string symbol;
-    RTQuantity!(Q.valueType) unit;
-}
+    SymbolList!N symbolList; /// A list of registered symbols for units and prefixes.
+    NumberParser!N numberParser; /// A function that can parse a string for a numeric value of type N.
 
-/// Creates a unit that can be added to a SymbolList via the SymbolList constuctor.
-auto withUnit(Q)(string symbol, Q unit)
-    if (isQuantity!Q)
-{
-    return WithUnit!Q(symbol, unit.toRT);
-}
-
-package struct WithPrefix(N)
-{
-    string symbol;
-    N factor;
-}
-
-/// Creates a prefix that can be added to a SymbolList via the SymbolList constuctor.
-auto withPrefix(N)(string symbol, N factor)
-    if (isNumberLike!N)
-{
-    return WithPrefix!N(symbol, factor);
-}
-
-/++
-Creates a runtime parser capable of working on user-defined units and prefixes.
-
-Params:
-    N = The type of the value type stored in the Quantity struct.
-    symbolList = A prefilled SymbolList struct that contains all units and prefixes.
-    parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
-        After this function returns, it must have consumed the numeric part and leave only the unit part.
-+/
-template rtQuantityParser(
-    N, 
-    alias symbolList, 
-    alias parseFun = (ref string s) => parse!N(s)
-)
-{
-    auto rtQuantityParser(Q, S)(S str)
-        if (isQuantity!Q)
+    /++
+    Parses a quantity of a known type Q from a string.
+    +/
+    Q parse(Q)(string str)
     {
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
-
-        auto rtQuant = parseRTQuantity!(Q.valueType, parseFun)(str, symbolList);
+        
+        auto q = parseQuantityImpl!(Q.valueType)(str, symbolList, numberParser);
         enforceEx!DimensionException(
-            equals(Q.dimensions, rtQuant.dimensions),
+            equals(Q.dimensions, q.dimensions),
             "Dimension error: [%s] is not compatible with [%s]"
-            .format(quantities.base.toString(Q.dimensions), quantities.base.toString(rtQuant.dimensions)));
-        return Q.make(rtQuant.value);
-    }    
+            .format(quantities.base.toString(Q.dimensions), quantities.base.toString(q.dimensions)));
+        return Q.make(q.value);
+    }
 }
 ///
-unittest
+@safe pure unittest
 {
-    import std.bigint;
-    
-    enum bit = unit!(BigInt, "bit");
-    alias BinarySize = typeof(bit);
+    // From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
 
-    SymbolList!BigInt symbolList;
-    symbolList.addUnit("bit", bit);
-    symbolList.addPrefix("hob", BigInt("1234567890987654321"));
+    enum century = unit!(real, "century");
+    alias LectureLength = typeof(century);
     
-    static BigInt parseFun(ref string input)
+    enum symbolList = SymbolList!real()
+        .addUnit("Cy", century)
+        .addPrefix("µ", 1e-6L);
+
+    // At runtime
     {
-        import std.exception, std.regex;
-        enum rgx = ctRegex!`^(\d*)\s*(.*)$`;
-        auto m = enforce(match(input, rgx));
-        input = m.captures[2];
-        return BigInt(m.captures[1]);
-    }
-    
-    alias parse = rtQuantityParser!(BigInt, symbolList, parseFun);
+        import std.conv;
+        auto parser = Parser!real(symbolList, &std.conv.parse!(real, string));
 
-    auto foo = BigInt("1234567890987654300") * bit;
-    foo += BigInt(21) * bit;
-    assert(foo == parse!BinarySize("1 hobbit"));
+        auto timing = 1e-6L * century;
+        assert(timing == parser.parse!LectureLength("1 µCy"));
+    }
+
+    // At compile-time
+    {
+        import std.conv;
+        enum parser = Parser!real(symbolList, &std.conv.parse!(real, string));
+        
+        enum timing = 1e-6L * century;
+        static assert(timing == parser.parse!LectureLength("1 µCy"));
+    }
 }
 
-/++
-Creates a compile-time parser capable of working on user-defined units and prefixes.
-
-Contrary to a runtime parser, a compile-time parser infers the type of the parsed quantity
-automatically from the dimensions of its components.
-
-Params:
-    N = The type of the value type stored in the Quantity struct.
-    symbolList = A prefilled SymbolList struct that contains all units and prefixes.
-    parseFun = A function that can parse the beginning of a string to return a numeric value of type N.
-        After this function returns, it must have consumed the numeric part and leave only the unit part.
-+/
-template ctQuantityParser(
-    N, 
-    alias symbolList, 
-    alias parseFun = (ref string s) => parse!N(s)
-)
+/// Creates a compile-time parser that parses a string for a quantity and
+/// automatically deduces the quantity type.
+template compileTimeParser(N, alias symbolList, alias numberParser)
 {
-    template ctQuantityParser(string str)
-    {        
-        // This is for a nice compile-time error message
-        enum msg = { return collectExceptionMsg(parseRTQuantity!(N, parseFun)(str, symbolList)); }();
-        static if (msg)
-        {
-            static assert(false, msg);
-        }
-        else
-        {
-            enum q = parseRTQuantity!(N, parseFun)(str, symbolList);
-            enum ctQuantityParser = Quantity!(N, removeNull(q.dimensions)).make(q.value);
-        }
+    template compileTimeParser(string str)
+    {
+        enum q = parseQuantityImpl!N(str, symbolList, &numberParser); 
+        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.value);
     }
 }
 ///
-version (D_Ddoc) // DMD BUG? (Differents symbolLists but same template instantiation)
-unittest
+@safe pure unittest
 {
-    enum bit = unit!("bit", ulong);
-    alias BinarySize = typeof(bit);
-    enum byte_ = 8 * bit;
+    enum century = unit!(real, "century");
+    alias LectureLength = typeof(century);
     
-    enum symbolList = makeSymbolList!ulong(
-        withUnit("bit", bit),
-        withUnit("B", byte_),
-        withPrefix("hob", 7)
-    );
+    enum symbolList = SymbolList!real()
+        .addUnit("Cy", century)
+        .addPrefix("µ", 1e-6L);
     
-    alias sz = ctQuantityParser!(ulong, symbolList);
-    
-    assert(sz!"1 hobbit".value(bit) == 7);
+    alias ctParser = compileTimeParser!(real, symbolList, std.conv.parse!(real, string));
+    enum timing = 1e-6L * century;
+    static assert(timing == ctParser!"1 µCy");
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -317,49 +245,44 @@ class ParsingException : Exception
     }
 }
 
-package:
+private:
 
-RTQuantity!N parseRTQuantity(N, alias parseFun, S, SL)(S str, auto ref SL symbolList)
+QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, NumberParser!N parseFun)
 {
-    static assert(isForwardRange!S && isSomeChar!(ElementType!S),
-                  "input must be a forward range of a character type");
-
     N value;
     try
-        value = parseFun(str);
-    catch
+        value = parseFun(input);
+    catch (Exception)
         value = 1;
 
-    if (str.empty)
-        return RTQuantity!N(value, null);
+    if (input.empty)
+        return QuantityParams!N(value, null);
 
-    auto input = str.to!string;
     auto tokens = lex(input);
-    auto parser = QuantityParser!N(symbolList);
+    auto parser = QuantityParser!N(tokens, symbolList);
     
-    RTQuantity!N result = parser.parseCompoundUnit(tokens);
+    QuantityParams!N result = parser.parseCompoundUnit();
     result.value *= value;
     return result;
 }
 
-unittest // Test parsing
+@safe pure unittest // Test parsing
 {
     enum meter = unit!(double, "L");
     enum kilogram = unit!(double, "M");
     enum second = unit!(double, "T");
     enum one = meter / meter;
 
-    enum siSL = makeSymbolList!double(
-        withUnit("m", meter),
-        withUnit("kg", kilogram),
-        withUnit("s", second),
-        withPrefix("c", 0.01L),
-        withPrefix("m", 0.001L)
-    );
+    enum siSL = SymbolList!double()
+        .addUnit("m", meter)
+        .addUnit("kg", kilogram)
+        .addUnit("s", second)
+        .addPrefix("c", 0.01L)
+        .addPrefix("m", 0.001L);
 
     static bool checkParse(Q)(string input, Q quantity)
     {
-        return parseRTQuantity!(double, std.conv.parse!(double, string))(input, siSL)
+        return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, string))
             == quantity.toRT;
     }
 
@@ -395,27 +318,20 @@ unittest // Test parsing
     assertThrown!ParsingException(checkParse("1-⁺⁵", one));
 }
 
-// Holds a value and a dimensions for parsing
-struct RTQuantity(N)
-{
-    // The payload
-    N value;
-
-    // The dimensions of the quantity
-    int[string] dimensions;
-}
-
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser(N)
 {
-    alias RTQ = RTQuantity!N;
+    alias RTQ = QuantityParams!N;
 
-    private SymbolList!N symbolList;
-
-    RTQ parseCompoundUnit(T)(auto ref T[] tokens, bool inParens = false)
-        if (is(T : Token))
+    private 
     {
-        RTQ ret = parseExponentUnit(tokens);
+        Token[] tokens;
+        SymbolList!N symbolList;
+    }
+
+    RTQ parseCompoundUnit(bool inParens = false) @safe pure
+    {
+        RTQ ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             return ret;
 
@@ -434,7 +350,7 @@ struct QuantityParser(N)
                 cur = tokens.front;
             }
 
-            RTQ rhs = parseExponentUnit(tokens);
+            RTQ rhs = parseExponentUnit();
             if (multiply)
             {
                 ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
@@ -456,10 +372,9 @@ struct QuantityParser(N)
         return ret;
     }
 
-    RTQ parseExponentUnit(T)(auto ref T[] tokens)
-        if (is(T : Token))
+    RTQ parseExponentUnit() @safe pure
     {
-        RTQ ret = parseUnit(tokens);
+        RTQ ret = parseUnit();
 
         if (tokens.empty)
             return ret;
@@ -471,7 +386,7 @@ struct QuantityParser(N)
         if (next.type == Tok.exp)
             tokens.advance(Tok.integer);
 
-        int n = parseInteger(tokens);
+        int n = parseInteger();
 
         static if (__traits(compiles, std.math.pow(ret.value, n)))
             ret.value = std.math.pow(ret.value, n);
@@ -482,8 +397,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    int parseInteger(T)(auto ref T[] tokens)
-        if (is(T : Token))
+    int parseInteger() @safe pure
     {
         tokens.check(Tok.integer, Tok.supinteger);
         int n = tokens.front.integer;
@@ -492,26 +406,24 @@ struct QuantityParser(N)
         return n;
     }
 
-    RTQ parseUnit(T)(auto ref T[] tokens)
-        if (is(T : Token))
+    RTQ parseUnit() @safe pure
     {
         RTQ ret;
 
         if (tokens.front.type == Tok.lparen)
         {
             tokens.advance();
-            ret = parseCompoundUnit(tokens, true);
+            ret = parseCompoundUnit(true);
             tokens.check(Tok.rparen);
             tokens.advance();
         }
         else
-            ret = parsePrefixUnit(tokens);
+            ret = parsePrefixUnit();
 
         return ret;
     }
 
-    RTQ parsePrefixUnit(T)(auto ref T[] tokens)
-        if (is(T : Token))
+    RTQ parsePrefixUnit() @safe pure
     {
         tokens.check(Tok.symbol);
         auto str = tokens.front.slice;
@@ -550,7 +462,7 @@ struct QuantityParser(N)
 auto toRT(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return RTQuantity!(Q.valueType)(quantity.rawValue, Q.dimensions);
+    return QuantityParams!(Q.valueType)(quantity.rawValue, Q.dimensions);
 }
 
 enum Tok
@@ -573,27 +485,7 @@ struct Token
     int integer = int.max;
 }
 
-enum ctSupIntegerMap = [
-    '⁰':'0',
-    '¹':'1',
-    '²':'2',
-    '³':'3',
-    '⁴':'4',
-    '⁵':'5',
-    '⁶':'6',
-    '⁷':'7',
-    '⁸':'8',
-    '⁹':'9',
-    '⁺':'+',
-    '⁻':'-'
-];
-static dchar[dchar] supIntegerMap;
-static this()
-{
-    supIntegerMap = ctSupIntegerMap;
-}
-
-Token[] lex(string input) @safe
+Token[] lex(string input) @safe pure
 {
     enum State
     {
@@ -631,10 +523,20 @@ Token[] lex(string input) @safe
 
         if (type == Tok.supinteger)
         {
-            if (__ctfe)
-                slice = translate(slice, ctSupIntegerMap);
-            else
-                slice = translate(slice, supIntegerMap);
+            slice = translate(slice, [
+                    '⁰':'0',
+                    '¹':'1',
+                    '²':'2',
+                    '³':'3',
+                    '⁴':'4',
+                    '⁵':'5',
+                    '⁶':'6',
+                    '⁷':'7',
+                    '⁸':'8',
+                    '⁹':'9',
+                    '⁺':'+',
+                    '⁻':'-'
+                ]);
         }
 
         int n;
@@ -791,20 +693,11 @@ void check(Types...)(Token[] tokens, Types types)
 }
 
 // Mul or div two dimension arrays
-int[string] binop(string op)(int[string] dim1, int[string] dim2)
+int[string] binop(string op)(int[string] dim1, int[string] dim2) @safe pure
 {
     static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
 
-    int[string] result;
-
-    // Clone these dimensions in the result
-    if (__ctfe)
-    {
-        foreach (key; dim1.keys)
-            result[key] = dim1[key];
-    }
-    else
-        result = dim1.dup;
+    int[string] result = dim1.dup;
 
     // Merge the other dimensions
     foreach (sym, pow; dim2)

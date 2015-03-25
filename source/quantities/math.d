@@ -1,8 +1,7 @@
-﻿// Written in the D programming language
-/++
+﻿/++
 This module defines common math operations on quantities.
 
-Copyright: Copyright 2013-2014, Nicolas Sicard
+Copyright: Copyright 2013-2015, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Standards: $(LINK http://www.bipm.org/en/si/si_brochure/)
@@ -117,7 +116,6 @@ template Cubic(Q)
     alias Cubic = typeof(Q.init * Q.init * Q.init);
 }
 
-///
 unittest
 {
     import quantities.si;

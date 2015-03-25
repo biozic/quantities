@@ -2,8 +2,9 @@ import quantities;
 import std.math : approxEqual;
 import std.stdio : writeln, writefln;
 
+void main()
+{
 // Working with predefined units
-unittest
 {
     auto distance = 384_400 * kilo(meter);
     auto speed = 299_792_458  * meter/second;
@@ -13,11 +14,10 @@ unittest
     writefln("Travel time of light from the moon: %s s", time.value(second));
 
     static assert(is(typeof(distance) == Length));
-    static assert(is(Speed == Quantity!(double, "L", 1, "T", -1)));
+    static assert(is(Speed == Quantity!(double, ["L": 1, "T": -1])));
 }
 
 // Dimensional correctness is check at compile-time
-unittest
 {
     Mass mass;
     static assert(!__traits(compiles, mass = 15 * meter));
@@ -25,7 +25,6 @@ unittest
 }
 
 // Calculations can be done at compile-time
-unittest
 {
     enum distance = 384_400 * kilo(meter);
     enum speed = 299_792_458  * meter/second;
@@ -34,7 +33,6 @@ unittest
 }
 
 // Create a new unit from the predefined ones
-unittest
 {
     enum inch = 2.54 * centi(meter);
     enum mile = 1609 * meter;
@@ -42,7 +40,6 @@ unittest
 }
 
 // Create a new unit with new dimensions
-unittest
 {
     // Create a new base unit of currency
     enum euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
@@ -53,7 +50,6 @@ unittest
 }
 
 // Compile-time parsing
-unittest
 {
     enum distance = si!"384_400 km";
     enum speed = si!"299_792_458 m/s";
@@ -65,7 +61,6 @@ unittest
 }
 
 // Runtime parsing
-unittest
 {
     auto data = [
         "distance-to-the-moon": "384_400 km",
@@ -78,7 +73,6 @@ unittest
 }
 
 // Chemistry session
-unittest
 {
     // Use the predefined quantity types (in module quantities.si)
     Volume volume;
@@ -106,11 +100,4 @@ unittest
     writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
     // prints: Weigh 297.3 mg of substance
 }
-
-void main()
-{
-    version(unittest)
-        writeln("ALL TESTS PASSED");
-    else
-        writeln("Run with -unittest or use 'dub test'.");
 }

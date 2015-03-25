@@ -1,7 +1,7 @@
 {
 	"name": "synopsis",
 	"description": "Code for the synopsis in readme.md.",
-	"copyright": "Copyright © 2014, Nicolas Sicard",
+	"copyright": "Copyright © 2014-15, Nicolas Sicard",
 	"authors": ["Nicolas Sicard"],
 	"dependencies": {
 		"quantities": {
