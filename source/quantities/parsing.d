@@ -393,7 +393,7 @@ struct QuantityParser(N)
         else
             foreach (i; 1 .. n)
                 ret.value *= ret.value;
-        ret.dimensions = ret.dimensions.exp(n);
+        ret.dimensions = ret.dimensions.pow(n);
         return ret;
     }
 
@@ -690,66 +690,4 @@ void check(Types...)(Token[] tokens, Types types)
                                    : format("Found '%s' while expecting %s", token.slice, valid.front)
                                    );
     }
-}
-
-// Mul or div two dimension arrays
-int[string] binop(string op)(int[string] dim1, int[string] dim2) @safe pure
-{
-    static assert(op == "*" || op == "/", "Unsupported dimension operator: " ~ op);
-
-    int[string] result = dim1.dup;
-
-    // Merge the other dimensions
-    foreach (sym, pow; dim2)
-    {
-        enum powop = op == "*" ? "+" : "-";
-
-        if (sym in dim1)
-        {
-            // A dimension is common between this one and the other:
-            // add or sub them
-            auto p = mixin("dim1[sym]" ~ powop ~ "pow");
-
-            // If the power becomes 0, remove the dimension from the list
-            // otherwise, set the new power
-            if (p == 0)
-                result.remove(sym);
-            else
-                result[sym] = p;
-        }
-        else
-        {
-            // Add this new dimensions to the result
-            // (with a negative power if op == "/")
-            result[sym] = mixin(powop ~ "pow");
-        }
-    }
-
-    return result;
-}
-
-// Raise a dimension array to a integer power (value)
-int[string] exp(int[string] dim, int value) @safe pure
-{
-    if (value == 0)
-        return null;
-
-    int[string] result;
-    foreach (sym, pow; dim)
-        result[sym] = pow * value;
-    return result;
-}
-
-// Raise a dimension array to a rational power (1/value)
-int[string] expInv(int[string] dim, int value) @safe pure
-{
-    assert(value > 0, "Bug: using Dimensions.expInv with a value <= 0");
-
-    int[string] result;
-    foreach (sym, pow; dim)
-    {
-        enforce(pow % value == 0, "Operation results in a non-integral dimension");
-        result[sym] = pow / value;
-    }
-    return result;
 }
