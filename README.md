@@ -14,10 +14,7 @@ Quantities can be parsed from strings at runtime and compile-time.
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.
 
-Tested with DMD 2.065, 2.066.1   
-Fails with DMD 2.066
-
-Copyright 2013-2014, Nicolas Sicard.
+Copyright 2013-2015, Nicolas Sicard.
 
 License: Boost License 1.0.
 
