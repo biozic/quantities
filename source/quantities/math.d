@@ -10,78 +10,176 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.math;
 
 import quantities.base;
+import quantities.qvariant;
+
 import std.math;
 import std.traits;
 
-/// Basic math functions that work with Quantities where N is a builtin floating point type.
+alias dimpow = quantities.base.pow;
+
+/// Basic math functions that work with Quantity and QVariant.
 auto square(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return quantity * quantity;
+    return Quantity!(Q.valueType, dimpow(Q.dimensions, 2)).make(quantity.rawValue ^^ 2);
+}
+
+/// ditto
+auto square(Q)(Q quantity)
+    if (isQVariant!Q)
+{
+    return Q.make(quantity.rawValue ^^ 2, dimpow(quantity.dimensions, 2));
+}
+
+/// ditto
+auto sqrt(Q)(Q quantity)
+    if (isQuantity!Q)
+{
+    return Quantity!(Q.valueType, powinverse(Q.dimensions, 2)).make(std.math.sqrt(quantity.rawValue));
+}
+
+/// ditto
+auto sqrt(Q)(Q quantity)
+    if (isQVariant!Q)
+{
+    return Q.make(std.math.sqrt(quantity.rawValue), powinverse(quantity.dimensions, 2));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L");
+    enum surface = 25 * square(meter);
+    enum side = sqrt(surface);
+    static assert(side.value(meter).approxEqual(5));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L").qVariant;
+    enum surface = 25 * square(meter);
+    enum side = sqrt(surface);
+    static assert(side.value(meter).approxEqual(5));
 }
 
 /// ditto
 auto cubic(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return quantity * quantity * quantity;
+    return Quantity!(Q.valueType, dimpow(Q.dimensions, 3)).make(quantity.rawValue ^^ 3);
 }
 
 /// ditto
-auto sqrt(Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+auto cubic(Q)(Q quantity)
+    if (isQVariant!Q)
 {
-    return Quantity!(Q.valueType, powinverse(Q.dimensions, 2)).make(std.math.sqrt(quantity.rawValue));
+    return Q.make(quantity.rawValue ^^ 3, dimpow(quantity.dimensions, 3));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+    if (isQuantity!Q)
 {
     return Quantity!(Q.valueType, powinverse(Q.dimensions, 3)).make(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
+auto cbrt(Q)(Q quantity)
+    if (isQVariant!Q)
+{
+    return Q.make(std.math.cbrt(quantity.rawValue), powinverse(quantity.dimensions, 3));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L");
+    enum vol = 27 * cubic(meter);
+    auto side = cbrt(vol); // Doesn't work with CTFE
+    assert(side.value(meter).approxEqual(3));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L").qVariant;
+    enum vol = 27 * cubic(meter);
+    auto side = cbrt(vol); // Doesn't work with CTFE
+    assert(side.value(meter).approxEqual(3));
+}
+
+/// ditto
+auto pow(int n, Q)(Q quantity)
+    if (isQuantity!Q)
+{
+    return Quantity!(Q.valueType, dimpow(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, n));
+}
+
+// ditto
+auto pow(int n, Q)(Q quantity)
+    if (isQVariant!Q)
+{
+    return Q.make(std.math.pow(quantity.rawValue, n), dimpow(quantity.dimensions, n));
+}
+
+/// ditto
 auto nthRoot(int n, Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+    if (isQuantity!Q)
 {
     return Quantity!(Q.valueType, powinverse(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 /// ditto
+auto nthRoot(int n, Q)(Q quantity)
+    if (isQVariant!Q)
+{
+    return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), powinverse(quantity.dimensions, n));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L");
+    enum x = 16 * pow!4(meter);
+    auto side = nthRoot!4(x);  // Doesn't work with CTFE
+    assert(side.value(meter).approxEqual(2));
+}
+
+unittest
+{
+    enum meter = unit!(double, "L").qVariant;
+    enum x = 16 * pow!4(meter);
+    auto side = nthRoot!4(x); // Doesn't work with CTFE
+    assert(side.value(meter).approxEqual(2));
+}
+
+/// ditto
 Q abs(Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+    if (isQuantity!Q)
 {
     return Q.make(std.math.fabs(quantity.rawValue));
 }
 
-///
-auto pow(int n, Q)(Q quantity)
-    if (isQuantity!Q && isFloatingPoint!(Q.valueType))
+// ditto
+Q abs(Q)(Q quantity)
+    if (isQVariant!Q)
 {
-    return Quantity!(Q.valueType, pow(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, n));
+    return Q.make(std.math.fabs(quantity.rawValue), quantity.dimensions);
 }
 
-///
 unittest
 {
     enum meter = unit!(double, "L");
-    enum liter = 0.001 * meter * meter * meter;
-
-    auto surface = 25 * square(meter);
-    auto side = sqrt(surface);
-    assert(side.value(meter).approxEqual(5));
-
-    auto volume = 27 * liter;
-    side = cbrt(volume);
-    assert(side.value(meter).approxEqual(0.3));
-
-    auto delta = -10 * meter;
-    assert(abs(delta) == 10 * meter);
+    enum mlength = -12 * meter;
+    enum length = abs(mlength);
+    static assert(length.value(meter).approxEqual(12));
 }
 
+unittest
+{
+    enum meter = unit!(double, "L").qVariant;
+    enum mlength = -12 * meter;
+    enum length = abs(mlength);
+    static assert(length.value(meter).approxEqual(12));
+}
 
-/// Utility templates to manipulate quantity types.
+/// Utility templates to manipulate Quantity types.
 template Inverse(Q)
     if (isQuantity!Q)
 {
