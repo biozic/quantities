@@ -96,12 +96,13 @@ Nicolas Sicard
 </big></dt>
 <dd>Contains the symbols of the units and the prefixes that a parser can handle.<br><br>
 
-<dl><dt><big><a name="SymbolList.addUnit"></a>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
+<dl><dt><big><a name="SymbolList.addUnit"></a>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQVariant!Q);
+<br>auto <u>addUnit</u>(Q)(string <i>symbol</i>, Q <i>unit</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Adds (or replaces) a unit in the list<br><br>
 
 </dd>
-<dt><big><a name="SymbolList.addPrefix"></a>auto <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isNumberLike!N);
+<dt><big><a name="SymbolList.addPrefix"></a>auto <u>addPrefix</u>(N)(string <i>symbol</i>, N <i>factor</i>) if (isNumeric!N);
 </big></dt>
 <dd>Adds (or replaces) a prefix in the list<br><br>
 
@@ -111,22 +112,6 @@ Nicolas Sicard
 <dt><big><a name="NumberParser"></a>template <u>NumberParser</u>(N)</big></dt>
 <dd>Type of a function that can parse a string for a numeric value of type N.<br><br>
 
-</dd>
-<dt><big><a name="QuantityParams"></a>struct <u>QuantityParams</u>(N);
-</big></dt>
-<dd>Holds a value and dimensions<br><br>
-
-<dl><dt><big><a name="QuantityParams.value"></a>N <u>value</u>;
-</big></dt>
-<dd>The parsed <u>value</u><br><br>
-
-</dd>
-<dt><big><a name="QuantityParams.dimensions"></a>int[string] <u>dimensions</u>;
-</big></dt>
-<dd>The parsed <u>dimensions</u><br><br>
-
-</dd>
-</dl>
 </dd>
 <dt><big><a name="Parser"></a>struct <u>Parser</u>(N);
 </big></dt>
@@ -171,7 +156,12 @@ Nicolas Sicard
 <dd>A function that can parse a string for a numeric value of type N.<br><br>
 
 </dd>
-<dt><big><a name="Parser.parse"></a>Q <u>parse</u>(Q)(string <i>str</i>);
+<dt><big><a name="Parser.parseVariant"></a>QVariant!N <u>parseVariant</u>(string <i>str</i>);
+</big></dt>
+<dd>Parses a QVariant from a string.<br><br>
+
+</dd>
+<dt><big><a name="Parser.parse"></a>Q <u>parse</u>(Q)(string <i>str</i>) if (isQuantity!Q);
 </big></dt>
 <dd>Parses a quantity of a known type Q from a string.<br><br>
 
