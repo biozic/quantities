@@ -485,7 +485,9 @@ template isQVariant(T)
     len = --meter;
     assert(len.value(meter).approxEqual(0));
     ++len;
-    assert(len.value(meter).approxEqual(1));    
+    assert(len.value(meter).approxEqual(1));
+    len++;
+    assert(len.value(meter).approxEqual(2));
 }
 
 @safe pure unittest // QVariant.opBinary Q*N Q/N
