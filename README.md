@@ -1,5 +1,7 @@
 ## About `quantities`
 
+[![Build Status](https://travis-ci.org/biozic/quantities.svg?branch=master)](https://travis-ci.org/biozic/quantities)
+
 The purpose of this small library is to perform automatic compile-time or
 runtime dimensional checking when dealing with quantities and units.
 
