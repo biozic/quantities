@@ -17,7 +17,7 @@ import std.traits;
 
 version (unittest) import std.math : approxEqual;
 
-alias Dimensions = immutable(int[string]);
+alias Dimensions = int[string];
 
 /++
 QVariant  is analog  to Quantity  except  that the  dimensions are  stored in  a
@@ -42,34 +42,50 @@ struct QVariant(N)
 {
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
-    alias valueType = N;
-
-    private
-    {
-        N _value;
-
-        void checkDim(Dimensions dim) const
-        {
-            enforceEx!DimensionException(equals(dim, dimensions),
-                    "Dimension error: [%s] is not compatible with [%s]"
-                    .format(.toString(dim), .toString(dimensions)));
-        }
-
-        static void checkValueType(T)()
-        {
-            static assert(is(T : valueType), "%s is not implicitly convertible to %s"
-                .format(T.stringof, valueType.stringof));
-        }
-    }
-
+package:
+    N _value;
     Dimensions dimensions;
-
-    package this(N value, Dimensions dim)
+    
+    this(N value, in Dimensions dim) @safe pure
     {
         _value = value;
-        dimensions = dim;
+        dimensions = dim.dimdup;
     }
 
+    // Should be a constructor
+    // Workaround for @@BUG 5770@@
+    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
+    // "Template constructor bypass access check"
+    static QVariant make(T)(T value, in Dimensions dim)
+        if (isNumeric!T)
+    {
+        checkValueType!T;
+        return QVariant(cast(N) value, dim);
+    }
+    
+    // Gets the internal number of this quantity.
+    N rawValue() const
+    {
+        return _value;
+    }
+
+private:
+    void checkDim(in Dimensions dim) const
+    {
+        enforceEx!DimensionException(equals(dim, dimensions),
+            "Dimension error: %s is not compatible with %s"
+            .format(.toString(dim), .toString(dimensions)));
+    }
+    
+    static void checkValueType(T)()
+    {
+        static assert(is(T : valueType), "%s is not implicitly convertible to %s"
+            .format(T.stringof, valueType.stringof));
+    }
+
+public:
+    alias valueType = N;
+    
     // Gets the base unit of this quantity.
     QVariant baseUnit()
     {
@@ -82,7 +98,7 @@ struct QVariant(N)
         if (isQVariant!Q || isQuantity!Q)
     {
         checkValueType!(Q.valueType);
-        _value = other._value;
+        _value = other.rawValue;
         dimensions = other.dimensions;
     }
 
@@ -93,23 +109,6 @@ struct QVariant(N)
         checkValueType!T;
         dimensions = Dimensions.init;
         _value = value;
-    }
-
-    // Should be a constructor
-    // Workaround for @@BUG 5770@@
-    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
-    // "Template constructor bypass access check"
-    package static QVariant make(T)(T value, Dimensions dim)
-        if (isNumeric!T)
-    {
-        checkValueType!T;
-        return QVariant(cast(N) value, dim);
-    }
-
-    // Gets the internal number of this quantity.
-    package N rawValue() const
-    {
-        return _value;
     }
 
     // Implicitly convert a dimensionless value to the value type
@@ -128,7 +127,7 @@ struct QVariant(N)
     {
         checkDim(target.dimensions);
         checkValueType!(Q.valueType);
-        return _value / target._value;
+        return _value / target.rawValue;
     }
     //
     @safe pure unittest
@@ -182,9 +181,9 @@ struct QVariant(N)
     void opAssign(Q)(Q other)
         if (isQVariant!Q || isQuantity!Q)
     {
-        checkDim(other.dimensions);
         checkValueType!(Q.valueType);
-        _value = other._value;
+        dimensions = other.dimensions;
+        _value = other.rawValue;
     }
 
     // Assign from a numeric value if this quantity is dimensionless
@@ -192,8 +191,8 @@ struct QVariant(N)
     void opAssign(T)(T other)
         if (isNumeric!T)
     {
-        checkDim(Dimensions.init);
         checkValueType!T;
+        dimensions = Dimensions.init;
         _value = other;
     }
 
@@ -221,7 +220,7 @@ struct QVariant(N)
     {
         checkDim(other.dimensions);
         checkValueType!(Q.valueType);
-        return QVariant.make(mixin("_value" ~ op ~ "other._value"), dimensions);
+        return QVariant.make(mixin("_value" ~ op ~ "other.rawValue"), dimensions);
     }
 
     // ditto
@@ -254,7 +253,7 @@ struct QVariant(N)
         if ((isQVariant!Q || isQuantity!Q) && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!(Q.valueType);
-        return QVariant.make(mixin("(_value" ~ op ~ "other._value)"),
+        return QVariant.make(mixin("(_value" ~ op ~ "other.rawValue)"),
             binop!op(dimensions, other.dimensions));
     }
 
@@ -290,9 +289,13 @@ struct QVariant(N)
         return QVariant.make(mixin("other" ~ op ~ "_value"), invert(dimensions));
     }
 
+    // ditto
     auto opBinary(string op, T)(T power) const
         if (op == "^^")
     {
+        if (__ctfe)
+            assert(false, "QVariant operator ^^ is not supported at compile-time");
+
         checkValueType!T;
         return QVariant.make(_value^^power, pow(dimensions, power));
     }
@@ -304,7 +307,7 @@ struct QVariant(N)
     {
         checkDim(other.dimensions);
         checkValueType!(Q.valueType);
-        mixin("_value " ~ op ~ "= other._value;");
+        mixin("_value " ~ op ~ "= other.rawValue;");
     }
 
     // Add/sub assign a number to a dimensionless quantity
@@ -322,9 +325,9 @@ struct QVariant(N)
     void opOpAssign(string op, Q)(Q other)
         if ((isQVariant!Q || isQuantity!Q) && (op == "*" || op == "/" || op == "%"))
     {
-        checkDim(Dimensions.init);
         checkValueType!(Q.valueType);
-        mixin("_value" ~ op ~ "= other._value;");
+        mixin("_value" ~ op ~ "= other.rawValue;");
+        dimensions = binop!op(dimensions, other.dimensions);
     }
 
     // Mul/div assign with a number
@@ -342,7 +345,7 @@ struct QVariant(N)
         if (isQVariant!Q || isQuantity!Q)
     {
         checkDim(other.dimensions);
-        return _value == other._value;
+        return _value == other.rawValue;
     }
 
     // Exact equality between a dimensionless quantity and a number
@@ -360,9 +363,9 @@ struct QVariant(N)
         if (isQVariant!Q || isQuantity!Q)
     {
         checkDim(other.dimensions);
-        if (_value == other._value)
+        if (_value == other.rawValue)
             return 0;
-        if (_value < other._value)
+        if (_value < other.rawValue)
             return -1;
         return 1;
     }
@@ -392,7 +395,7 @@ struct QVariant(N)
 /// Converts a Quantity to an equivalent QVariant
 auto qVariant(Q)(Q quantity)
 {
-    return QVariant!(Q.valueType).make(quantity._value, quantity.dimensions);
+    return QVariant!(Q.valueType).make(quantity.rawValue, quantity.dimensions);
 }
 ///
 @safe pure unittest
@@ -447,11 +450,16 @@ template isQVariant(T)
 
 @safe pure unittest // QVariant.opAssign Q = Q
 {
-    import quantities.si : meter;
+    import quantities.si : meter, second, radian;
 
-    QVariant!double length = meter;
-    length = 100 * meter;
-    assert(length.value(meter) == 100);
+    QVariant!double var = meter;
+    var = 100 * meter;
+    assert(var.value(meter) == 100);
+
+    var /= 5 * second;
+    assert(var.value(meter/second).approxEqual(20));
+
+    var = 3.14 * radian;
 }
 
 @safe pure unittest // QVariant.opAssign Q = N
@@ -636,7 +644,6 @@ unittest // Quantity.toString
 
     QVariant!double m = meter;
     assertThrown!DimensionException(m.value(second));
-    assertThrown!DimensionException(m = second);
     assertThrown!DimensionException(m + second);
     assertThrown!DimensionException(m - second);
     assertThrown!DimensionException(m + 1);
@@ -645,10 +652,6 @@ unittest // Quantity.toString
     assertThrown!DimensionException(1 - m);
     assertThrown!DimensionException(m += second);
     assertThrown!DimensionException(m -= second);
-    assertThrown!DimensionException(m *= second);
-    assertThrown!DimensionException(m /= second);
-    assertThrown!DimensionException(m *= meter);
-    assertThrown!DimensionException(m /= meter);
     assertThrown!DimensionException(m += 1);
     assertThrown!DimensionException(m -= 1);
     assertThrown!DimensionException(m == 1);
@@ -657,159 +660,19 @@ unittest // Quantity.toString
     assertThrown!DimensionException(m < 1);
 }
 
-package:
-
-Dimensions freeze(T)(T exp) @trusted
+@safe pure unittest // Compile-time
 {
-    return cast(Dimensions) exp;
-}
+    import quantities.si : meter, second, radian, cubic;
+        
+    enum length = 100 * meter.qVariant;
+    enum time = 5 * second.qVariant;
+    enum speed = length / time;
+    enum val = speed.value(meter/second);
+    static assert(val.approxEqual(20));
 
-// Necessary because of bugs with dim1 == dim2 at compile time.
-bool equals(Dimensions dim1, Dimensions dim2) @safe pure
-{
-    if (dim1.length != dim2.length)
-        return false;
-    
-    foreach (k, v1; dim1)
+    version (none)
     {
-        auto v2 = k in dim2;
-        if (v2 is null || v1 != *v2)
-            return false;
+        enum volume = length^^3;
+        static assert(volume.value(cubic(meter)).approxEqual(1e6));
     }
-    return true;
-}
-@safe pure unittest
-{
-    assert(equals(Dimensions.init, Dimensions.init));
-    assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1, "b": 1], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1, "b": 0], ["a": 1]));
-}
-
-Dimensions removeNull(Dimensions dim) @safe pure
-{
-    int[string] ret;
-    foreach (k, v; dim)
-        if (v != 0)
-            ret[k] = v;
-    return ret.freeze;
-}
-@safe pure unittest
-{
-    auto dim = ["a": 1, "b": 0, "c": 0, "d": 1].freeze;
-    assert(dim.removeNull == ["a": 1, "d": 1].freeze);
-}
-
-Dimensions invert(Dimensions dim) @safe pure
-{
-    int[string] ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        ret[k] = -v;
-    }
-    return ret.freeze;
-}
-@safe pure unittest
-{
-    auto dim = ["a": 5, "b": -2].freeze;
-    assert(dim.invert == ["a": -5, "b": 2].freeze);
-}
-
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
-    if (op == "*")
-{
-    auto ret = (() @trusted => cast(int[string]) dim1.dup)();
-    foreach (k, v2; dim2)
-    {
-        auto v1 = k in ret;
-        if (v1)
-            ret[k] = *v1 + v2;
-        else
-            ret[k] = v2;
-    }
-    return ret.freeze.removeNull;
-}
-@safe pure unittest
-{
-    auto dim1 = ["a": 1, "b": -2].freeze;
-    auto dim2 = ["a": -1, "c": 2].freeze;
-    assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2].freeze);
-}
-
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
-    if (op == "/" || op == "%")
-{
-    return binop!"*"(dim1, dim2.invert);
-}
-@safe pure unittest
-{
-    auto dim1 = ["a": 1, "b": -2].freeze;
-    auto dim2 = ["a": 1, "c": 2].freeze;
-    assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2].freeze);
-}
-
-Dimensions pow(Dimensions dim, int power) @safe pure
-{
-    if (dim.length == 0 || power == 0)
-        return Dimensions.init;
-    
-    int[string] ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        ret[k] = v * power;
-    }
-    return ret.freeze;
-}
-@safe pure unittest
-{
-    auto dim = ["a": 5, "b": -2].freeze;
-    assert(dim.pow(2) == ["a": 10, "b": -4].freeze);
-    assert(dim.pow(0) is null);
-}
-
-Dimensions powinverse(Dimensions dim, int n) @safe pure
-{
-    assert(n != 0);
-    int[string] ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        enforce(v % n == 0, "Dimension error: '%s^%s' is not divisible by %s".format(k, v, n));
-        ret[k] = v / n;
-    }
-    return ret.freeze;
-}
-@safe pure unittest
-{
-    auto dim = ["a": 6, "b": -2].freeze;
-    assert(dim.powinverse(2) == ["a": 3, "b": -1].freeze);
-}
-
-string toString(Dimensions dim) @safe pure
-{
-    import std.algorithm : filter;
-    import std.array : join;
-    import std.conv : to;
-    
-    static string stringize(string symbol, int power) pure
-    {
-        if (power == 0)
-            return null;
-        if (power == 1)
-            return symbol;
-        return symbol ~ "^" ~ to!string(power);
-    }
-    
-    string[] dimstrs;
-    foreach (sym, pow; dim)
-        dimstrs ~= stringize(sym, pow);
-    
-    return "[%-(%s %)]".format(dimstrs.filter!"a !is null");
-}
-unittest
-{
-    assert(["a": 2, "b": -1, "c": 1, "d": 0].toString == "[a^2 b^-1 c]");
 }

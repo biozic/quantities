@@ -81,6 +81,8 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.parsing;
 
 import quantities.base;
+import quantities.qvariant;
+
 import std.array;
 import std.algorithm;
 import std.conv;
@@ -118,17 +120,23 @@ struct SymbolList(N)
 
     package
     {
-        QuantityParams!N[string] units;
+        QVariant!N[string] units;
         N[string] prefixes;
         size_t maxPrefixLength;
     }
 
     /// Adds (or replaces) a unit in the list
     auto addUnit(Q)(string symbol, Q unit)
+        if (isQVariant!Q)
+    {
+        units[symbol] = unit;
+        return this;
+    }
+    /// ditto
+    auto addUnit(Q)(string symbol, Q unit)
         if (isQuantity!Q)
     {
-        units[symbol] = unit.toRT;
-        return this;
+        return addUnit(symbol, unit.qVariant);
     }
 
     /// Adds (or replaces) a prefix in the list
@@ -145,13 +153,6 @@ struct SymbolList(N)
 /// Type of a function that can parse a string for a numeric value of type N.
 alias NumberParser(N) = N function(ref string s) @safe pure;
 
-/// Holds a value and dimensions
-struct QuantityParams(N)
-{
-    N value; /// The parsed value
-    int[string] dimensions; /// The parsed dimensions
-}
-
 /// A quantity parser
 struct Parser(N)
 {
@@ -159,9 +160,18 @@ struct Parser(N)
     NumberParser!N numberParser; /// A function that can parse a string for a numeric value of type N.
 
     /++
+    Parses a QVariant from a string.
+    +/
+    QVariant!N parseVariant(string str)
+    {
+        return parseQuantityImpl!N(str, symbolList, numberParser);
+    }
+
+    /++
     Parses a quantity of a known type Q from a string.
     +/
     Q parse(Q)(string str)
+        if (isQuantity!Q)
     {
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
         
@@ -170,7 +180,7 @@ struct Parser(N)
             equals(Q.dimensions, q.dimensions),
             "Dimension error: [%s] is not compatible with [%s]"
             .format(quantities.base.toString(Q.dimensions), quantities.base.toString(q.dimensions)));
-        return Q.make(q.value);
+        return Q.make(q.rawValue);
     }
 }
 ///
@@ -211,7 +221,7 @@ template compileTimeParser(N, alias symbolList, alias numberParser)
     template compileTimeParser(string str)
     {
         enum q = parseQuantityImpl!N(str, symbolList, &numberParser); 
-        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.value);
+        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.rawValue);
     }
 }
 ///
@@ -247,7 +257,7 @@ class ParsingException : Exception
 
 private:
 
-QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, NumberParser!N parseFun)
+QVariant!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, NumberParser!N parseFun)
 {
     N value;
     try
@@ -256,14 +266,12 @@ QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbol
         value = 1;
 
     if (input.empty)
-        return QuantityParams!N(value, null);
+        return QVariant!N(value, null);
 
     auto tokens = lex(input);
     auto parser = QuantityParser!N(tokens, symbolList);
-    
-    QuantityParams!N result = parser.parseCompoundUnit();
-    result.value *= value;
-    return result;
+
+    return value * parser.parseCompoundUnit();
 }
 
 @safe pure unittest // Test parsing
@@ -283,7 +291,7 @@ QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbol
     static bool checkParse(Q)(string input, Q quantity)
     {
         return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, string))
-            == quantity.toRT;
+            == quantity.qVariant;
     }
 
     assert(checkParse("1    m    ", meter));
@@ -295,6 +303,7 @@ QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbol
     assert(checkParse("1 (m)", meter));
     assert(checkParse("1 (m^-1)", 1 / meter));
     assert(checkParse("1 ((m)^-1)^-1", meter));
+    assert(checkParse("1 (s/(s/m))", meter));
     assert(checkParse("1 m*m", meter * meter));
     assert(checkParse("1 m m", meter * meter));
     assert(checkParse("1 m.m", meter * meter));
@@ -321,17 +330,15 @@ QuantityParams!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbol
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser(N)
 {
-    alias RTQ = QuantityParams!N;
-
     private 
     {
         Token[] tokens;
         SymbolList!N symbolList;
     }
 
-    RTQ parseCompoundUnit(bool inParens = false) @safe pure
+    QVariant!N parseCompoundUnit(bool inParens = false) @safe pure
     {
-        RTQ ret = parseExponentUnit();
+        QVariant!N ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             return ret;
 
@@ -350,17 +357,11 @@ struct QuantityParser(N)
                 cur = tokens.front;
             }
 
-            RTQ rhs = parseExponentUnit();
+            QVariant!N rhs = parseExponentUnit();
             if (multiply)
-            {
-                ret.dimensions = ret.dimensions.binop!"*"(rhs.dimensions);
-                ret.value = ret.value * rhs.value;
-            }
+                ret *= rhs;
             else
-            {
-                ret.dimensions = ret.dimensions.binop!"/"(rhs.dimensions);
-                ret.value = ret.value / rhs.value;
-            }
+                ret /= rhs;
 
             if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
                 break;
@@ -372,9 +373,9 @@ struct QuantityParser(N)
         return ret;
     }
 
-    RTQ parseExponentUnit() @safe pure
+    QVariant!N parseExponentUnit() @safe pure
     {
-        RTQ ret = parseUnit();
+        QVariant!N ret = parseUnit();
 
         if (tokens.empty)
             return ret;
@@ -388,11 +389,12 @@ struct QuantityParser(N)
 
         int n = parseInteger();
 
+        // Cannot use ret ^^ n because of CTFE limitation
         static if (__traits(compiles, std.math.pow(ret.value, n)))
-            ret.value = std.math.pow(ret.value, n);
+            ret._value = std.math.pow(ret.value, n);
         else
             foreach (i; 1 .. n)
-                ret.value *= ret.value;
+                ret._value *= ret._value;
         ret.dimensions = ret.dimensions.pow(n);
         return ret;
     }
@@ -406,9 +408,9 @@ struct QuantityParser(N)
         return n;
     }
 
-    RTQ parseUnit() @safe pure
+    QVariant!N parseUnit() @safe pure
     {
-        RTQ ret;
+        QVariant!N ret;
 
         if (tokens.front.type == Tok.lparen)
         {
@@ -423,7 +425,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    RTQ parsePrefixUnit() @safe pure
+    QVariant!N parsePrefixUnit() @safe pure
     {
         tokens.check(Tok.symbol);
         auto str = tokens.front.slice;
@@ -449,20 +451,13 @@ struct QuantityParser(N)
                     enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
                     uptr = unit in symbolList.units;
                     if (uptr)
-                        return RTQ(*factor * uptr.value, uptr.dimensions);
+                        return *factor * *uptr;
                 }
             }
         }
 
         throw new ParsingException("Unknown unit symbol: '%s'".format(str));
     }
-}
-
-// Convert a compile-time quantity to its runtime equivalent.
-auto toRT(Q)(Q quantity)
-    if (isQuantity!Q)
-{
-    return QuantityParams!(Q.valueType)(quantity.rawValue, Q.dimensions);
 }
 
 enum Tok

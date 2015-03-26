@@ -95,29 +95,59 @@ struct Quantity(N, Dimensions dims)
 {
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
+private:
+    N _value;
+
+    static void checkDim(Dimensions dim)()
+    {
+        static assert(equals(dim, dimensions),
+            "Dimension error: %s is not compatible with %s"
+            .format(.toString(dim), .toString(dimensions)));
+    }
+    
+    static void checkValueType(T)()
+    {
+        static assert(is(T : valueType), "%s is not implicitly convertible to %s"
+            .format(T.stringof, valueType.stringof));
+    }
+
+package:
+    // Should be a constructor
+    // Workaround for @@BUG 5770@@
+    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
+    // "Template constructor bypass access check"
+    package static Quantity make(T)(T value)
+        if (isNumeric!T)
+    {
+        checkValueType!T;
+        Quantity ret;
+        ret._value = value;
+        return ret;
+    }
+    
+    // Gets the internal number of this quantity.
+    package N rawValue() const
+    {
+        return _value;
+    }
+
+public:
     /// The type of the underlying numeric value.
     alias valueType = N;
 
-    package N _value;
+    // Implicitly convert a dimensionless value to the value type
+    static if (!dimensions.length)
+    {
+        // Gets the internal number of this quantity.
+        N get() const
+        {
+            return _value;
+        }
+        alias get this;
+    }
 
     /// The dimensions of the quantity.
     enum dimensions = dims;
-
-    private
-    {
-        static void checkDim(Dimensions dim)()
-        {
-            static assert(equals(dim, dimensions),
-                "Dimension error: [%s] is not compatible with [%s]"
-                .format(.toString(dim), .toString(dimensions)));
-        }
-
-        static void checkValueType(T)()
-        {
-            static assert(is(T : valueType), "%s is not implicitly convertible to %s"
-                .format(T.stringof, valueType.stringof));
-        }
-    }
 
     /// Gets the base unit of this quantity.
     static Quantity baseUnit()
@@ -142,28 +172,6 @@ struct Quantity(N, Dimensions dims)
         checkValueType!T;
         _value = value;
     }
-
-    // Should be a constructor
-    // Workaround for @@BUG 5770@@
-    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
-    // "Template constructor bypass access check"
-    package static Quantity make(T)(T value)
-        if (isNumeric!T)
-    {
-        checkValueType!T;
-        Quantity ret;
-        ret._value = value;
-        return ret;
-    }
-
-    // Gets the internal number of this quantity.
-    package N rawValue() const
-    {
-        return _value;
-    }
-    // Implicitly convert a dimensionless value to the value type
-    static if (!dimensions.length)
-        alias rawValue this;
 
     /++
     Gets the _value of this quantity expressed in the given target unit.
@@ -759,8 +767,13 @@ template prefix(alias factor)
 
 package:
 
+Dimensions dimdup(in Dimensions dim) @trusted pure
+{
+    return cast(Dimensions) dim.dup;
+}
+
 // Necessary because of bugs with dim1 == dim2 at compile time.
-bool equals(Dimensions dim1, Dimensions dim2) @safe pure
+bool equals(in Dimensions dim1, in Dimensions dim2) @safe pure
 {
     if (dim1.length != dim2.length)
         return false;
@@ -782,7 +795,7 @@ bool equals(Dimensions dim1, Dimensions dim2) @safe pure
     assert(!equals(["a": 1, "b": 0], ["a": 1]));
 }
 
-Dimensions removeNull(Dimensions dim) @safe pure
+Dimensions removeNull(in Dimensions dim) @safe pure
 {
     Dimensions ret;
     foreach (k, v; dim)
@@ -796,7 +809,7 @@ Dimensions removeNull(Dimensions dim) @safe pure
     assert(dim.removeNull == ["a": 1, "d": 1]);
 }
 
-Dimensions invert(Dimensions dim) @safe pure
+Dimensions invert(in Dimensions dim) @safe pure
 {
     Dimensions ret;
     foreach (k, v; dim)
@@ -812,10 +825,10 @@ Dimensions invert(Dimensions dim) @safe pure
     assert(dim.invert == ["a": -5, "b": 2]);
 }
 
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
+Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) @safe pure
     if (op == "*")
 {
-    auto ret = dim1.dup;
+    auto ret = dim1.dimdup;
     foreach (k, v2; dim2)
     {
         auto v1 = k in ret;
@@ -833,7 +846,7 @@ Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
     assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
 }
 
-Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
+Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) @safe pure
     if (op == "/" || op == "%")
 {
     return binop!"*"(dim1, dim2.invert);
@@ -845,7 +858,7 @@ Dimensions binop(string op)(Dimensions dim1, Dimensions dim2) @safe pure
     assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
 }
 
-Dimensions pow(Dimensions dim, int power) @safe pure
+Dimensions pow(in Dimensions dim, int power) @safe pure
 {
     if (dim.length == 0 || power == 0)
         return Dimensions.init;
@@ -865,7 +878,7 @@ Dimensions pow(Dimensions dim, int power) @safe pure
     assert(dim.pow(0) is null);
 }
 
-Dimensions powinverse(Dimensions dim, int n) @safe pure
+Dimensions powinverse(in Dimensions dim, int n) @safe pure
 {
     assert(n != 0);
     Dimensions ret;
@@ -883,7 +896,7 @@ Dimensions powinverse(Dimensions dim, int n) @safe pure
     assert(dim.powinverse(2) == ["a": 3, "b": -1]);
 }
 
-string toString(Dimensions dim) @safe pure
+string toString(in Dimensions dim) @safe pure
 {
     import std.algorithm : filter;
     import std.array : join;
