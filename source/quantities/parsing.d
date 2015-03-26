@@ -266,7 +266,7 @@ QVariant!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, 
         value = 1;
 
     if (input.empty)
-        return QVariant!N(value, null);
+        return QVariant!N.make(value, null);
 
     auto tokens = lex(input);
     auto parser = QuantityParser!N(tokens, symbolList);

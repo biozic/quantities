@@ -42,16 +42,30 @@ struct QVariant(N)
 {
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
-package:
-    N _value;
-    Dimensions dimensions;
-    
+private:
     this(N value, in Dimensions dim) @safe pure
     {
         _value = value;
         dimensions = dim.dimdup;
     }
-
+    
+    void checkDim(in Dimensions dim) const
+    {
+        enforceEx!DimensionException(equals(dim, dimensions),
+            "Dimension error: %s is not compatible with %s"
+            .format(.toString(dim), .toString(dimensions)));
+    }
+    
+    static void checkValueType(T)()
+    {
+        static assert(is(T : valueType), "%s is not implicitly convertible to %s"
+            .format(T.stringof, valueType.stringof));
+    }
+    
+package:
+    N _value;
+    Dimensions dimensions;
+    
     // Should be a constructor
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
@@ -67,20 +81,6 @@ package:
     N rawValue() const
     {
         return _value;
-    }
-
-private:
-    void checkDim(in Dimensions dim) const
-    {
-        enforceEx!DimensionException(equals(dim, dimensions),
-            "Dimension error: %s is not compatible with %s"
-            .format(.toString(dim), .toString(dimensions)));
-    }
-    
-    static void checkValueType(T)()
-    {
-        static assert(is(T : valueType), "%s is not implicitly convertible to %s"
-            .format(T.stringof, valueType.stringof));
     }
 
 public:
