@@ -40,7 +40,7 @@ See_Also:
 +/
 struct QVariant(N)
 {
-    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
     alias valueType = N;
 
@@ -88,7 +88,7 @@ struct QVariant(N)
 
     // Creates a new dimensionless quantity from a number
     this(T)(T value)
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkValueType!T;
         dimensions = Dimensions.init;
@@ -100,7 +100,7 @@ struct QVariant(N)
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
     // "Template constructor bypass access check"
     package static QVariant make(T)(T value, Dimensions dim)
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkValueType!T;
         return QVariant(cast(N) value, dim);
@@ -168,7 +168,7 @@ struct QVariant(N)
 
     // Cast a dimensionless quantity to a numeric type
     T opCast(T)() const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim(Dimensions.init);
         checkValueType!T;
@@ -190,7 +190,7 @@ struct QVariant(N)
     // Assign from a numeric value if this quantity is dimensionless
     // ditto
     void opAssign(T)(T other)
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim(Dimensions.init);
         checkValueType!T;
@@ -234,7 +234,7 @@ struct QVariant(N)
     // Add (or substract) a dimensionless quantity and a number
     // ditto
     auto opBinary(string op, T)(T other) const
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim(Dimensions.init);
         checkValueType!T;
@@ -243,7 +243,7 @@ struct QVariant(N)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
@@ -268,7 +268,7 @@ struct QVariant(N)
     // Multiply or divide a quantity by a number
     // ditto
     auto opBinary(string op, T)(T other) const
-        if (isNumberLike!T && (op == "*" || op == "/" || op == "%"))
+        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
         return QVariant.make(mixin("_value" ~ op ~ "other"), dimensions);
@@ -276,7 +276,7 @@ struct QVariant(N)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && op == "*")
+        if (isNumeric!T && op == "*")
     {
         checkValueType!T;
         return this * other;
@@ -284,7 +284,7 @@ struct QVariant(N)
 
     // ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && (op == "/" || op == "%"))
+        if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
         return QVariant.make(mixin("other" ~ op ~ "_value"), invert(dimensions));
@@ -310,7 +310,7 @@ struct QVariant(N)
     // Add/sub assign a number to a dimensionless quantity
     // ditto
     void opOpAssign(string op, T)(T other)
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim(Dimensions.init);
         checkValueType!T;
@@ -330,7 +330,7 @@ struct QVariant(N)
     // Mul/div assign with a number
     // ditto
     void opOpAssign(string op, T)(T other)
-        if (isNumberLike!T && (op == "*" || op == "/" || op == "%"))
+        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
         mixin("_value" ~ op ~ "= other;");
@@ -348,7 +348,7 @@ struct QVariant(N)
     // Exact equality between a dimensionless quantity and a number
     // ditto
     bool opEquals(T)(T other) const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim(Dimensions.init);
         return _value == other;
@@ -370,7 +370,7 @@ struct QVariant(N)
     // Comparison between a dimensionless quantity and a number
     // ditto
     int opCmp(T)(T other) const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim(Dimensions.init);
         if (_value < other)

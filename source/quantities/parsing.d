@@ -114,7 +114,7 @@ Contains the symbols of the units and the prefixes that a parser can handle.
 +/
 struct SymbolList(N)
 {
-    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
     package
     {
@@ -133,7 +133,7 @@ struct SymbolList(N)
 
     /// Adds (or replaces) a prefix in the list
     auto addPrefix(N)(string symbol, N factor)
-        if (isNumberLike!N)
+        if (isNumeric!N)
     {
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)

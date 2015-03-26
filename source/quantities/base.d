@@ -19,47 +19,12 @@ version (unittest)
     // import std.conv : text;
 }
 
-version (none) // ICE and BUGS with commented lines
-{
-    enum isNumberLike(N) = !isQuantity!N &&
-        is(typeof({
-                    Unqual!N n, n1;
-                    n = 1;
-                    n = +n1;
-                    n = -n1;
-                    n = n1 + n;
-                    n = n1 - n;
-//                    n = n1 * n;
-//                    n = n1 / n;
-                    n += n1;
-                    n -= n1;
-                    n *= n1;
-                    n /= n1;
-//                    bool b = n == n;
-                    bool b = n < n1;
-                }));
-
-    version (unittest)
-    {
-        static assert(isNumberLike!double);
-        static assert(isNumberLike!(const(double)));
-        static assert(isNumberLike!int);
-        static assert(!isNumberLike!string);
-
-        import std.bigint, std.typecons;
-        static assert(isNumberLike!BigInt);
-        static assert(isNumberLike!(RefCounted!real));
-    }
-}
-else
-    alias isNumberLike = isNumeric;
-
 alias Dimensions = int[string];
 
 /++
 A quantity  that can  be represented as  the product  of a number  and a  set of
 dimensions. The  number is  stored internally as  a member of  type N,  which is
-enforced to be a built-in numeric  type (isNumberLike!N is true). The dimensions
+enforced to be a built-in numeric  type (isNumeric!N is true). The dimensions
 are  stored as  an  associative array  where  keys are  symbols  and values  are
 integral powers.
 For  instance  length and  speed quantities can be stored as:
@@ -128,7 +93,7 @@ Params:
 +/
 struct Quantity(N, Dimensions dims)
 {
-    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
     /// The type of the underlying numeric value.
     alias valueType = N;
@@ -172,7 +137,7 @@ struct Quantity(N, Dimensions dims)
 
     // Creates a new dimensionless quantity from a number
     this(T)(T value)
-        if (isNumberLike!T && dimensions.length == 0)
+        if (isNumeric!T && dimensions.length == 0)
     {
         checkValueType!T;
         _value = value;
@@ -183,7 +148,7 @@ struct Quantity(N, Dimensions dims)
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
     // "Template constructor bypass access check"
     package static Quantity make(T)(T value)
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkValueType!T;
         Quantity ret;
@@ -252,7 +217,7 @@ struct Quantity(N, Dimensions dims)
 
     // Cast a dimensionless quantity to a numeric type
     T opCast(T)() const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -272,7 +237,7 @@ struct Quantity(N, Dimensions dims)
     // Assign from a numeric value if this quantity is dimensionless
     /// ditto
     void opAssign(T)(T other)
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -309,7 +274,7 @@ struct Quantity(N, Dimensions dims)
     // Add (or substract) a dimensionless quantity and a number
     /// ditto
     auto opBinary(string op, T)(T other) const
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -318,7 +283,7 @@ struct Quantity(N, Dimensions dims)
 
     /// ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
@@ -336,7 +301,7 @@ struct Quantity(N, Dimensions dims)
     // Multiply or divide a quantity by a number
     /// ditto
     auto opBinary(string op, T)(T other) const
-        if (isNumberLike!T && (op == "*" || op == "/" || op == "%"))
+        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
         return Quantity.make(mixin("_value" ~ op ~ "other"));
@@ -344,7 +309,7 @@ struct Quantity(N, Dimensions dims)
 
     /// ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && op == "*")
+        if (isNumeric!T && op == "*")
     {
         checkValueType!T;
         return this * other;
@@ -352,7 +317,7 @@ struct Quantity(N, Dimensions dims)
 
     /// ditto
     auto opBinaryRight(string op, T)(T other) const
-        if (isNumberLike!T && (op == "/" || op == "%"))
+        if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
         return Quantity!(N, invert(dimensions)).make(mixin("other" ~ op ~ "_value"));
@@ -377,7 +342,7 @@ struct Quantity(N, Dimensions dims)
     // Add/sub assign a number to a dimensionless quantity
     /// ditto
     void opOpAssign(string op, T)(T other)
-        if (isNumberLike!T && (op == "+" || op == "-"))
+        if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -397,7 +362,7 @@ struct Quantity(N, Dimensions dims)
     // Mul/div assign with a number
     /// ditto
     void opOpAssign(string op, T)(T other)
-        if (isNumberLike!T && (op == "*" || op == "/" || op == "%"))
+        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
         mixin("_value" ~ op ~ "= other;");
@@ -415,7 +380,7 @@ struct Quantity(N, Dimensions dims)
     // Exact equality between a dimensionless quantity and a number
     /// ditto
     bool opEquals(T)(T other) const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkValueType!T;
         checkDim!(Dimensions.init);
@@ -438,7 +403,7 @@ struct Quantity(N, Dimensions dims)
     // Comparison between a dimensionless quantity and a number
     /// ditto
     int opCmp(T)(T other) const
-        if (isNumberLike!T)
+        if (isNumeric!T)
     {
         checkValueType!T;
         checkDim!(Dimensions.init);
@@ -739,7 +704,7 @@ template isQuantity(T)
 /// Creates a new monodimensional unit.
 template unit(N, string symbol)
 {
-    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
     enum N one = 1;
     enum unit = Quantity!(N, [symbol: 1]).make(one);
 }
@@ -775,7 +740,7 @@ Creates a new prefix function that mutlpy a Quantity by _factor factor.
 template prefix(alias factor)
 {
     alias N = typeof(factor);
-    static assert(isNumberLike!N, "Incompatible type: " ~ N.stringof);
+    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
     auto prefix(Q)(Q base)
         if (isQuantity!Q)
