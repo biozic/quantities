@@ -1,7 +1,7 @@
 {
     "name": "quantities",
-    "description": "Dimensional analysis of units and quantities at compile time",
-    "copyright": "Copyright © 2013-2014, Nicolas Sicard",
+    "description": "A library to work with quantities and units",
+    "copyright": "Copyright © 2013-2015, Nicolas Sicard",
     "authors": ["Nicolas Sicard"],
     "homepage": "https://github.com/biozic/quantities",
     "license": "BSL-1.0",
