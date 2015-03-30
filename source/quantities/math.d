@@ -47,18 +47,18 @@ auto sqrt(Q)(Q quantity)
 
 pure nothrow @nogc @safe unittest
 {
-    enum meter = unit!(double, "L");
-    enum surface = 25 * square(meter);
-    enum side = sqrt(surface);
-    static assert(side.value(meter).approxEqual(5));
+    auto meter = unit!(double, "L");
+    auto surface = 25 * square(meter);
+    auto side = sqrt(surface);
+    assert(side.value(meter).approxEqual(5));
 }
 
 pure @safe unittest
 {
-    enum meter = unit!(double, "L").qVariant;
-    enum surface = 25 * square(meter);
-    enum side = sqrt(surface);
-    static assert(side.value(meter).approxEqual(5));
+    auto meter = unit!(double, "L").qVariant;
+    auto surface = 25 * square(meter);
+    auto side = sqrt(surface);
+    assert(side.value(meter).approxEqual(5));
 }
 
 /// ditto
@@ -91,17 +91,17 @@ auto cbrt(Q)(Q quantity)
 
 @safe /+pure+/ /+nothrow+/ @nogc unittest
 {
-    enum meter = unit!(double, "L");
-    enum vol = 27 * cubic(meter);
-    auto side = cbrt(vol); // Doesn't work with CTFE
+    auto meter = unit!(double, "L");
+    auto vol = 27 * cubic(meter);
+    auto side = cbrt(vol);
     assert(side.value(meter).approxEqual(3));
 }
 
 @safe /+pure+/ unittest
 {
-    enum meter = unit!(double, "L").qVariant;
-    enum vol = 27 * cubic(meter);
-    auto side = cbrt(vol); // Doesn't work with CTFE
+    auto meter = unit!(double, "L").qVariant;
+    auto vol = 27 * cubic(meter);
+    auto side = cbrt(vol);
     assert(side.value(meter).approxEqual(3));
 }
 
@@ -135,17 +135,17 @@ auto nthRoot(int n, Q)(Q quantity)
 
 pure nothrow @nogc @safe unittest
 {
-    enum meter = unit!(double, "L");
-    enum x = 16 * pow!4(meter);
-    auto side = nthRoot!4(x);  // Doesn't work with CTFE
+    auto meter = unit!(double, "L");
+    auto x = 16 * pow!4(meter);
+    auto side = nthRoot!4(x);
     assert(side.value(meter).approxEqual(2));
 }
 
 pure @safe unittest
 {
-    enum meter = unit!(double, "L").qVariant;
-    enum x = 16 * pow!4(meter);
-    auto side = nthRoot!4(x); // Doesn't work with CTFE
+    auto meter = unit!(double, "L").qVariant;
+    auto x = 16 * pow!4(meter);
+    auto side = nthRoot!4(x);
     assert(side.value(meter).approxEqual(2));
 }
 
@@ -165,18 +165,18 @@ Q abs(Q)(Q quantity)
 
 pure nothrow @nogc @safe unittest
 {
-    enum meter = unit!(double, "L");
-    enum mlength = -12 * meter;
-    enum length = abs(mlength);
-    static assert(length.value(meter).approxEqual(12));
+    auto meter = unit!(double, "L");
+    auto mlength = -12 * meter;
+    auto length = abs(mlength);
+    assert(length.value(meter).approxEqual(12));
 }
 
 pure @safe unittest
 {
-    enum meter = unit!(double, "L").qVariant;
-    enum mlength = -12 * meter;
-    enum length = abs(mlength);
-    static assert(length.value(meter).approxEqual(12));
+    auto meter = unit!(double, "L").qVariant;
+    auto mlength = -12 * meter;
+    auto length = abs(mlength);
+    assert(length.value(meter).approxEqual(12));
 }
 
 /// Utility templates to manipulate Quantity types.

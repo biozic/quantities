@@ -188,30 +188,18 @@ pure @safe unittest
 {
     // From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
 
-    enum century = unit!(real, "century");
+    auto century = unit!(real, "century");
     alias LectureLength = typeof(century);
     
-    enum symbolList = SymbolList!real()
+    auto symbolList = SymbolList!real()
         .addUnit("Cy", century)
         .addPrefix("µ", 1e-6L);
 
-    // At runtime
-    {
-        import std.conv;
-        auto parser = Parser!real(symbolList, &std.conv.parse!(real, string));
+    import std.conv;
+    auto parser = Parser!real(symbolList, &std.conv.parse!(real, string));
 
-        auto timing = 1e-6L * century;
-        assert(timing == parser.parse!LectureLength("1 µCy"));
-    }
-
-    // At compile-time
-    {
-        import std.conv;
-        enum parser = Parser!real(symbolList, &std.conv.parse!(real, string));
-        
-        enum timing = 1e-6L * century;
-        static assert(timing == parser.parse!LectureLength("1 µCy"));
-    }
+    auto timing = 1e-6L * century;
+    assert(timing == parser.parse!LectureLength("1 µCy"));
 }
 
 /// Creates a compile-time parser that parses a string for a quantity and
@@ -276,19 +264,20 @@ QVariant!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, 
 
 pure @safe unittest // Test parsing
 {
-    enum meter = unit!(double, "L");
-    enum kilogram = unit!(double, "M");
-    enum second = unit!(double, "T");
-    enum one = meter / meter;
+    auto meter = unit!(double, "L");
+    auto kilogram = unit!(double, "M");
+    auto second = unit!(double, "T");
+    auto one = meter / meter;
+    auto unknown = one;
 
-    enum siSL = SymbolList!double()
+    auto siSL = SymbolList!double()
         .addUnit("m", meter)
         .addUnit("kg", kilogram)
         .addUnit("s", second)
         .addPrefix("c", 0.01L)
         .addPrefix("m", 0.001L);
 
-    static bool checkParse(Q)(string input, Q quantity)
+    bool checkParse(Q)(string input, Q quantity)
     {
         return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, string))
             == quantity.qVariant;
