@@ -1,4 +1,4 @@
-﻿/++
+/++
 This module defines common math operations on quantities.
 
 Copyright: Copyright 2013-2015, Nicolas Sicard
@@ -45,7 +45,7 @@ auto sqrt(Q)(Q quantity)
     return Q.make(std.math.sqrt(quantity.rawValue), powinverse(quantity.dimensions, 2));
 }
 
-unittest
+pure nothrow @nogc @safe unittest
 {
     enum meter = unit!(double, "L");
     enum surface = 25 * square(meter);
@@ -53,7 +53,7 @@ unittest
     static assert(side.value(meter).approxEqual(5));
 }
 
-unittest
+pure @safe unittest
 {
     enum meter = unit!(double, "L").qVariant;
     enum surface = 25 * square(meter);
@@ -89,7 +89,7 @@ auto cbrt(Q)(Q quantity)
     return Q.make(std.math.cbrt(quantity.rawValue), powinverse(quantity.dimensions, 3));
 }
 
-unittest
+@safe /+pure+/ /+nothrow+/ @nogc unittest
 {
     enum meter = unit!(double, "L");
     enum vol = 27 * cubic(meter);
@@ -97,7 +97,7 @@ unittest
     assert(side.value(meter).approxEqual(3));
 }
 
-unittest
+@safe /+pure+/ unittest
 {
     enum meter = unit!(double, "L").qVariant;
     enum vol = 27 * cubic(meter);
@@ -133,7 +133,7 @@ auto nthRoot(int n, Q)(Q quantity)
     return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), powinverse(quantity.dimensions, n));
 }
 
-unittest
+pure nothrow @nogc @safe unittest
 {
     enum meter = unit!(double, "L");
     enum x = 16 * pow!4(meter);
@@ -141,7 +141,7 @@ unittest
     assert(side.value(meter).approxEqual(2));
 }
 
-unittest
+pure @safe unittest
 {
     enum meter = unit!(double, "L").qVariant;
     enum x = 16 * pow!4(meter);
@@ -163,7 +163,7 @@ Q abs(Q)(Q quantity)
     return Q.make(std.math.fabs(quantity.rawValue), quantity.dimensions);
 }
 
-unittest
+pure nothrow @nogc @safe unittest
 {
     enum meter = unit!(double, "L");
     enum mlength = -12 * meter;
@@ -171,7 +171,7 @@ unittest
     static assert(length.value(meter).approxEqual(12));
 }
 
-unittest
+pure @safe unittest
 {
     enum meter = unit!(double, "L").qVariant;
     enum mlength = -12 * meter;
@@ -214,7 +214,7 @@ template Cubic(Q)
     alias Cubic = typeof(Q.init * Q.init * Q.init);
 }
 
-unittest
+pure nothrow @nogc @safe unittest
 {
     import quantities.si;
 

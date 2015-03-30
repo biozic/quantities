@@ -184,7 +184,7 @@ public:
         return _value / target._value;
     }
     ///
-    @safe pure unittest
+    pure nothrow @nogc @safe unittest
     {
         import quantities.si : minute, hour;
 
@@ -203,7 +203,7 @@ public:
         return ret;
     }
     ///
-    @safe pure unittest
+    pure nothrow @nogc @safe unittest
     {
         import quantities.si : minute, second, meter;
 
@@ -431,14 +431,14 @@ public:
     }
 }
 
-@safe pure unittest // Quantity.baseUnit
+pure nothrow @nogc @safe unittest // Quantity.baseUnit
 {
     import quantities.si : minute, second;
 
     assert(minute.baseUnit == second);
 }
 
-@safe pure unittest // Quantity constructor
+pure nothrow @nogc @safe unittest // Quantity constructor
 {
     import quantities.si : minute, second, radian;
 
@@ -450,15 +450,15 @@ public:
     assert(angle.value(radian) == 3.14);
 }
 
-@safe pure unittest // QVariant.alias this
+pure nothrow @nogc @safe unittest // QVariant.alias this
 {
     import quantities.si : radian;
 
-    static double foo(double d) { return d; }
+    static double foo(double d) nothrow @nogc { return d; }
     assert(foo(2 * radian) == 2);
 }
 
-@safe pure unittest // Quantity.opCast
+pure nothrow @nogc @safe unittest // Quantity.opCast
 {
     import quantities.si : second, radian;
 
@@ -468,7 +468,7 @@ public:
     assert(cast(double) angle == 12);
 }
 
-@safe pure unittest // Quantity.opAssign Q = Q
+pure nothrow @nogc @safe unittest // Quantity.opAssign Q = Q
 {
     import quantities.si : meter, radian;
 
@@ -480,7 +480,7 @@ public:
     assert(angle.value(radian) == 2);
 }
 
-@safe pure unittest // Quantity.opUnary +Q -Q ++Q --Q
+pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
     import quantities.si : meter;
 
@@ -497,7 +497,7 @@ public:
     assert(len.value(meter).approxEqual(1));    
 }
 
-@safe pure unittest // Quantity.opBinary Q*N Q/N
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
 {
     import quantities.si : second;
 
@@ -507,7 +507,7 @@ public:
     assert(time2.value(second) == 1.0/2);
 }
 
-@safe pure unittest // Quantity.opBinary Q*Q Q/Q
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
 {
     import quantities.si : meter, minute, second;
 
@@ -526,7 +526,7 @@ public:
     assert(y.rawValue == 60);
 }
 
-@safe pure unittest // Quantity.opBinaryRight N*Q
+pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
 {
     import quantities.si : meter;
 
@@ -534,7 +534,7 @@ public:
     assert(length == meter * 100);
 }
 
-@safe pure unittest // Quantity.opBinaryRight N/Q
+pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
 {
     import quantities.si : meter;
 
@@ -542,7 +542,7 @@ public:
     assert(x.value(1/meter) == 1.0/2);
 }
 
-@safe pure unittest // Quantity.opBinary Q%Q Q%N N%Q
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
     import quantities.si : meter;
 
@@ -553,7 +553,7 @@ public:
     assert(y2.value(meter).approxEqual(8.1));
 }
 
-@safe pure unittest // Quantity.opBinary Q+Q Q-Q
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
 {
     import quantities.si : meter;
     
@@ -563,7 +563,7 @@ public:
     assert(length2.value(meter) == 1);
 }
 
-@safe pure unittest // Quantity.opBinary Q+N Q-N
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
     import quantities.si : radian;
     
@@ -575,7 +575,7 @@ public:
     assert(angle.value(radian) == 2);
 }
 
-@safe pure unittest // Quantity.opOpAssign Q+=Q Q-=Q
+pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
     import quantities.si : second;
 
@@ -586,7 +586,7 @@ public:
     assert(time.value(second).approxEqual(20));
 }
 
-@safe pure unittest // Quantity.opBinary Q+N Q-N
+pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
     import quantities.si : radian;
     
@@ -597,7 +597,7 @@ public:
     assert(angle.value(radian) == 1);
 }
 
-@safe pure unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
+pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     import quantities.si : second;
 
@@ -610,7 +610,7 @@ public:
     assert(time.value(second).approxEqual(1));
 }
 
-@safe pure unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
+pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     import quantities.si : meter, second;
     
@@ -623,7 +623,7 @@ public:
     assert(time.value(second).approxEqual(1));
 }
 
-@safe pure unittest // Quantity.opEquals
+pure nothrow @nogc @safe unittest // Quantity.opEquals
 {
     import quantities.si : radian, minute, second;
 
@@ -631,7 +631,7 @@ public:
     assert(1 * radian == 1);
 }
 
-@safe pure unittest // Quantity.opCmp
+pure nothrow @nogc @safe unittest // Quantity.opCmp
 {
     import quantities.si : minute, second;
 
@@ -642,7 +642,7 @@ public:
     assert(hour >= hour);
 }
 
-@safe pure unittest // Quantity.opCmp
+pure nothrow @nogc @safe unittest // Quantity.opCmp
 {
     import quantities.si : radian;
     
@@ -662,7 +662,7 @@ unittest // Quantity.toString
     assert(length.text == "12 [L]", length.text);
 }
 
-@safe pure unittest // Compilation errors for incompatible dimensions
+pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensions
 {
     import quantities.si : meter, second;
 
@@ -689,7 +689,7 @@ unittest // Quantity.toString
     static assert(!__traits(compiles, m < 1));
 }
 
-@safe pure unittest // immutable Quantity
+pure nothrow @nogc @safe unittest // immutable Quantity
 {
     import quantities.si : meter, minute, second;
 
@@ -717,7 +717,7 @@ template unit(N, string symbol)
     enum unit = Quantity!(N, [symbol: 1]).make(one);
 }
 ///
-@safe pure unittest
+pure nothrow @nogc @safe unittest
 {
     auto euro = unit!(double, "C"); // C for Currency
     assert(isQuantity!(typeof(euro)));
@@ -732,7 +732,7 @@ template AreConsistent(Q1, Q2)
     enum AreConsistent = Q1.dimensions == Q2.dimensions;
 }
 ///
-@safe pure unittest
+pure nothrow @nogc @safe unittest
 {
     import quantities.si : meter, second;
 
@@ -740,7 +740,6 @@ template AreConsistent(Q1, Q2)
     alias Velocity = typeof((1/second * meter));
     static assert(AreConsistent!(Speed, Velocity));
 }
-
 
 /++
 Creates a new prefix function that mutlpy a Quantity by _factor factor.
@@ -757,7 +756,7 @@ template prefix(alias factor)
     }
 }
 ///
-@safe pure unittest
+pure nothrow @nogc @safe unittest
 {
     import quantities.si : meter;
 
@@ -773,7 +772,7 @@ Dimensions dimdup(in Dimensions dim) @trusted pure
 }
 
 // Necessary because of bugs with dim1 == dim2 at compile time.
-bool equals(in Dimensions dim1, in Dimensions dim2) @safe pure
+bool equals(in Dimensions dim1, in Dimensions dim2) pure @safe
 {
     if (dim1.length != dim2.length)
         return false;
@@ -786,7 +785,7 @@ bool equals(in Dimensions dim1, in Dimensions dim2) @safe pure
     }
     return true;
 }
-@safe pure unittest
+pure @safe unittest
 {
     assert(equals(Dimensions.init, Dimensions.init));
     assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
@@ -795,7 +794,7 @@ bool equals(in Dimensions dim1, in Dimensions dim2) @safe pure
     assert(!equals(["a": 1, "b": 0], ["a": 1]));
 }
 
-Dimensions removeNull(in Dimensions dim) @safe pure
+Dimensions removeNull(in Dimensions dim) pure @safe
 {
     Dimensions ret;
     foreach (k, v; dim)
@@ -803,13 +802,13 @@ Dimensions removeNull(in Dimensions dim) @safe pure
             ret[k] = v;
     return ret;
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim = ["a": 1, "b": 0, "c": 0, "d": 1];
     assert(dim.removeNull == ["a": 1, "d": 1]);
 }
 
-Dimensions invert(in Dimensions dim) @safe pure
+Dimensions invert(in Dimensions dim) pure @safe
 {
     Dimensions ret;
     foreach (k, v; dim)
@@ -819,13 +818,13 @@ Dimensions invert(in Dimensions dim) @safe pure
     }
     return ret;
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim = ["a": 5, "b": -2];
     assert(dim.invert == ["a": -5, "b": 2]);
 }
 
-Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) @safe pure
+Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) pure @safe
     if (op == "*")
 {
     auto ret = dim1.dimdup;
@@ -839,26 +838,26 @@ Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) @safe pure
     }
     return ret.removeNull;
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim1 = ["a": 1, "b": -2];
     auto dim2 = ["a": -1, "c": 2];
     assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
 }
 
-Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) @safe pure
+Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) pure @safe
     if (op == "/" || op == "%")
 {
     return binop!"*"(dim1, dim2.invert);
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim1 = ["a": 1, "b": -2];
     auto dim2 = ["a": 1, "c": 2];
     assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
 }
 
-Dimensions pow(in Dimensions dim, int power) @safe pure
+Dimensions pow(in Dimensions dim, int power) pure @safe
 {
     if (dim.length == 0 || power == 0)
         return Dimensions.init;
@@ -871,14 +870,14 @@ Dimensions pow(in Dimensions dim, int power) @safe pure
     }
     return ret;
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim = ["a": 5, "b": -2];
     assert(dim.pow(2) == ["a": 10, "b": -4]);
     assert(dim.pow(0) is null);
 }
 
-Dimensions powinverse(in Dimensions dim, int n) @safe pure
+Dimensions powinverse(in Dimensions dim, int n) pure @safe
 {
     assert(n != 0);
     Dimensions ret;
@@ -890,13 +889,13 @@ Dimensions powinverse(in Dimensions dim, int n) @safe pure
     }
     return ret;
 }
-@safe pure unittest
+pure @safe unittest
 {
     auto dim = ["a": 6, "b": -2];
     assert(dim.powinverse(2) == ["a": 3, "b": -1]);
 }
 
-string toString(in Dimensions dim) @safe pure
+string toString(in Dimensions dim) pure @safe
 {
     import std.algorithm : filter;
     import std.array : join;

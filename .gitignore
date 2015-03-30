@@ -6,3 +6,4 @@ TODO.txt
 dub.selections.json
 libquantities.a
 run-examples.sh
+*.lst

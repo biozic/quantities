@@ -43,13 +43,13 @@ struct QVariant(N)
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
 private:
-    this(N value, in Dimensions dim) @safe pure
+    this(N value, in Dimensions dim) pure @safe
     {
         _value = value;
         dimensions = dim.dimdup;
     }
     
-    void checkDim(in Dimensions dim) const
+    void checkDim(in Dimensions dim) const pure @safe
     {
         enforceEx!DimensionException(equals(dim, dimensions),
             "Dimension error: %s is not compatible with %s"
@@ -78,7 +78,7 @@ package:
     }
     
     // Gets the internal number of this quantity.
-    N rawValue() const
+    N rawValue() const pure nothrow @nogc @safe
     {
         return _value;
     }
@@ -87,7 +87,7 @@ public:
     alias valueType = N;
     
     // Gets the base unit of this quantity.
-    QVariant baseUnit()
+    QVariant baseUnit() pure @safe
     {
         N one = 1;
         return QVariant.make(one, dimensions.dup);
@@ -112,7 +112,7 @@ public:
     }
 
     // Implicitly convert a dimensionless value to the value type
-    N get() const
+    N get() const pure @safe
     {
         checkDim(Dimensions.init);
         return _value;
@@ -130,7 +130,7 @@ public:
         return _value / target.rawValue;
     }
     //
-    @safe pure unittest
+    pure @safe unittest
     {
         import quantities.si : minute, hour;
 
@@ -148,7 +148,7 @@ public:
         return equals(dimensions, other.dimensions);
     }
     //
-    @safe pure unittest
+    pure @safe unittest
     {
         import quantities.si : minute, second, meter;
 
@@ -398,7 +398,7 @@ auto qVariant(Q)(Q quantity)
     return QVariant!(Q.valueType).make(quantity.rawValue, quantity.dimensions);
 }
 ///
-@safe pure unittest
+pure @safe unittest
 {
     import quantities.si : meter, second;
 
@@ -417,7 +417,7 @@ template isQVariant(T)
         enum isQVariant = false;
 }
 
-@safe pure unittest // QVariant constructor
+pure @safe unittest // QVariant constructor
 {
     import quantities.si : minute, second, radian;
 
@@ -429,7 +429,7 @@ template isQVariant(T)
     assert(angle.value(radian) == 2);
 }
 
-@safe pure unittest // QVariant.alias this
+pure @safe unittest // QVariant.alias this
 {
     import quantities.si : radian;
 
@@ -437,7 +437,7 @@ template isQVariant(T)
     assert(foo(2 * qVariant(radian)) == 2);
 }
 
-@safe pure unittest // QVariant.opCast
+pure @safe unittest // QVariant.opCast
 {
     import quantities.si : meter, radian, Angle;
    
@@ -448,7 +448,7 @@ template isQVariant(T)
     assert(cast(double) angle2 == 12);
 }
 
-@safe pure unittest // QVariant.opAssign Q = Q
+pure @safe unittest // QVariant.opAssign Q = Q
 {
     import quantities.si : meter, second, radian;
 
@@ -462,7 +462,7 @@ template isQVariant(T)
     var = 3.14 * radian;
 }
 
-@safe pure unittest // QVariant.opAssign Q = N
+pure @safe unittest // QVariant.opAssign Q = N
 {
     import quantities.si : radian;
     
@@ -471,7 +471,7 @@ template isQVariant(T)
     assert(angle.value(radian) == 2);
 }
 
-@safe pure unittest // QVariant.opUnary +Q -Q ++Q --Q
+pure @safe unittest // QVariant.opUnary +Q -Q ++Q --Q
 {
     import quantities.si : meter;
 
@@ -490,7 +490,7 @@ template isQVariant(T)
     assert(len.value(meter).approxEqual(2));
 }
 
-@safe pure unittest // QVariant.opBinary Q*N Q/N
+pure @safe unittest // QVariant.opBinary Q*N Q/N
 {
     import quantities.si : second;
 
@@ -500,7 +500,7 @@ template isQVariant(T)
     assert(time2.value(second) == 1.0/2);
 }
 
-@safe pure unittest // QVariant.opBinary Q+Q Q-Q
+pure @safe unittest // QVariant.opBinary Q+Q Q-Q
 {
     import quantities.si : meter;
 
@@ -510,7 +510,7 @@ template isQVariant(T)
     assert(length2.value(meter) == 1);
 }
 
-@safe pure unittest // QVariant.opBinary Q+N Q-N
+pure @safe unittest // QVariant.opBinary Q+N Q-N
 {
     import quantities.si : radian;
     
@@ -520,7 +520,7 @@ template isQVariant(T)
     assert(angle2.value(radian) == 1);
 }
 
-@safe pure unittest // QVariant.opBinary Q*Q Q/Q
+pure @safe unittest // QVariant.opBinary Q*Q Q/Q
 {
     import quantities.si : meter, minute, second;
 
@@ -539,7 +539,7 @@ template isQVariant(T)
     assert(y.rawValue == 60);
 }
 
-@safe pure unittest // QVariant.opBinaryRight N*Q
+pure @safe unittest // QVariant.opBinaryRight N*Q
 {
     import quantities.si : meter;
 
@@ -547,7 +547,7 @@ template isQVariant(T)
     assert(length == meter * 100);
 }
 
-@safe pure unittest // QVariant.opBinaryRight N/Q
+pure @safe unittest // QVariant.opBinaryRight N/Q
 {
     import quantities.si : meter;
 
@@ -555,7 +555,7 @@ template isQVariant(T)
     assert(x.value(1/meter) == 1.0/2);
 }
 
-@safe pure unittest // QVariant.opBinary Q%Q Q%N N%Q
+pure @safe unittest // QVariant.opBinary Q%Q Q%N N%Q
 {
     import quantities.si : meter;
 
@@ -566,7 +566,7 @@ template isQVariant(T)
     assert(y2.value(meter).approxEqual(8.1));
 }
 
-@safe pure unittest // QVariant.opBinary Q^^N
+pure @safe unittest // QVariant.opBinary Q^^N
 {
     import quantities.si : meter;
     import quantities.si : cubic;
@@ -575,7 +575,7 @@ template isQVariant(T)
     assert((x^^3).value(cubic(meter)).approxEqual(8));
 }
 
-@safe pure unittest // QVariant.opOpAssign Q+=Q Q-=Q
+pure @safe unittest // QVariant.opOpAssign Q+=Q Q-=Q
 {
     import quantities.si : second;
 
@@ -586,7 +586,7 @@ template isQVariant(T)
     assert(time.value(second).approxEqual(20));
 }
 
-@safe pure unittest // QVariant.opOpAssign Q*=N Q/=N Q%=N
+pure @safe unittest // QVariant.opOpAssign Q*=N Q/=N Q%=N
 {
     import quantities.si : second;
 
@@ -599,7 +599,7 @@ template isQVariant(T)
     assert(time.value(second).approxEqual(1));
 }
 
-@safe pure unittest // QVariant.opEquals
+pure @safe unittest // QVariant.opEquals
 {
     import quantities.si : meter, minute, second, radian;
 
@@ -608,7 +608,7 @@ template isQVariant(T)
     assert(radian.qVariant == 1);
 }
 
-@safe pure unittest // QVariant.opCmp
+pure @safe unittest // QVariant.opCmp
 {
     import quantities.si : minute, second;
 
@@ -619,7 +619,7 @@ template isQVariant(T)
     assert(hour >= hour);
 }
 
-@safe pure unittest // Quantity.opCmp
+pure @safe unittest // Quantity.opCmp
 {
     import quantities.si : radian;
     
@@ -639,7 +639,7 @@ unittest // Quantity.toString
     assert(length.text == "12 [L]", length.text);
 }
 
-@safe pure unittest // Exceptions for incompatible dimensions
+pure @safe unittest // Exceptions for incompatible dimensions
 {
     import quantities.si : meter, second;
     import std.exception;
@@ -662,7 +662,7 @@ unittest // Quantity.toString
     assertThrown!DimensionException(m < 1);
 }
 
-@safe pure unittest // Compile-time
+pure @safe unittest // Compile-time
 {
     import quantities.si : meter, second, radian, cubic;
         

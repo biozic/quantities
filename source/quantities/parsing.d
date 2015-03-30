@@ -98,13 +98,13 @@ import std.utf;
 /// Exception thrown when operating on two units that are not interconvertible.
 class DimensionException : Exception
 {
-    @safe pure nothrow
+    pure @safe nothrow
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
         super(msg, file, line, next);
     }
     
-    @safe pure nothrow
+    pure @safe nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line, next);
@@ -151,7 +151,7 @@ struct SymbolList(N)
 }
 
 /// Type of a function that can parse a string for a numeric value of type N.
-alias NumberParser(N) = N function(ref string s) @safe pure;
+alias NumberParser(N) = N function(ref string s) pure @safe;
 
 /// A quantity parser
 struct Parser(N)
@@ -184,7 +184,7 @@ struct Parser(N)
     }
 }
 ///
-@safe pure unittest
+pure @safe unittest
 {
     // From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
 
@@ -225,7 +225,7 @@ template compileTimeParser(N, alias symbolList, alias numberParser)
     }
 }
 ///
-@safe pure unittest
+pure @safe unittest
 {
     enum century = unit!(real, "century");
     alias LectureLength = typeof(century);
@@ -242,13 +242,13 @@ template compileTimeParser(N, alias symbolList, alias numberParser)
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
 {
-    @safe pure nothrow
+    pure @safe nothrow
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
         super(msg, file, line, next);
     }
 
-    @safe pure nothrow
+    pure @safe nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line, next);
@@ -274,7 +274,7 @@ QVariant!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, 
     return value * parser.parseCompoundUnit();
 }
 
-@safe pure unittest // Test parsing
+pure @safe unittest // Test parsing
 {
     enum meter = unit!(double, "L");
     enum kilogram = unit!(double, "M");
@@ -336,7 +336,7 @@ struct QuantityParser(N)
         SymbolList!N symbolList;
     }
 
-    QVariant!N parseCompoundUnit(bool inParens = false) @safe pure
+    QVariant!N parseCompoundUnit(bool inParens = false) pure @safe
     {
         QVariant!N ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
@@ -373,7 +373,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    QVariant!N parseExponentUnit() @safe pure
+    QVariant!N parseExponentUnit() pure @safe
     {
         QVariant!N ret = parseUnit();
 
@@ -399,7 +399,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    int parseInteger() @safe pure
+    int parseInteger() pure @safe
     {
         tokens.check(Tok.integer, Tok.supinteger);
         int n = tokens.front.integer;
@@ -408,7 +408,7 @@ struct QuantityParser(N)
         return n;
     }
 
-    QVariant!N parseUnit() @safe pure
+    QVariant!N parseUnit() pure @safe
     {
         QVariant!N ret;
 
@@ -425,7 +425,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    QVariant!N parsePrefixUnit() @safe pure
+    QVariant!N parsePrefixUnit() pure @safe
     {
         tokens.check(Tok.symbol);
         auto str = tokens.front.slice;
@@ -480,7 +480,7 @@ struct Token
     int integer = int.max;
 }
 
-Token[] lex(string input) @safe pure
+Token[] lex(string input) pure @safe
 {
     enum State
     {

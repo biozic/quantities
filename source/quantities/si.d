@@ -233,7 +233,7 @@ Q parseSI(Q)(string str)
     return SI.parse!Q(str);
 }
 ///
-@safe pure unittest
+pure @safe unittest
 {
     auto t = parseSI!Time("90 min");
     assert(t == 90 * minute);
@@ -247,7 +247,7 @@ Q parseSI(Q)(string str)
 /// A compile-time parser with automatic type deduction for SI quantities.
 alias si = compileTimeParser!(Numeric, siSymbols, std.conv.parse!(Numeric, string));
 ///
-@safe pure unittest
+pure @safe unittest
 {
     enum min = si!"min";
     enum inch = si!"2.54 cm";
@@ -262,7 +262,7 @@ alias si = compileTimeParser!(Numeric, siSymbols, std.conv.parse!(Numeric, strin
 }
 
 /// Converts a quantity of time to or from a core.time.Duration
-Time fromDuration(Duration d) @safe pure 
+Time fromDuration(Duration d) pure @safe 
 {
     return d.total!"hnsecs" * hecto(nano(second));
 }
