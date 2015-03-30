@@ -200,6 +200,7 @@ pure @safe unittest
 
     auto timing = 1e-6L * century;
     assert(timing == parser.parse!LectureLength("1 µCy"));
+    assert(timing == parser.parseVariant("1 µCy"));
 }
 
 /// Creates a compile-time parser that parses a string for a quantity and
@@ -302,18 +303,22 @@ pure @safe unittest // Test parsing
     assert(checkParse("1 m÷m", meter / meter));
     assert(checkParse("1 m.s", second * meter));
     assert(checkParse("1 m s", second * meter));
+    assert(checkParse("1 m²s", meter * meter * second));
     assert(checkParse("1 m*m/m", meter));
+    assert(checkParse("0.8 m⁰", 0.8 * one));
     assert(checkParse("0.8", 0.8 * one));
 
-    assertThrown!ParsingException(checkParse("1 c m", meter * meter));
-    assertThrown!ParsingException(checkParse("1 c", 0.01 * meter));
-    assertThrown!ParsingException(checkParse("1 Qm", meter));
-    assertThrown!ParsingException(checkParse("1 m/", meter));
-    assertThrown!ParsingException(checkParse("1 m^", meter));
-    assertThrown!ParsingException(checkParse("1 m ) m", meter * meter));
-    assertThrown!ParsingException(checkParse("1 m * m) m", meter * meter * meter));
-    assertThrown!ParsingException(checkParse("1 m^²", meter * meter));
-    assertThrown!ParsingException(checkParse("1-⁺⁵", one));
+    assertThrown!ParsingException(checkParse("1 c m", unknown));
+    assertThrown!ParsingException(checkParse("1 c", unknown));
+    assertThrown!ParsingException(checkParse("1 Qm", unknown));
+    assertThrown!ParsingException(checkParse("1 m + m", unknown));
+    assertThrown!ParsingException(checkParse("1 m/", unknown));
+    assertThrown!ParsingException(checkParse("1 m^", unknown));
+    assertThrown!ParsingException(checkParse("1 m^m", unknown));
+    assertThrown!ParsingException(checkParse("1 m ) m", unknown));
+    assertThrown!ParsingException(checkParse("1 m * m) m", unknown));
+    assertThrown!ParsingException(checkParse("1 m^²", unknown));
+    assertThrown!ParsingException(checkParse("1-⁺⁵", unknown));
 }
 
 // A parser that can parse a text for a unit or a quantity
