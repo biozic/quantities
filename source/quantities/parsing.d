@@ -482,21 +482,13 @@ Token[] lex(string input) pure @safe
     Token[] tokens;
     auto tokapp = appender(tokens); // Only for runtime
 
-    void appendToken(Token token)
-    {
-        if (!__ctfe)
-            tokapp.put(token);
-        else
-            tokens ~= token;
-    }
-
     auto original = input;
     size_t i, j;
     State state = State.none;
 
     void pushToken(Tok type)
     {
-        appendToken(Token(type, original[i .. j]));
+        tokapp.put(Token(type, original[i .. j]));
         i = j;
         state = State.none;
     }
@@ -531,7 +523,7 @@ Token[] lex(string input) pure @safe
 
         enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
 
-        appendToken(Token(type, original[i .. j], n));
+        tokapp.put(Token(type, original[i .. j], n));
         i = j;
         state = State.none;
     }
@@ -636,10 +628,7 @@ Token[] lex(string input) pure @safe
     }
     push();
 
-    if (!__ctfe)
-        return tokapp.data;
-    else
-        return tokens;
+    return tokapp.data;
 }
 
 void advance(Types...)(ref Token[] tokens, Types types)
