@@ -158,6 +158,7 @@ alias atto = prefix!1e-18; /// ditto
 alias zepto = prefix!1e-21; /// ditto
 alias yocto = prefix!1e-24; /// ditto
 
+/// A list of common SI symbols and prefixes
 enum siSymbols = SymbolList!Numeric()
     .addUnit("m", meter)
     .addUnit("kg", kilogram)

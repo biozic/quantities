@@ -19,6 +19,7 @@ version (unittest)
     // import std.conv : text;
 }
 
+/// The type of a set of dimensions.
 alias Dimensions = int[string];
 
 /++
