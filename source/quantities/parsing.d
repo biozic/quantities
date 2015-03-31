@@ -176,10 +176,9 @@ struct Parser(N)
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
         
         auto q = parseQuantityImpl!(Q.valueType)(str, symbolList, numberParser);
-        enforceEx!DimensionException(
-            equals(Q.dimensions, q.dimensions),
-            "Dimension error: [%s] is not compatible with [%s]"
-            .format(quantities.base.toString(Q.dimensions), quantities.base.toString(q.dimensions)));
+        enforceEx!DimensionException(equals(Q.dimensions, q.dimensions),
+            "Dimension error: [%s] is not compatible with [%s]".format(
+                quantities.base.toString(Q.dimensions), quantities.base.toString(q.dimensions)));
         return Q.make(q.rawValue);
     }
 }
@@ -246,7 +245,7 @@ class ParsingException : Exception
 
 private:
 
-QVariant!N parseQuantityImpl(N)(string input, auto ref SymbolList!N symbolList, NumberParser!N parseFun)
+QVariant!N parseQuantityImpl(N)(string input, SymbolList!N symbolList, NumberParser!N parseFun)
 {
     N value;
     try
@@ -485,7 +484,7 @@ Token[] lex(string input) pure @safe
     }
 
     Token[] tokens;
-    auto tokapp = appender(tokens); // Only for runtime
+    auto tokapp = appender(tokens);
 
     auto original = input;
     size_t i, j;
@@ -504,20 +503,27 @@ Token[] lex(string input) pure @safe
 
         if (type == Tok.supinteger)
         {
-            slice = translate(slice, [
-                    '⁰':'0',
-                    '¹':'1',
-                    '²':'2',
-                    '³':'3',
-                    '⁴':'4',
-                    '⁵':'5',
-                    '⁶':'6',
-                    '⁷':'7',
-                    '⁸':'8',
-                    '⁹':'9',
-                    '⁺':'+',
-                    '⁻':'-'
-                ]);
+            auto a = appender!string;
+            foreach (dchar c; slice)
+            {
+                switch (c)
+                {
+                    case '⁰': a.put('0'); break;
+                    case '¹': a.put('1'); break;
+                    case '²': a.put('2'); break;
+                    case '³': a.put('3'); break;
+                    case '⁴': a.put('4'); break;
+                    case '⁵': a.put('5'); break;
+                    case '⁶': a.put('6'); break;
+                    case '⁷': a.put('7'); break;
+                    case '⁸': a.put('8'); break;
+                    case '⁹': a.put('9'); break;
+                    case '⁺': a.put('+'); break;
+                    case '⁻': a.put('-'); break;
+                    default: assert(false, "Error in pushInteger()");
+                }
+            }
+            slice = a.data;
         }
 
         int n;
@@ -663,9 +669,7 @@ void check(Types...)(Token[] tokens, Types types)
             }
         }
         import std.string : format;
-        enforceEx!ParsingException(ok, valid.length > 1
-                                   ? format("Found '%s' while expecting one of [%(%s, %)]", token.slice, valid)
-                                   : format("Found '%s' while expecting %s", token.slice, valid.front)
-                                   );
+        enforceEx!ParsingException(ok, format("Found '%s' while expecting %s", 
+            token.slice, valid.front));
     }
 }

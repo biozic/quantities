@@ -775,16 +775,21 @@ Dimensions dimdup(in Dimensions dim) @trusted pure
 // Necessary because of bugs with dim1 == dim2 at compile time.
 bool equals(in Dimensions dim1, in Dimensions dim2) pure @safe
 {
-    if (dim1.length != dim2.length)
-        return false;
-
-    foreach (k, v1; dim1)
+    if (__ctfe)
     {
-        auto v2 = k in dim2;
-        if (v2 is null || v1 != *v2)
+        if (dim1.length != dim2.length)
             return false;
+
+        foreach (k, v1; dim1)
+        {
+            auto v2 = k in dim2;
+            if (v2 is null || v1 != *v2)
+                return false;
+        }
+        return true;
     }
-    return true;
+    else
+        return dim1 == dim2;
 }
 pure @safe unittest
 {

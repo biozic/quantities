@@ -225,16 +225,23 @@ enum siSymbols = SymbolList!Numeric()
     .addPrefix("Gi", 1024.0^^3)
     .addPrefix("Mi", 1024.0^^2)
     .addPrefix("Ki", 1024.0);
-        
-/// Parses a string for a quantity of type Q.
+
+private static SymbolList!Numeric _siSymbols;
+private static Parser!Numeric _siParser;
+static this()
+{
+    _siSymbols = siSymbols;
+    _siParser = Parser!Numeric(_siSymbols, &std.conv.parse!(Numeric, string));
+}
+
+/// Parses a string for a quantity of type Q at runtime
 Q parseSI(Q)(string str)
     if (isQuantity!Q)
 {
-    Parser!Numeric SI = Parser!Numeric(siSymbols, &std.conv.parse!(Numeric, string));
-    return SI.parse!Q(str);
+    return _siParser.parse!Q(str);
 }
 ///
-pure @safe unittest
+@safe unittest
 {
     auto t = parseSI!Time("90 min");
     assert(t == 90 * minute);

@@ -1,11 +1,10 @@
 {
 	"name": "benchmark",
 	"description": "Benchmarks for the quantities package.",
-	"copyright": "Copyright © 2014, Nicolas Sicard",
+	"copyright": "Copyright © 2014-2015, Nicolas Sicard",
 	"authors": ["Nicolas Sicard"],
 	"dependencies": {
 		"quantities": {
-			"version": "~develop",
 			"path": ".."
 		}
 	}
