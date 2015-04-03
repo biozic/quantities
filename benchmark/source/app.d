@@ -49,18 +49,28 @@ void parseValues(string[] lines)
 
 void main(string[] args)
 {
-    uint number = 10_000;
-    uint iterations = 10;
+    int number = 10_000;
+    int iterations = 10;
+    bool clean;
 
-    getopt(args, "number|n", &number, "iterations|i", &iterations);
-
-    generate(number);
+    getopt(args,
+        "number|n", &number,
+        "iterations|i", &iterations,
+        "clean", &clean
+    );
+    
+    if (!filename.exists)
+        generate(number);
+        
     auto input = readText(filename).splitLines;
 
     auto time = benchmark!({ parseValues(input); })(iterations);
     writefln("Iteration mean duration: %s ms", time[0].msecs / cast(real) iterations);
 
-    writeln("Removing generated file...");
-    std.file.remove(filename);
+    if (clean) 
+    {
+        writeln("Removing generated file...");
+        std.file.remove(filename);
+    }
     writeln("Done.");
 }

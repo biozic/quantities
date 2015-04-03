@@ -80,6 +80,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.parsing;
 
+import quantities.internal.dimensions;
 import quantities.base;
 import quantities.qvariant;
 
@@ -176,9 +177,9 @@ struct Parser(N)
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
         
         auto q = parseQuantityImpl!(Q.valueType)(str, symbolList, numberParser);
-        enforceEx!DimensionException(equals(Q.dimensions, q.dimensions),
+        enforceEx!DimensionException(Q.dimensions == q.dimensions,
             "Dimension error: [%s] is not compatible with [%s]".format(
-                quantities.base.toString(Q.dimensions), quantities.base.toString(q.dimensions)));
+                Q.dimensions.toString, q.dimensions.toString));
         return Q.make(q.rawValue);
     }
 }
@@ -254,7 +255,7 @@ QVariant!N parseQuantityImpl(N)(string input, SymbolList!N symbolList, NumberPar
         value = 1;
 
     if (input.empty)
-        return QVariant!N.make(value, null);
+        return QVariant!N.make(value, Dimensions.init);
 
     auto tokens = lex(input);
     auto parser = QuantityParser!N(tokens, symbolList);
@@ -284,6 +285,7 @@ pure @safe unittest // Test parsing
     }
 
     assert(checkParse("1    m    ", meter));
+    assert(checkParse("1m", meter));
     assert(checkParse("1 mm", 0.001 * meter));
     assert(checkParse("1 m^-1", 1 / meter));
     assert(checkParse("1 m²", meter * meter));
@@ -306,6 +308,7 @@ pure @safe unittest // Test parsing
     assert(checkParse("1 m*m/m", meter));
     assert(checkParse("0.8 m⁰", 0.8 * one));
     assert(checkParse("0.8", 0.8 * one));
+    assert(checkParse("0.8 ", 0.8 * one));
 
     assertThrown!ParsingException(checkParse("1 c m", unknown));
     assertThrown!ParsingException(checkParse("1 c", unknown));
@@ -403,8 +406,10 @@ struct QuantityParser(N)
 
     QVariant!N parseUnit() pure @safe
     {
-        QVariant!N ret;
+        if (!tokens.length)
+            return QVariant!N.make(1, Dimensions.init);
 
+        QVariant!N ret;        
         if (tokens.front.type == Tok.lparen)
         {
             tokens.advance();
@@ -651,25 +656,23 @@ void advance(Types...)(ref Token[] tokens, Types types)
         check(tokens, types);
 }
 
-void check(Types...)(Token[] tokens, Types types)
+void check(Token[] tokens) pure @safe
 {
-    enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
-    auto token = tokens.front;
+    enforceEx!ParsingException(tokens.length, "Unexpected end of input");
+}
 
-    static if (Types.length)
-    {
-        bool ok = false;
-        Tok[] valid = [types];
-        foreach (type; types)
-        {
-            if (token.type == type)
-            {
-                ok = true;
-                break;
-            }
-        }
-        import std.string : format;
-        enforceEx!ParsingException(ok, format("Found '%s' while expecting %s", 
-            token.slice, valid.front));
-    }
+void check(Token[] tokens, Tok tok) pure @safe
+{
+    tokens.check();
+    enforceEx!ParsingException(tokens[0].type == tok,
+        format("Found '%s' while expecting %s", 
+            tokens[0].slice, tok));
+}
+
+void check(Token[] tokens, Tok tok1, Tok tok2) pure @safe
+{
+    tokens.check();
+    enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
+        format("Found '%s' while expecting %s or %s", 
+            tokens[0].slice, tok1, tok2));
 }

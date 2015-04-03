@@ -8,6 +8,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.qvariant;
 
+import quantities.internal.dimensions;
 import quantities.base;
 import quantities.parsing : DimensionException;
 import std.exception;
@@ -16,8 +17,6 @@ import std.string;
 import std.traits;
 
 version (unittest) import std.math : approxEqual;
-
-alias Dimensions = int[string];
 
 /++
 QVariant  is analog  to Quantity  except  that the  dimensions are  stored in  a
@@ -43,17 +42,11 @@ struct QVariant(N)
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
 private:
-    this(N value, in Dimensions dim) pure @safe
-    {
-        _value = value;
-        dimensions = dim.dimdup;
-    }
-    
     void checkDim(in Dimensions dim) const pure @safe
     {
-        enforceEx!DimensionException(equals(dim, dimensions),
+        enforceEx!DimensionException(dim == dimensions,
             "Dimension error: %s is not compatible with %s"
-            .format(.toString(dim), .toString(dimensions)));
+            .format(dim.toString, dimensions.toString));
     }
     
     static void checkValueType(T)()
@@ -70,11 +63,15 @@ package:
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
     // "Template constructor bypass access check"
-    static QVariant make(T)(T value, in Dimensions dim)
+    static QVariant make(T)(T value, in Dimensions dim) @trusted
         if (isNumeric!T)
     {
         checkValueType!T;
-        return QVariant(cast(N) value, dim);
+        QVariant result = void;
+        result._value = value;
+        // The cast if safe: dim is a unique duplicate
+        result.dimensions = cast(Dimensions) dim;
+        return result;
     }
     
     // Gets the internal number of this quantity.
@@ -90,7 +87,7 @@ public:
     QVariant baseUnit() pure @safe
     {
         N one = 1;
-        return QVariant.make(one, dimensions.dup);
+        return QVariant.make(one, dimensions);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -145,7 +142,7 @@ public:
     bool isConsistentWith(Q)(Q other) const
         if (isQVariant!Q || isQuantity!Q)
     {
-        return equals(dimensions, other.dimensions);
+        return dimensions == other.dimensions;
     }
     //
     pure @safe unittest
@@ -254,7 +251,7 @@ public:
     {
         checkValueType!(Q.valueType);
         return QVariant.make(mixin("(_value" ~ op ~ "other.rawValue)"),
-            binop!op(dimensions, other.dimensions));
+            dimensions.binop!op(other.dimensions));
     }
 
     // ditto
@@ -286,7 +283,7 @@ public:
         if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
-        return QVariant.make(mixin("other" ~ op ~ "_value"), invert(dimensions));
+        return QVariant.make(mixin("other" ~ op ~ "_value"), dimensions.invert());
     }
 
     // ditto
@@ -297,7 +294,7 @@ public:
             assert(false, "QVariant operator ^^ is not supported at compile-time");
 
         checkValueType!T;
-        return QVariant.make(_value^^power, pow(dimensions, power));
+        return QVariant.make(_value^^power, dimensions.pow(power));
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
@@ -327,7 +324,7 @@ public:
     {
         checkValueType!(Q.valueType);
         mixin("_value" ~ op ~ "= other.rawValue;");
-        dimensions = binop!op(dimensions, other.dimensions);
+        dimensions = dimensions.binop!op(other.dimensions);
     }
 
     // Mul/div assign with a number

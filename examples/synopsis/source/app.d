@@ -12,9 +12,6 @@ void main()
     Time time;
     time = distance / speed;
     writefln("Travel time of light from the moon: %s s", time.value(second));
-
-    static assert(is(typeof(distance) == Length));
-    static assert(is(Speed == Quantity!(double, ["L": 1, "T": -1])));
 }
 
 // Dimensional correctness is check at compile-time

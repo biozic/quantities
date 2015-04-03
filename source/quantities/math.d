@@ -9,40 +9,39 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.math;
 
+import quantities.internal.dimensions;
 import quantities.base;
 import quantities.qvariant;
 
 import std.math;
 import std.traits;
 
-alias dimpow = quantities.base.pow;
-
 /// Basic math functions that work with Quantity and QVariant.
 auto square(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, dimpow(Q.dimensions, 2)).make(quantity.rawValue ^^ 2);
+    return Quantity!(Q.valueType, Q.dimensions.pow(2)).make(quantity.rawValue ^^ 2);
 }
 
 /// ditto
 auto square(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(quantity.rawValue ^^ 2, dimpow(quantity.dimensions, 2));
+    return Q.make(quantity.rawValue ^^ 2, quantity.dimensions.pow(2));
 }
 
 /// ditto
 auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, powinverse(Q.dimensions, 2)).make(std.math.sqrt(quantity.rawValue));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(2)).make(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
 auto sqrt(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.sqrt(quantity.rawValue), powinverse(quantity.dimensions, 2));
+    return Q.make(std.math.sqrt(quantity.rawValue), quantity.dimensions.powinverse(2));
 }
 
 pure nothrow @nogc @safe unittest
@@ -65,28 +64,28 @@ pure @safe unittest
 auto cubic(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, dimpow(Q.dimensions, 3)).make(quantity.rawValue ^^ 3);
+    return Quantity!(Q.valueType, Q.dimensions.pow(3)).make(quantity.rawValue ^^ 3);
 }
 
 /// ditto
 auto cubic(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(quantity.rawValue ^^ 3, dimpow(quantity.dimensions, 3));
+    return Q.make(quantity.rawValue ^^ 3, quantity.dimensions.pow(3));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, powinverse(Q.dimensions, 3)).make(std.math.cbrt(quantity.rawValue));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(3)).make(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.cbrt(quantity.rawValue), powinverse(quantity.dimensions, 3));
+    return Q.make(std.math.cbrt(quantity.rawValue), quantity.dimensions.powinverse(3));
 }
 
 @safe /+pure+/ /+nothrow+/ @nogc unittest
@@ -109,28 +108,28 @@ auto cbrt(Q)(Q quantity)
 auto pow(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, dimpow(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, n));
+    return Quantity!(Q.valueType, Q.dimensions.pow(n)).make(std.math.pow(quantity.rawValue, n));
 }
 
 // ditto
 auto pow(int n, Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.pow(quantity.rawValue, n), dimpow(quantity.dimensions, n));
+    return Q.make(std.math.pow(quantity.rawValue, n), quantity.dimensions.pow(n));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, powinverse(Q.dimensions, n)).make(std.math.pow(quantity.rawValue, 1.0 / n));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(n)).make(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), powinverse(quantity.dimensions, n));
+    return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions.powinverse(n));
 }
 
 pure nothrow @nogc @safe unittest

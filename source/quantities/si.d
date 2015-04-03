@@ -17,6 +17,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.si;
 
+import quantities.internal.dimensions;
 import quantities.base;
 import quantities.math;
 import quantities.parsing;

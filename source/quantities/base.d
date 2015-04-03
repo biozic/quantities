@@ -8,6 +8,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.base;
 
+import quantities.internal.dimensions;
 import std.exception;
 import std.format;
 import std.string;
@@ -19,30 +20,19 @@ version (unittest)
     // import std.conv : text;
 }
 
-/// The type of a set of dimensions.
-alias Dimensions = int[string];
-
 /++
 A quantity  that can  be represented as  the product  of a number  and a  set of
 dimensions. The  number is  stored internally as  a member of  type N,  which is
-enforced to be a built-in numeric  type (isNumeric!N is true). The dimensions
-are  stored as  an  associative array  where  keys are  symbols  and values  are
-integral powers.
-For  instance  length and  speed quantities can be stored as:
----
-alias Length = Quantity!(double, ["L": 1]);
-alias Speed  = Quantity!(double, ["L": 1, "T": -1]);
----
-where "L" is the symbol for the length  dimension, "T" is the symbol of the time
-dimensions,  and  1   and  -1  are  the  powers  of   those  dimensions  in  the
-representation of the quantity.
+enforced to  be a built-in  numeric type  (isNumeric!N is true).  The dimensions
+are stored as a private struct that  is equivalent to an associative array where
+keys are dimension symbols (e.g. "L" for  length, "T" for time, etc.) and values
+are dimension exponents.
 
 Units are  just instances  of a  Quantity struct where  the value  is 1  and the
 dimensions only  contain one symbol, with  the power 1. For  instance, the meter
 unit can be defined using the template `unit` as:
 ---
 enum meter = unit!(double, "L");
-static assert(is(typeof(meter) == Quantity!(double, ["L": 1])));
 ---
 The main  quantities compliant with the  international system of units  (SI) are
 actually predefined  in  the module  quantities.si.
@@ -84,7 +74,6 @@ then the quantity type with the typeof operator:
 ---
 enum euro = unit!"C"; // C for currency
 alias Currency = typeof(euro);
-assert(is(Currency == Quantity!(double, ["C": 1])));
 ---
 This means that all currencies will be defined with respect to euro.
 
@@ -101,9 +90,8 @@ private:
 
     static void checkDim(Dimensions dim)()
     {
-        static assert(equals(dim, dimensions),
-            "Dimension error: %s is not compatible with %s"
-            .format(.toString(dim), .toString(dimensions)));
+        static assert(dim == dimensions, "Dimension error: %s is not compatible with %s"
+            .format(dim.toString, dimensions.toString));
     }
     
     static void checkValueType(T)()
@@ -137,7 +125,7 @@ public:
     alias valueType = N;
 
     // Implicitly convert a dimensionless value to the value type
-    static if (!dimensions.length)
+    static if (dimensions.empty)
     {
         // Gets the internal number of this quantity.
         N get() const
@@ -168,7 +156,7 @@ public:
 
     // Creates a new dimensionless quantity from a number
     this(T)(T value)
-        if (isNumeric!T && dimensions.length == 0)
+        if (isNumeric!T && dimensions.empty)
     {
         checkValueType!T;
         _value = value;
@@ -200,7 +188,7 @@ public:
     bool isConsistentWith(Q)(Q other) const
         if (isQuantity!Q)
     {
-        enum ret = equals(dimensions, other.dimensions);
+        enum ret = dimensions == other.dimensions;
         return ret;
     }
     ///
@@ -303,7 +291,7 @@ public:
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!(Q.valueType);
-        return Quantity!(N, binop!op(dimensions, other.dimensions))
+        return Quantity!(N, dimensions.binop!op(other.dimensions))
             .make(mixin("(_value" ~ op ~ "other._value)"));
     }
 
@@ -329,7 +317,7 @@ public:
         if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
-        return Quantity!(N, invert(dimensions)).make(mixin("other" ~ op ~ "_value"));
+        return Quantity!(N, dimensions.invert()).make(mixin("other" ~ op ~ "_value"));
     }
 
     auto opBinary(string op, T)(T power) const
@@ -713,9 +701,8 @@ template isQuantity(T)
 /// Creates a new monodimensional unit.
 template unit(N, string symbol)
 {
-    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
-    enum N one = 1;
-    enum unit = Quantity!(N, [symbol: 1]).make(one);
+    enum dim = Dimensions.mono(symbol);
+    enum unit = {return Quantity!(N, dim).make(1); }();
 }
 ///
 pure nothrow @nogc @safe unittest
@@ -763,166 +750,4 @@ pure nothrow @nogc @safe unittest
 
     alias milli = prefix!1e-3;
     assert(milli(meter).value(meter).approxEqual(1e-3));
-}
-
-package:
-
-Dimensions dimdup(in Dimensions dim) @trusted pure
-{
-    return cast(Dimensions) dim.dup;
-}
-
-// Necessary because of bugs with dim1 == dim2 at compile time.
-bool equals(in Dimensions dim1, in Dimensions dim2) pure @safe
-{
-    if (__ctfe)
-    {
-        if (dim1.length != dim2.length)
-            return false;
-
-        foreach (k, v1; dim1)
-        {
-            auto v2 = k in dim2;
-            if (v2 is null || v1 != *v2)
-                return false;
-        }
-        return true;
-    }
-    else
-        return dim1 == dim2;
-}
-pure @safe unittest
-{
-    assert(equals(Dimensions.init, Dimensions.init));
-    assert(equals(["a": 1, "b": 0], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1, "b": 1], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1], ["a": 1, "b": 0]));
-    assert(!equals(["a": 1, "b": 0], ["a": 1]));
-}
-
-Dimensions removeNull(in Dimensions dim) pure @safe
-{
-    Dimensions ret;
-    foreach (k, v; dim)
-        if (v != 0)
-            ret[k] = v;
-    return ret;
-}
-pure @safe unittest
-{
-    auto dim = ["a": 1, "b": 0, "c": 0, "d": 1];
-    assert(dim.removeNull == ["a": 1, "d": 1]);
-}
-
-Dimensions invert(in Dimensions dim) pure @safe
-{
-    Dimensions ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        ret[k] = -v;
-    }
-    return ret;
-}
-pure @safe unittest
-{
-    auto dim = ["a": 5, "b": -2];
-    assert(dim.invert == ["a": -5, "b": 2]);
-}
-
-Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) pure @safe
-    if (op == "*")
-{
-    auto ret = dim1.dimdup;
-    foreach (k, v2; dim2)
-    {
-        auto v1 = k in ret;
-        if (v1)
-            ret[k] = *v1 + v2;
-        else
-            ret[k] = v2;
-    }
-    return ret.removeNull;
-}
-pure @safe unittest
-{
-    auto dim1 = ["a": 1, "b": -2];
-    auto dim2 = ["a": -1, "c": 2];
-    assert(binop!"*"(dim1, dim2) == ["b": -2, "c": 2]);
-}
-
-Dimensions binop(string op)(in Dimensions dim1, in Dimensions dim2) pure @safe
-    if (op == "/" || op == "%")
-{
-    return binop!"*"(dim1, dim2.invert);
-}
-pure @safe unittest
-{
-    auto dim1 = ["a": 1, "b": -2];
-    auto dim2 = ["a": 1, "c": 2];
-    assert(binop!"/"(dim1, dim2) == ["b": -2, "c": -2]);
-}
-
-Dimensions pow(in Dimensions dim, int power) pure @safe
-{
-    if (dim.length == 0 || power == 0)
-        return Dimensions.init;
-
-    Dimensions ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        ret[k] = v * power;
-    }
-    return ret;
-}
-pure @safe unittest
-{
-    auto dim = ["a": 5, "b": -2];
-    assert(dim.pow(2) == ["a": 10, "b": -4]);
-    assert(dim.pow(0) is null);
-}
-
-Dimensions powinverse(in Dimensions dim, int n) pure @safe
-{
-    assert(n != 0);
-    Dimensions ret;
-    foreach (k, v; dim)
-    {
-        assert(v != 0);
-        enforce(v % n == 0, "Dimension error: '%s^%s' is not divisible by %s".format(k, v, n));
-        ret[k] = v / n;
-    }
-    return ret;
-}
-pure @safe unittest
-{
-    auto dim = ["a": 6, "b": -2];
-    assert(dim.powinverse(2) == ["a": 3, "b": -1]);
-}
-
-string toString(in Dimensions dim) pure @safe
-{
-    import std.algorithm : filter;
-    import std.array : join;
-    import std.conv : to;
-    
-    static string stringize(string symbol, int power) pure
-    {
-        if (power == 0)
-            return null;
-        if (power == 1)
-            return symbol;
-        return symbol ~ "^" ~ to!string(power);
-    }
-    
-    string[] dimstrs;
-    foreach (sym, pow; dim)
-        dimstrs ~= stringize(sym, pow);
-    
-    return "[%-(%s %)]".format(dimstrs.filter!"a !is null");
-}
-unittest
-{
-    assert(["a": 2, "b": -1, "c": 1, "d": 0].toString == "[a^2 b^-1 c]");
 }
