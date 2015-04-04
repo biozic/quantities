@@ -111,7 +111,7 @@ auto pow(int n, Q)(Q quantity)
     return Quantity!(Q.valueType, Q.dimensions.pow(n)).make(std.math.pow(quantity.rawValue, n));
 }
 
-// ditto
+/// ditto
 auto pow(int n, Q)(Q quantity)
     if (isQVariant!Q)
 {
@@ -155,7 +155,7 @@ Q abs(Q)(Q quantity)
     return Q.make(std.math.fabs(quantity.rawValue));
 }
 
-// ditto
+/// ditto
 Q abs(Q)(Q quantity)
     if (isQVariant!Q)
 {
@@ -177,6 +177,7 @@ pure @safe unittest
     auto length = abs(mlength);
     assert(length.value(meter).approxEqual(12));
 }
+
 
 /// Utility templates to manipulate Quantity types.
 template Inverse(Q)
@@ -213,6 +214,7 @@ template Cubic(Q)
     alias Cubic = typeof(Q.init * Q.init * Q.init);
 }
 
+///
 pure nothrow @nogc @safe unittest
 {
     import quantities.si;

@@ -253,8 +253,43 @@ Q parseSI(Q)(string str)
     assert(v == (2 * meter) / meter);
 }
 
-/// A compile-time parser with automatic type deduction for SI quantities.
-alias si = compileTimeParser!(Numeric, siSymbols, std.conv.parse!(Numeric, string));
+version (D_Ddoc)
+{
+    /// A compile-time parser with automatic type deduction for SI quantities.
+    alias si = compileTimeParser;
+    ///
+    pure @safe unittest
+    {
+        enum min = si!"min";
+        enum inch = si!"2.54 cm";
+        auto conc = si!"1 µmol/L";
+        auto speed = si!"m s^-1";
+        auto value = si!"0.5";
+        
+        static assert(is(typeof(inch) == Length));
+        static assert(is(typeof(conc) == Concentration));
+        static assert(is(typeof(speed) == Speed));
+        static assert(is(typeof(value) == Dimensionless));
+    }
+}
+else
+{
+    alias si = compileTimeParser!(Numeric, siSymbols, std.conv.parse!(Numeric, string));
+
+    pure @safe unittest
+    {
+        enum min = si!"min";
+        enum inch = si!"2.54 cm";
+        auto conc = si!"1 µmol/L";
+        auto speed = si!"m s^-1";
+        auto value = si!"0.5";
+        
+        static assert(is(typeof(inch) == Length));
+        static assert(is(typeof(conc) == Concentration));
+        static assert(is(typeof(speed) == Speed));
+        static assert(is(typeof(value) == Dimensionless));
+    }
+}
 ///
 pure @safe unittest
 {
@@ -285,6 +320,7 @@ Duration toDuration(Q)(Q quantity)
     return dur!"hnsecs"(hns.roundTo!long);
 }
 
+///
 @safe unittest // Durations
 {
     auto d = 4.dur!"msecs";

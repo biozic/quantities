@@ -430,13 +430,14 @@ pure nothrow @nogc @safe unittest // Quantity.baseUnit
 pure nothrow @nogc @safe unittest // Quantity constructor
 {
     import quantities.si : minute, second, radian;
+    import std.math : approxEqual;
 
     auto time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
 
 
     auto angle = typeof(radian)(3.14);
-    assert(angle.value(radian) == 3.14);
+    assert(angle.value(radian).approxEqual(3.14));
 }
 
 pure nothrow @nogc @safe unittest // QVariant.alias this
@@ -489,11 +490,12 @@ pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
 {
     import quantities.si : second;
+    import std.math : approxEqual;
 
     auto time = second * 60;
     assert(time.value(second) == 60);
     auto time2 = second / 2;
-    assert(time2.value(second) == 1.0/2);
+    assert(time2.value(second).approxEqual(0.5));
 }
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
@@ -526,9 +528,10 @@ pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
 pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
 {
     import quantities.si : meter;
+    import std.math : approxEqual;
 
     auto x = 1 / (2 * meter);
-    assert(x.value(1/meter) == 1.0/2);
+    assert(x.value(1 / meter).approxEqual(0.5));
 }
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
