@@ -21,8 +21,13 @@ import quantities.internal.dimensions;
 import quantities.base;
 import quantities.math;
 import quantities.parsing;
+import quantities.qvariant;
+
+import std.array : appender;
 import std.conv;
 import std.math : PI;
+import std.format;
+import std.string;
 import std.typetuple;
 import core.time : Duration, dur;
 
@@ -290,23 +295,99 @@ else
         static assert(is(typeof(value) == Dimensionless));
     }
 }
-///
-pure @safe unittest
-{
-    enum min = si!"min";
-    enum inch = si!"2.54 cm";
-    auto conc = si!"1 µmol/L";
-    auto speed = si!"m s^-1";
-    auto value = si!"0.5";
 
-    static assert(is(typeof(inch) == Length));
-    static assert(is(typeof(conc) == Concentration));
-    static assert(is(typeof(speed) == Speed));
-    static assert(is(typeof(value) == Dimensionless));
+/++
+Helper struct that formats a SI quantity.
++/
+struct SIFormatWrapper(Q)
+    if (isQuantity!Q || isQVariant!Q)
+{
+    private string fmt;
+
+    /++
+    Creates a new formatter from a format string.
+    +/
+    this(string fmt)
+    {
+        this.fmt = fmt;
+    }
+
+    /++
+    Returns a wrapper struct that can be formatted by `std.string.format` or
+    `std.format` functions.
+    +/
+    auto opCall(Q quantity) const
+    {
+        auto _fmt = fmt;
+
+        ///
+        struct Wrapper
+        {
+            private Q quantity;
+            
+            void toString(scope void delegate(const(char)[]) sink) const
+            {
+                auto spec = FormatSpec!char(_fmt);
+                spec.writeUpToNextSpec(sink);
+                auto target = spec.trailing.idup;
+                auto unit = parseSI!Q(target);
+                sink.formatValue(quantity.value(unit), spec);
+                sink(target);
+            }
+
+            string toString() const
+            {
+                return format("%s", this);
+            }
+        }
+
+        return Wrapper(quantity);
+    }
+}
+///
+unittest
+{
+    import std.string;
+
+    auto sf = SIFormatWrapper!Speed("%.1f km/h");
+    auto speed = 343.4 * meter/second;
+    assert("Speed: %s".format(sf(speed)) == "Speed: 1236.2 km/h");
+}
+
+unittest
+{
+    auto sf = SIFormatWrapper!Speed("%.1f km/h");
+    assert(text(sf(si!"343.4 m/s")) == "1236.2 km/h");
+    assert(text(sf(parseSI!Speed("343.4 m/s"))) == "1236.2 km/h");
+}
+
+/++
+Convenience function that returns a SIFormatter when the format string is
+known at compile-time.
++/
+auto siFormatWrapper(string fmt)()
+{
+    enum unit = si!({
+        auto spec = FormatSpec!char(fmt);
+        auto dummy = appender!string;
+        spec.writeUpToNextSpec(dummy);
+        return spec.trailing.idup;
+    }());
+
+    return SIFormatWrapper!(typeof(unit))(fmt);
+}
+///
+unittest
+{
+    import std.string;
+
+    auto sf = siFormatWrapper!"%.1f km/h";
+    auto speed = 343.4 * meter/second;
+    assert("Speed: %s".format(sf(speed)) == "Speed: 1236.2 km/h");
 }
 
 /// Converts a quantity of time to or from a core.time.Duration
-Time fromDuration(Duration d) pure @safe 
+Time fromDuration(Duration d) pure @safe
 {
     return d.total!"hnsecs" * hecto(nano(second));
 }

@@ -86,8 +86,6 @@ struct Quantity(N, Dimensions dims)
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
 private:
-    N _value;
-
     static void checkDim(Dimensions dim)()
     {
         static assert(dim == dimensions, "Dimension error: %s is not compatible with %s"
@@ -101,6 +99,9 @@ private:
     }
 
 package:
+    N _value;
+    enum dimensions = dims;
+    
     // Should be a constructor
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
@@ -134,9 +135,6 @@ public:
         }
         alias get this;
     }
-
-    /// The dimensions of the quantity.
-    enum dimensions = dims;
 
     /// Gets the base unit of this quantity.
     static Quantity baseUnit()
@@ -200,6 +198,25 @@ public:
         assert(!meter.isConsistentWith(second));
     }
 
+    /++
+    Convert a quantity to another one with the same dimensions.
+    +/
+    Q convert(Q)(Q target) const
+        if (isQuantity!Q)
+    {
+        return Q.make(_value / target._value);
+    }
+    ///
+    unittest
+    {
+        import quantities.si : minute, second;
+        import std.math : approxEqual;
+
+        auto min = 2 * minute;
+        auto sec = min.convert(second);
+        assert(sec.value(second).approxEqual(120.0));
+    }
+
     /// Overloaded operators.
     /// Only dimensionally correct operations will compile.
 
@@ -220,7 +237,6 @@ public:
         checkValueType!T;
         return _value;
     }
-
 
     // Assign from another quantity
     void opAssign(Q)(Q other)
@@ -411,7 +427,7 @@ public:
         return 0;
     }
 
-    // String formatting function
+    // Default string formatting function
     void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
     {
         sink.formatValue(_value, fmt);
