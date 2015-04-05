@@ -8,3 +8,4 @@ libquantities.a
 run-examples.sh
 *.lst
 benchmark
+docs
