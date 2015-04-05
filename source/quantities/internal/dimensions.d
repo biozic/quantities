@@ -12,12 +12,6 @@ struct Dim
         return power == other.power && symbol == other.symbol;
     }
 
-    string toString() const
-    {
-        import std.string;
-        return "%s:%s".format(symbol, power);
-    }
-
     int opCmp(Dim other) const pure @safe nothrow
     {
         if (symbol < other.symbol)
@@ -26,6 +20,18 @@ struct Dim
             return 1;
         else
             return 0;
+    }
+
+    string toString() const pure @safe
+    {
+        import std.string : format;
+        
+        if (power == 0)
+            return null;
+        else if (power == 1)
+            return symbol;
+        else 
+            return "%s^%d".format(symbol, power);
     }
 }
 
@@ -100,26 +106,24 @@ struct DimList
         return list == other.list;
     }
 
-    string toString() const
+    string toString() const pure @safe
     {
         import std.string;
-        return "[%(%s, %)]".format(list);
+        return "[%(%s %)]".format(list);
     }
 }
-
-//debug import std.stdio;
 
 unittest
 {
     auto list = DimList([Dim("a", 1), Dim("c", 2), Dim("e", 1)]);
     list.insert("f", -1);
-    assert(list.toString == "[a:1, c:2, e:1, f:-1]");
+    assert(list.toString == "[a c^2 e f^-1]");
     list.insert("f", 1);
-    assert(list.toString == "[a:1, c:2, e:1]");
+    assert(list.toString == "[a c^2 e]");
     list.insert("b", 3);
-    assert(list.toString == "[a:1, b:3, c:2, e:1]");
+    assert(list.toString == "[a b^3 c^2 e]");
     list.insert("0", 1);
-    assert(list.toString == "[0:1, a:1, b:3, c:2, e:1]");
+    assert(list.toString == "[0 a b^3 c^2 e]");
     list.insert("0", -1);
     list.insert("a", -1);
     list.insert("b", -3);
@@ -129,7 +133,7 @@ unittest
     list.insert("x", 0);
     assert(list.toString == "[]");
     list.insert("x", 1);
-    assert(list.toString == "[x:1]");
+    assert(list.toString == "[x]");
 }
 
 unittest // Compile-time
@@ -269,28 +273,10 @@ public:
         assert(Dimensions(["a": 1]) != Dimensions(["a": 1, "b": 2]));
         assert(Dimensions(["a": 1, "b": 2]) != Dimensions(["a": 1]));
     }
-    
+
     string toString() const pure @safe
     {
-        import std.algorithm : filter;
-        import std.array : appender, join;
-        import std.conv : to;
-        import std.string : format;
-        
-        static string stringize(string symbol, int power) pure
-        {
-            if (power == 0)
-                return null;
-            if (power == 1)
-                return symbol;
-            return symbol ~ "^" ~ to!string(power);
-        }
-
-        auto dimstrs = appender!(string[]);
-        foreach (dim; dimList.list)
-            dimstrs.put(stringize(dim.symbol, dim.power));
-
-        return "[%-(%s %)]".format(dimstrs.data.filter!"a !is null");
+        return dimList.toString;
     }
     unittest
     {
