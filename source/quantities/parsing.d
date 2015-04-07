@@ -555,9 +555,8 @@ Token[] lex(string input) pure @safe
             pushInteger(Tok.supinteger);
     }
 
-    while (!input.empty)
+    foreach (dchar cur; input)
     {
-        auto cur = input.front;
         auto len = cur.codeLength!char;
         switch (cur)
         {
@@ -641,7 +640,6 @@ Token[] lex(string input) pure @safe
                 j += len;
                 break;
         }
-        input.popFront();
     }
     push();
 
