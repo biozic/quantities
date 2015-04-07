@@ -533,12 +533,13 @@ Token[] lex(string input) pure @safe
 
         int n;
         try
+        {
             n = std.conv.parse!int(slice);
+            enforce(slice.empty);
+        }
         catch (Exception)
             throw new ParsingException("Unexpected integer format: " ~ original[i .. j]);
-
-        enforceEx!ParsingException(slice.empty, "Unexpected integer format: " ~ slice);
-
+            
         tokapp.put(Token(type, original[i .. j], n));
         i = j;
         state = State.none;
