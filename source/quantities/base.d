@@ -233,9 +233,10 @@ public:
     T opCast(T)() const
         if (isNumeric!T)
     {
+        import std.conv;
         checkDim!(Dimensions.init);
         checkValueType!T;
-        return _value;
+        return _value.to!T;
     }
 
     // Assign from another quantity
