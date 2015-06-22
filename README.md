@@ -42,7 +42,7 @@ void main()
 }
 ```
 
-#### Dimensional correctness is check at compile-time
+#### Dimensional correctness is checked at compile-time
 
 ```d
 Mass mass;
