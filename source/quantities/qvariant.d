@@ -86,8 +86,7 @@ public:
     // Gets the base unit of this quantity.
     QVariant baseUnit() pure @safe
     {
-        N one = 1;
-        return QVariant.make(one, dimensions);
+        return QVariant.make(1, dimensions);
     }
 
     // Creates a new quantity from another one with the same dimensions

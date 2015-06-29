@@ -139,8 +139,7 @@ public:
     /// Gets the base unit of this quantity.
     static Quantity baseUnit()
     {
-        N one = 1;
-        return Quantity.make(one);
+        return Quantity.make(1);
     }
 
     // Creates a new quantity from another one with the same dimensions
