@@ -749,7 +749,7 @@ pure nothrow @nogc @safe unittest
 }
 
 /++
-Creates a new prefix function that mutlpy a Quantity by _factor factor.
+Creates a new prefix function that multiplies a Quantity by a _factor.
 +/
 template prefix(alias factor)
 {
