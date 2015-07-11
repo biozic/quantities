@@ -206,7 +206,7 @@ public:
         return Q.make(_value / target._value);
     }
     ///
-    unittest
+    pure nothrow @nogc @safe unittest
     {
         import quantities.si : minute, second;
         import std.math : approxEqual;
