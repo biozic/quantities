@@ -128,9 +128,10 @@ public:
     //
     pure @safe unittest
     {
-        import quantities.si : minute, hour;
+        enum minute = unit!(int, "T");
+        enum hour = 60 * minute;
 
-        QVariant!double time = 120 * minute;
+        QVariant!double time = 120 * minute.qVariant;
         assert(time.value(hour) == 2);
         assert(time.value(minute) == 120);
     }
@@ -146,7 +147,9 @@ public:
     //
     pure @safe unittest
     {
-        import quantities.si : minute, second, meter;
+        enum second = unit!(double, "T");
+        enum minute = 60 * second;
+        enum meter = unit!(double, "L");
 
         assert(minute.qVariant.isConsistentWith(second));
         assert(!meter.qVariant.isConsistentWith(second));
@@ -396,7 +399,8 @@ auto qVariant(Q)(Q quantity)
 ///
 pure @safe unittest
 {
-    import quantities.si : meter, second;
+    enum second = unit!(double, "T");
+    enum meter = unit!(double, "L");
 
     auto speed = 42 * meter/second;
     auto qspeed = speed.qVariant;
@@ -415,7 +419,9 @@ template isQVariant(T)
 
 pure @safe unittest // QVariant constructor
 {
-    import quantities.si : minute, second, radian;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum radian = unit!(double, "L") / unit!(double, "L");
 
     QVariant!double time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
@@ -427,7 +433,7 @@ pure @safe unittest // QVariant constructor
 
 pure @safe unittest // QVariant.alias this
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
 
     static double foo(double d) { return d; }
     assert(foo(2 * qVariant(radian)) == 2);
@@ -435,7 +441,9 @@ pure @safe unittest // QVariant.alias this
 
 pure @safe unittest // QVariant.opCast
 {
-    import quantities.si : meter, radian, Angle;
+    enum meter = unit!(double, "L");
+    enum radian = meter / meter;
+    alias Angle = typeof(radian);
    
     auto angle = cast(Angle) (12 * radian.qVariant);
     assert(angle.value(radian) == 12);
@@ -446,7 +454,9 @@ pure @safe unittest // QVariant.opCast
 
 pure @safe unittest // QVariant.opAssign Q = Q
 {
-    import quantities.si : meter, second, radian;
+    enum meter = unit!(double, "L");
+    enum radian = meter / meter;
+    enum second = unit!(double, "T");
 
     QVariant!double var = meter;
     var = 100 * meter;
@@ -460,8 +470,8 @@ pure @safe unittest // QVariant.opAssign Q = Q
 
 pure @safe unittest // QVariant.opAssign Q = N
 {
-    import quantities.si : radian;
-    
+    enum radian = unit!(double, "L") / unit!(double, "L");
+
     QVariant!double angle = radian;
     angle = 2;
     assert(angle.value(radian) == 2);
@@ -469,7 +479,7 @@ pure @safe unittest // QVariant.opAssign Q = N
 
 pure @safe unittest // QVariant.opUnary +Q -Q ++Q --Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     QVariant!double length = + meter.qVariant;
     assert(length == 1 * meter);
@@ -488,7 +498,7 @@ pure @safe unittest // QVariant.opUnary +Q -Q ++Q --Q
 
 pure @safe unittest // QVariant.opBinary Q*N Q/N
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
 
     QVariant!double time = second * 60;
     assert(time.value(second) == 60);
@@ -498,7 +508,7 @@ pure @safe unittest // QVariant.opBinary Q*N Q/N
 
 pure @safe unittest // QVariant.opBinary Q+Q Q-Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     QVariant!double length = meter + meter;
     assert(length.value(meter) == 2);
@@ -508,7 +518,7 @@ pure @safe unittest // QVariant.opBinary Q+Q Q-Q
 
 pure @safe unittest // QVariant.opBinary Q+N Q-N
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
     
     QVariant!double angle = radian + 1;
     assert(angle.value(radian) == 2);
@@ -518,7 +528,9 @@ pure @safe unittest // QVariant.opBinary Q+N Q-N
 
 pure @safe unittest // QVariant.opBinary Q*Q Q/Q
 {
-    import quantities.si : meter, minute, second;
+    enum meter = unit!(double, "L");
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
 
     QVariant!double hertz = 1 / second;
 
@@ -537,7 +549,7 @@ pure @safe unittest // QVariant.opBinary Q*Q Q/Q
 
 pure @safe unittest // QVariant.opBinaryRight N*Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     QVariant!double length = 100 * meter;
     assert(length == meter * 100);
@@ -545,7 +557,7 @@ pure @safe unittest // QVariant.opBinaryRight N*Q
 
 pure @safe unittest // QVariant.opBinaryRight N/Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     QVariant!double x = 1 / (2 * meter);
     assert(x.value(1/meter) == 1.0/2);
@@ -553,7 +565,7 @@ pure @safe unittest // QVariant.opBinaryRight N/Q
 
 pure @safe unittest // QVariant.opBinary Q%Q Q%N N%Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     QVariant!double x = 258.1 * meter;
     QVariant!double y1 = x % (50 * meter);
@@ -564,16 +576,15 @@ pure @safe unittest // QVariant.opBinary Q%Q Q%N N%Q
 
 pure @safe unittest // QVariant.opBinary Q^^N
 {
-    import quantities.si : meter;
-    import quantities.si : cubic;
+    enum meter = unit!(double, "L");
 
     QVariant!double x = 2 * meter;
-    assert((x^^3).value(cubic(meter)).approxEqual(8));
+    assert((x^^3).value(meter * meter * meter).approxEqual(8));
 }
 
 pure @safe unittest // QVariant.opOpAssign Q+=Q Q-=Q
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
 
     QVariant!double time = 10 * second;
     time += 50 * second;
@@ -584,7 +595,7 @@ pure @safe unittest // QVariant.opOpAssign Q+=Q Q-=Q
 
 pure @safe unittest // QVariant.opOpAssign Q*=N Q/=N Q%=N
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
 
     QVariant!double time = 20 * second;
     time *= 2;
@@ -597,7 +608,10 @@ pure @safe unittest // QVariant.opOpAssign Q*=N Q/=N Q%=N
 
 pure @safe unittest // QVariant.opEquals
 {
-    import quantities.si : meter, minute, second, radian;
+    enum meter = unit!(double, "L");
+    enum radian = meter / meter;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
 
     assert(qVariant(1 * minute) == qVariant(60 * second));
     assert(qVariant((1 / second) * meter) == qVariant(meter / second));
@@ -606,7 +620,8 @@ pure @safe unittest // QVariant.opEquals
 
 pure @safe unittest // QVariant.opCmp
 {
-    import quantities.si : minute, second;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
 
     QVariant!double hour = 60 * minute;
     assert(second.qVariant < minute.qVariant);
@@ -617,7 +632,7 @@ pure @safe unittest // QVariant.opCmp
 
 pure @safe unittest // Quantity.opCmp
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
     
     QVariant!double angle = 2 * radian;
     assert(angle < 4);
@@ -628,7 +643,7 @@ pure @safe unittest // Quantity.opCmp
 
 unittest // Quantity.toString
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
     import std.conv : text;
 
     QVariant!double length = 12 * meter;
@@ -637,7 +652,9 @@ unittest // Quantity.toString
 
 pure @safe unittest // Exceptions for incompatible dimensions
 {
-    import quantities.si : meter, second;
+    enum meter = unit!(double, "L");
+    enum second = unit!(double, "T");
+
     import std.exception;
 
     QVariant!double m = meter;
@@ -660,17 +677,13 @@ pure @safe unittest // Exceptions for incompatible dimensions
 
 pure @safe unittest // Compile-time
 {
-    import quantities.si : meter, second, radian, cubic;
+    enum meter = unit!(double, "L");
+    enum second = unit!(double, "T");
+    enum radian = meter / meter;
         
     enum length = 100 * meter.qVariant;
     enum time = 5 * second.qVariant;
     enum speed = length / time;
     enum val = speed.value(meter/second);
     static assert(val.approxEqual(20));
-
-    version (none)
-    {
-        enum volume = length^^3;
-        static assert(volume.value(cubic(meter)).approxEqual(1e6));
-    }
 }

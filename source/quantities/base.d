@@ -172,7 +172,9 @@ public:
     ///
     pure nothrow @nogc @safe unittest
     {
-        import quantities.si : minute, hour;
+        enum second = unit!(int, "T");
+        enum minute = 60 * second;
+        enum hour = 60 * minute;
 
         auto time = 120 * minute;
         assert(time.value(hour) == 2);
@@ -191,7 +193,9 @@ public:
     ///
     pure nothrow @nogc @safe unittest
     {
-        import quantities.si : minute, second, meter;
+        enum second = unit!(double, "T");
+        enum minute = 60 * second;
+        enum meter = unit!(double, "L");
 
         assert(minute.isConsistentWith(second));
         assert(!meter.isConsistentWith(second));
@@ -208,12 +212,12 @@ public:
     ///
     pure nothrow @nogc @safe unittest
     {
-        import quantities.si : minute, second;
-        import std.math : approxEqual;
+        enum second = unit!(int, "T");
+        enum minute = 60 * second;
 
         auto min = 2 * minute;
         auto sec = min.convert(second);
-        assert(sec.value(second).approxEqual(120.0));
+        assert(sec.value(second) == 120);
     }
 
     /// Overloaded operators.
@@ -438,27 +442,29 @@ public:
 
 pure nothrow @nogc @safe unittest // Quantity.baseUnit
 {
-    import quantities.si : minute, second;
-
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
     assert(minute.baseUnit == second);
 }
 
 pure nothrow @nogc @safe unittest // Quantity constructor
 {
-    import quantities.si : minute, second, radian;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum radian = unit!(double, "L") / unit!(double, "L");
+
     import std.math : approxEqual;
 
     auto time = typeof(second)(1 * minute);
     assert(time.value(second) == 60);
 
-
     auto angle = typeof(radian)(3.14);
     assert(angle.value(radian).approxEqual(3.14));
 }
 
-pure nothrow @nogc @safe unittest // QVariant.alias this
+pure nothrow @nogc @safe unittest // Quantity.alias this
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
 
     static double foo(double d) nothrow @nogc { return d; }
     assert(foo(2 * radian) == 2);
@@ -466,7 +472,8 @@ pure nothrow @nogc @safe unittest // QVariant.alias this
 
 pure nothrow @nogc @safe unittest // Quantity.opCast
 {
-    import quantities.si : second, radian;
+    enum second = unit!(double, "T");
+    enum radian = unit!(double, "L") / unit!(double, "L");
 
     auto fsec = unit!(float, "T");
     assert((cast(typeof(second)) fsec).value(second) == 1);
@@ -476,7 +483,8 @@ pure nothrow @nogc @safe unittest // Quantity.opCast
 
 pure nothrow @nogc @safe unittest // Quantity.opAssign Q = Q
 {
-    import quantities.si : meter, radian;
+    enum meter = unit!(double, "L");
+    enum radian = meter / meter;
 
     auto length = meter;
     length = 100 * meter;
@@ -488,7 +496,7 @@ pure nothrow @nogc @safe unittest // Quantity.opAssign Q = Q
 
 pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     auto length = + meter;
     assert(length == 1 * meter);
@@ -505,7 +513,7 @@ pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
     import std.math : approxEqual;
 
     auto time = second * 60;
@@ -516,7 +524,9 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
 {
-    import quantities.si : meter, minute, second;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum meter = unit!(double, "L");
 
     auto hertz = 1 / second;
 
@@ -535,7 +545,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     auto length = 100 * meter;
     assert(length == meter * 100);
@@ -543,7 +553,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
 
 pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
     import std.math : approxEqual;
 
     auto x = 1 / (2 * meter);
@@ -552,7 +562,7 @@ pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     auto x = 258.1 * meter;
     auto y1 = x % (50 * meter);
@@ -563,7 +573,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
     
     auto length = meter + meter;
     assert(length.value(meter) == 2);
@@ -573,7 +583,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
     
     auto angle = radian + 1;
     assert(angle.value(radian) == 2);
@@ -585,7 +595,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 
 pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
 
     auto time = 10 * second;
     time += 50 * second;
@@ -596,7 +606,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
     
     auto angle = 1 * radian;
     angle += 1;
@@ -607,7 +617,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 
 pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
-    import quantities.si : second;
+    enum second = unit!(double, "T");
 
     auto time = 20 * second;
     time *= 2;
@@ -620,7 +630,8 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 
 pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
-    import quantities.si : meter, second;
+    enum second = unit!(double, "T");
+    enum meter = unit!(double, "L");
     
     auto time = 20 * second;
     time *= (2 * meter) / meter;
@@ -633,7 +644,9 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 
 pure nothrow @nogc @safe unittest // Quantity.opEquals
 {
-    import quantities.si : radian, minute, second;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum radian = unit!(double, "L") / unit!(double, "L");
 
     assert(1 * minute == 60 * second);
     assert(1 * radian == 1);
@@ -641,7 +654,8 @@ pure nothrow @nogc @safe unittest // Quantity.opEquals
 
 pure nothrow @nogc @safe unittest // Quantity.opCmp
 {
-    import quantities.si : minute, second;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
 
     auto hour = 60 * minute;
     assert(second < minute);
@@ -652,7 +666,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
 
 pure nothrow @nogc @safe unittest // Quantity.opCmp
 {
-    import quantities.si : radian;
+    enum radian = unit!(double, "L") / unit!(double, "L");
     
     auto angle = 2 * radian;
     assert(angle < 4);
@@ -663,7 +677,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
 
 unittest // Quantity.toString
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
     import std.conv : text;
 
     auto length = 12 * meter;
@@ -672,7 +686,8 @@ unittest // Quantity.toString
 
 pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensions
 {
-    import quantities.si : meter, second;
+    enum second = unit!(double, "T");
+    enum meter = unit!(double, "L");
 
     auto m = meter;
     static assert(!__traits(compiles, m.value(second)));
@@ -699,7 +714,9 @@ pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensi
 
 pure nothrow @nogc @safe unittest // immutable Quantity
 {
-    import quantities.si : meter, minute, second;
+    enum second = unit!(double, "T");
+    enum minute = 60 * second;
+    enum meter = unit!(double, "L");
 
     immutable length = 3e8 * meter;
     immutable time = 1 * second;
@@ -741,7 +758,8 @@ template AreConsistent(Q1, Q2)
 ///
 pure nothrow @nogc @safe unittest
 {
-    import quantities.si : meter, second;
+    enum second = unit!(double, "T");
+    enum meter = unit!(double, "L");
 
     alias Speed = typeof(meter/second);
     alias Velocity = typeof((1/second * meter));
@@ -765,7 +783,7 @@ template prefix(alias factor)
 ///
 pure nothrow @nogc @safe unittest
 {
-    import quantities.si : meter;
+    enum meter = unit!(double, "L");
 
     alias milli = prefix!1e-3;
     assert(milli(meter).value(meter).approxEqual(1e-3));

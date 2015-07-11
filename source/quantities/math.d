@@ -217,10 +217,18 @@ template Cubic(Q)
 ///
 pure nothrow @nogc @safe unittest
 {
-    import quantities.si;
+    enum meter = unit!(double, "L");
+    enum second = unit!(double, "T");
+    enum hertz = 1 / second;
+
+    alias Length = typeof(meter);
+    alias Area = typeof(meter * meter);
+    alias Volume = typeof(meter * meter * meter);
+    alias Time = typeof(second);
+    alias Frequency = typeof(hertz);
+    alias Speed = typeof(meter / second);
 
     static assert(is(Inverse!Time == Frequency));
-    static assert(is(Product!(Power, Time) == Energy));
     static assert(is(Quotient!(Length, Time) == Speed));
     static assert(is(Square!Length == Area));
     static assert(is(Cubic!Length == Volume));
