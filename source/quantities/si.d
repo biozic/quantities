@@ -33,116 +33,105 @@ import core.time : Duration, dur;
 
 version (unittest) import std.math : approxEqual;
 
-// version (SIReal)
-//     alias N = real;
-// else version (SIDouble)
-//     alias N = double;
-// else version (SIFloat)
-//     alias N = float;
-// else
-//     alias N = double;
-
 alias StdN = double; // standard numeric (precision)
 
-/++
-Predefined SI units.
-+/
-enum meter(N = StdN) = unit!(N, "L");
-alias metre = meter; /// ditto
-enum kilogram(N = StdN) = unit!(N, "M"); /// ditto
-enum second(N = StdN) = unit!(N, "T"); /// ditto
-enum ampere(N = StdN) = unit!(N, "I"); /// ditto
-enum kelvin(N = StdN) = unit!(N, "Θ"); /// ditto
-enum mole(N = StdN) = unit!(N, "N"); /// ditto
-enum candela(N = StdN) = unit!(N, "J"); /// ditto
+/++ Predefined SI units. +/
+enum meters(N = StdN) = unit!(N, "L");
+alias metres = meters; /// ditto
+enum kilograms(N = StdN) = unit!(N, "M"); /// ditto
+enum seconds(N = StdN) = unit!(N, "T"); /// ditto
+enum amperes(N = StdN) = unit!(N, "I"); /// ditto
+enum kelvins(N = StdN) = unit!(N, "Θ"); /// ditto
+enum moles(N = StdN) = unit!(N, "N"); /// ditto
+enum candelas(N = StdN) = unit!(N, "J"); /// ditto
 
-enum radian(N = StdN) = meter!N / meter!N; // ditto
-enum steradian(N = StdN) = square(meter!N) / square(meter!N); /// ditto
-enum hertz(N = StdN) = 1 / second!N; /// ditto
-enum newton(N = StdN) = kilogram!N * meter!N / square(second!N); /// ditto
-enum pascal(N = StdN) = newton!N / square(meter!N); /// ditto
-enum joule(N = StdN) = newton!N * meter!N; /// ditto
-enum watt(N = StdN) = joule!N / second!N; /// ditto
-enum coulomb(N = StdN) = second!N * ampere!N; /// ditto
-enum volt(N = StdN) = watt!N / ampere!N; /// ditto
-enum farad(N = StdN) = coulomb!N / volt!N; /// ditto
-enum ohm(N = StdN) = volt!N / ampere!N; /// ditto
-enum siemens(N = StdN) = ampere!N / volt!N; /// ditto
-enum weber(N = StdN) = volt!N * second!N; /// ditto
-enum tesla(N = StdN) = weber!N / square(meter!N); /// ditto
-enum henry(N = StdN) = weber!N / ampere!N; /// ditto
-enum celsius(N = StdN) = kelvin!N; /// ditto
-enum lumen(N = StdN) = candela!N / steradian!N; /// ditto
-enum lux(N = StdN) = lumen!N / square(meter!N); /// ditto
-enum becquerel(N = StdN) = 1 / second!N; /// ditto
-enum gray(N = StdN) = joule!N / kilogram!N; /// ditto
-enum sievert(N = StdN) = joule!N / kilogram!N; /// ditto
-enum katal(N = StdN) = mole!N / second!N; /// ditto
+enum radians(N = StdN) = meters!N / meters!N; // ditto
+enum steradians(N = StdN) = square(meters!N) / square(meters!N); /// ditto
+enum hertzes(N = StdN) = 1 / seconds!N; /// ditto
+enum newtons(N = StdN) = kilograms!N * meters!N / square(seconds!N); /// ditto
+enum pascals(N = StdN) = newtons!N / square(meters!N); /// ditto
+enum joules(N = StdN) = newtons!N * meters!N; /// ditto
+enum watts(N = StdN) = joules!N / seconds!N; /// ditto
+enum coulombs(N = StdN) = seconds!N * amperes!N; /// ditto
+enum volts(N = StdN) = watts!N / amperes!N; /// ditto
+enum farads(N = StdN) = coulombs!N / volts!N; /// ditto
+enum ohms(N = StdN) = volts!N / amperes!N; /// ditto
+enum siemenses(N = StdN) = amperes!N / volts!N; /// ditto
+enum webers(N = StdN) = volts!N * seconds!N; /// ditto
+enum teslas(N = StdN) = webers!N / square(meters!N); /// ditto
+enum henrys(N = StdN) = webers!N / amperes!N; /// ditto
+enum celsiuses(N = StdN) = kelvins!N; /// ditto
+enum lumens(N = StdN) = candelas!N / steradians!N; /// ditto
+enum luxes(N = StdN) = lumens!N / square(meters!N); /// ditto
+enum becquerels(N = StdN) = 1 / seconds!N; /// ditto
+enum grays(N = StdN) = joules!N / kilograms!N; /// ditto
+enum sieverts(N = StdN) = joules!N / kilograms!N; /// ditto
+enum katals(N = StdN) = moles!N / seconds!N; /// ditto
 
-enum gram(N = StdN) = 1e-3 * kilogram!N; /// ditto
-enum minute(N = StdN) = 60 * second!N; /// ditto
-enum hour(N = StdN) = 60 * minute!N; /// ditto
-enum day(N = StdN) = 24 * hour!N; /// ditto
-enum degreeOfAngle(N = StdN) = PI / 180 * radian!N; /// ditto
-enum minuteOfAngle(N = StdN) = degreeOfAngle!N / 60; /// ditto
-enum secondOfAngle(N = StdN) = minuteOfAngle!N / 60; /// ditto
-enum hectare(N = StdN) = 1e4 * square(meter!N); /// ditto
-enum liter(N = StdN) = 1e-3 * cubic(meter!N); /// ditto
-alias litre = liter; /// ditto
-enum ton(N = StdN) = 1e3 * kilogram!N; /// ditto
-enum electronVolt(N = StdN) = 1.60217653e-19 * joule!N; /// ditto
-enum dalton(N = StdN) = 1.66053886e-27 * kilogram!N; /// ditto
+enum grams(N = StdN) = 1e-3 * kilograms!N; /// ditto
+enum minutes(N = StdN) = 60 * seconds!N; /// ditto
+enum hours(N = StdN) = 60 * minutes!N; /// ditto
+enum days(N = StdN) = 24 * hours!N; /// ditto
+enum degreesOfAngle(N = StdN) = PI / 180 * radians!N; /// ditto
+enum minutesOfAngle(N = StdN) = degreesOfAngle!N / 60; /// ditto
+enum secondsOfAngle(N = StdN) = minutesOfAngle!N / 60; /// ditto
+enum hectares(N = StdN) = 1e4 * square(meters!N); /// ditto
+enum liters(N = StdN) = 1e-3 * cubic(meters!N); /// ditto
+alias litres = liters; /// ditto
+enum tons(N = StdN) = 1e3 * kilograms!N; /// ditto
+enum electronVolts(N = StdN) = 1.60217653e-19 * joules!N; /// ditto
+enum daltons(N = StdN) = 1.66053886e-27 * kilograms!N; /// ditto
 
 //enum one = Quantity!(N, Dimensions.init)(1); /// The dimensionless unit 'one'
 
-alias Length(N = StdN) = typeof(meter!N); /// Predefined quantity type templates for SI quantities
-alias Mass(N = StdN) = typeof(kilogram!N); /// ditto
-alias Time(N = StdN) = typeof(second!N); /// ditto
-alias ElectricCurrent(N = StdN) = typeof(ampere!N); /// ditto
-alias Temperature(N = StdN) = typeof(kelvin!N); /// ditto
-alias AmountOfSubstance(N = StdN) = typeof(mole!N); /// ditto
-alias LuminousIntensity(N = StdN) = typeof(candela!N); /// ditto
+alias Length(N = StdN) = typeof(meters!N); /// Predefined quantity type templates for SI quantities
+alias Mass(N = StdN) = typeof(kilograms!N); /// ditto
+alias Time(N = StdN) = typeof(seconds!N); /// ditto
+alias ElectricCurrent(N = StdN) = typeof(amperes!N); /// ditto
+alias Temperature(N = StdN) = typeof(kelvins!N); /// ditto
+alias AmountOfSubstance(N = StdN) = typeof(moles!N); /// ditto
+alias LuminousIntensity(N = StdN) = typeof(candelas!N); /// ditto
 
-alias Area(N = StdN) = typeof(square(meter!N)); /// ditto
+alias Area(N = StdN) = typeof(square(meters!N)); /// ditto
 alias Surface(N = StdN) = Area!N;
-alias Volume(N = StdN) = typeof(cubic(meter!N)); /// ditto
-alias Speed(N = StdN) = typeof(meter!N/second!N); /// ditto
-alias Acceleration(N = StdN) = typeof(meter!N/square(second!N)); /// ditto
-alias MassDensity(N = StdN) = typeof(kilogram!N/cubic(meter!N)); /// ditto
-alias CurrentDensity(N = StdN) = typeof(ampere!N/square(meter!N)); /// ditto
-alias MagneticFieldStrength(N = StdN) = typeof(ampere!N/meter!N); /// ditto
-alias Concentration(N = StdN) = typeof(mole!N/cubic(meter!N)); /// ditto
+alias Volume(N = StdN) = typeof(cubic(meters!N)); /// ditto
+alias Speed(N = StdN) = typeof(meters!N/seconds!N); /// ditto
+alias Acceleration(N = StdN) = typeof(meters!N/square(seconds!N)); /// ditto
+alias MassDensity(N = StdN) = typeof(kilograms!N/cubic(meters!N)); /// ditto
+alias CurrentDensity(N = StdN) = typeof(amperes!N/square(meters!N)); /// ditto
+alias MagneticFieldStrength(N = StdN) = typeof(amperes!N/meters!N); /// ditto
+alias Concentration(N = StdN) = typeof(moles!N/cubic(meters!N)); /// ditto
 alias MolarConcentration(N = StdN) = Concentration!N; /// ditto
-alias MassicConcentration(N = StdN) = typeof(kilogram!N/cubic(meter!N)); /// ditto
-alias Luminance(N = StdN) = typeof(candela!N/square(meter!N)); /// ditto
-alias RefractiveIndex(N = StdN) = typeof(kilogram!N); /// ditto
+alias MassicConcentration(N = StdN) = typeof(kilograms!N/cubic(meters!N)); /// ditto
+alias Luminance(N = StdN) = typeof(candelas!N/square(meters!N)); /// ditto
+alias RefractiveIndex(N = StdN) = typeof(kilograms!N); /// ditto
 
-alias Angle(N = StdN) = typeof(radian!N); /// ditto
-alias SolidAngle(N = StdN) = typeof(steradian!N); /// ditto
-alias Frequency(N = StdN) = typeof(hertz!N); /// ditto
-alias Force(N = StdN) = typeof(newton!N); /// ditto
-alias Pressure(N = StdN) = typeof(pascal!N); /// ditto
-alias Energy(N = StdN) = typeof(joule!N); /// ditto
+alias Angle(N = StdN) = typeof(radians!N); /// ditto
+alias SolidAngle(N = StdN) = typeof(steradians!N); /// ditto
+alias Frequency(N = StdN) = typeof(hertzes!N); /// ditto
+alias Force(N = StdN) = typeof(newtons!N); /// ditto
+alias Pressure(N = StdN) = typeof(pascals!N); /// ditto
+alias Energy(N = StdN) = typeof(joules!N); /// ditto
 alias Work(N) = Energy!N; /// ditto
 alias Heat(N) = Energy!N; /// ditto
-alias Power(N = StdN) = typeof(watt!N); /// ditto
-alias ElectricCharge(N = StdN) = typeof(coulomb!N); /// ditto
-alias ElectricPotential(N = StdN) = typeof(volt!N); /// ditto
-alias Capacitance(N = StdN) = typeof(farad!N); /// ditto
-alias ElectricResistance(N = StdN) = typeof(ohm!N); /// ditto
-alias ElectricConductance(N = StdN) = typeof(siemens!N); /// ditto
-alias MagneticFlux(N = StdN) = typeof(weber!N); /// ditto
-alias MagneticFluxDensity(N = StdN) = typeof(tesla!N); /// ditto
-alias Inductance(N = StdN) = typeof(henry!N); /// ditto
-alias LuminousFlux(N = StdN) = typeof(lumen!N); /// ditto
-alias Illuminance(N = StdN) = typeof(lux!N); /// ditto
-alias CelsiusTemperature(N = StdN) = typeof(celsius!N); /// ditto
-alias Radioactivity(N = StdN) = typeof(becquerel!N); /// ditto
-alias AbsorbedDose(N = StdN) = typeof(gray!N); /// ditto
-alias DoseEquivalent(N = StdN) = typeof(sievert!N); /// ditto
-alias CatalyticActivity(N = StdN) = typeof(katal!N); /// ditto
+alias Power(N = StdN) = typeof(watts!N); /// ditto
+alias ElectricCharge(N = StdN) = typeof(coulombs!N); /// ditto
+alias ElectricPotential(N = StdN) = typeof(volts!N); /// ditto
+alias Capacitance(N = StdN) = typeof(farads!N); /// ditto
+alias ElectricResistance(N = StdN) = typeof(ohms!N); /// ditto
+alias ElectricConductance(N = StdN) = typeof(siemenses!N); /// ditto
+alias MagneticFlux(N = StdN) = typeof(webers!N); /// ditto
+alias MagneticFluxDensity(N = StdN) = typeof(teslas!N); /// ditto
+alias Inductance(N = StdN) = typeof(henrys!N); /// ditto
+alias LuminousFlux(N = StdN) = typeof(lumens!N); /// ditto
+alias Illuminance(N = StdN) = typeof(luxes!N); /// ditto
+alias CelsiusTemperature(N = StdN) = typeof(celsiuses!N); /// ditto
+alias Radioactivity(N = StdN) = typeof(becquerels!N); /// ditto
+alias AbsorbedDose(N = StdN) = typeof(grays!N); /// ditto
+alias DoseEquivalent(N = StdN) = typeof(sieverts!N); /// ditto
+alias CatalyticActivity(N = StdN) = typeof(katals!N); /// ditto
 
-alias Dimensionless(N = StdN) = typeof(meter!N/meter!N); /// The type of dimensionless quantities
+alias Dimensionless(N = StdN) = typeof(meters!N/meters!N); /// The type of dimensionless quantities
 
 /// SI prefixes.
 alias yotta = prefix!1e24;
@@ -168,43 +157,43 @@ alias yocto = prefix!1e-24; /// ditto
 
 /// A list of common SI symbols and prefixes
 enum siSymbols(N) = SymbolList!N()
-    .addUnit("m", meter!N)
-    .addUnit("kg", kilogram!N)
-    .addUnit("s", second!N)
-    .addUnit("A", ampere!N)
-    .addUnit("K", kelvin!N)
-    .addUnit("mol", mole!N)
-    .addUnit("cd", candela!N)
-    .addUnit("rad", radian!N)
-    .addUnit("sr", steradian!N)
-    .addUnit("Hz", hertz!N)
-    .addUnit("N", newton!N)
-    .addUnit("Pa", pascal!N)
-    .addUnit("J", joule!N)
-    .addUnit("W", watt!N)
-    .addUnit("C", coulomb!N)
-    .addUnit("V", volt!N)
-    .addUnit("F", farad!N)
-    .addUnit("Ω", ohm!N)
-    .addUnit("S", siemens!N)
-    .addUnit("Wb", weber!N)
-    .addUnit("T", tesla!N)
-    .addUnit("H", henry!N)
-    .addUnit("lm", lumen!N)
-    .addUnit("lx", lux!N)
-    .addUnit("Bq", becquerel!N)
-    .addUnit("Gy", gray!N)
-    .addUnit("Sv", sievert!N)
-    .addUnit("kat", katal!N)
-    .addUnit("g", gram!N)
-    .addUnit("min", minute!N)
-    .addUnit("h", hour!N)
-    .addUnit("d", day!N)
-    .addUnit("l", liter!N)
-    .addUnit("L", liter!N)
-    .addUnit("t", ton!N)
-    .addUnit("eV", electronVolt!N)
-    .addUnit("Da", dalton!N)
+    .addUnit("m", meters!N)
+    .addUnit("kg", kilograms!N)
+    .addUnit("s", seconds!N)
+    .addUnit("A", amperes!N)
+    .addUnit("K", kelvins!N)
+    .addUnit("mol", moles!N)
+    .addUnit("cd", candelas!N)
+    .addUnit("rad", radians!N)
+    .addUnit("sr", steradians!N)
+    .addUnit("Hz", hertzes!N)
+    .addUnit("N", newtons!N)
+    .addUnit("Pa", pascals!N)
+    .addUnit("J", joules!N)
+    .addUnit("W", watts!N)
+    .addUnit("C", coulombs!N)
+    .addUnit("V", volts!N)
+    .addUnit("F", farads!N)
+    .addUnit("Ω", ohms!N)
+    .addUnit("S", siemenses!N)
+    .addUnit("Wb", webers!N)
+    .addUnit("T", teslas!N)
+    .addUnit("H", henrys!N)
+    .addUnit("lm", lumens!N)
+    .addUnit("lx", luxes!N)
+    .addUnit("Bq", becquerels!N)
+    .addUnit("Gy", grays!N)
+    .addUnit("Sv", sieverts!N)
+    .addUnit("kat", katals!N)
+    .addUnit("g", grams!N)
+    .addUnit("min", minutes!N)
+    .addUnit("h", hours!N)
+    .addUnit("d", days!N)
+    .addUnit("l", liters!N)
+    .addUnit("L", liters!N)
+    .addUnit("t", tons!N)
+    .addUnit("eV", electronVolts!N)
+    .addUnit("Da", daltons!N)
     .addPrefix("Y", 1e24)
     .addPrefix("Z", 1e21)
     .addPrefix("E", 1e18)
@@ -279,12 +268,12 @@ Q parseSI(Q)(string str)
 {
     alias N = double;
     auto t = "90 min".parseSI!(Time!N);
-    assert(t == 90 * minute!N);
+    assert(t == 90 * minutes!N);
     t = "h".parseSI!(Time!N);
-    assert(t == 1 * hour!N);
+    assert(t == 1 * hours!N);
 
     auto v = "2".parseSI!(Dimensionless!N);
-    assert(v == (2 * meter!N) / meter!N);
+    assert(v == (2 * meters!N) / meters!N);
 }
 
 /// A compile-time parser with automatic type deduction for SI quantities.
@@ -362,7 +351,7 @@ unittest
 
     alias N = double;
     auto sf = SIFormatWrapper!(Speed!N)("%.1f km/h");
-    auto speed = 343.4 * meter!N/second!N;
+    auto speed = 343.4 * meters!N/seconds!N;
     assert("Speed: %s".format(sf(speed)) == "Speed: 1236.2 km/h");
 }
 
@@ -397,14 +386,14 @@ unittest
 
     alias N = double;
     auto sf = siFormatWrapper!(N, "%.1f km/h");
-    auto speed = 343.4 * meter!N / second!N;
+    auto speed = 343.4 * meters!N / seconds!N;
     assert("Speed: %s".format(sf(speed)) == "Speed: 1236.2 km/h");
 }
 
 /// Converts a quantity of time to or from a core.time.Duration
 Time!N fromDuration(N)(Duration d) pure @safe
 {
-    return d.total!"hnsecs" * hecto(nano(second!N));
+    return d.total!"hnsecs" * hecto(nano(seconds!N));
 }
 
 /// ditto
@@ -413,7 +402,7 @@ Duration toDuration(Q)(Q quantity)
 {
     import std.conv;
     alias N = Q.valueType;
-    auto hns = quantity.value(hecto(nano(second!N)));
+    auto hns = quantity.value(hecto(nano(seconds!N)));
     return dur!"hnsecs"(hns.roundTo!long);
 }
 
@@ -423,9 +412,9 @@ Duration toDuration(Q)(Q quantity)
     alias N = double;
     auto d = 4.dur!"msecs";
     auto t = d.fromDuration!N;
-    assert(t.value(milli(second!N)).approxEqual(4));
+    assert(t.value(milli(seconds!N)).approxEqual(4));
 
-    auto t2 = 3.5 * minute!N;
+    auto t2 = 3.5 * minutes!N;
     auto d2 = t2.toDuration;
     auto s = d2.split!("minutes", "seconds")();
     assert(s.minutes == 3 && s.seconds == 30);
