@@ -90,14 +90,15 @@ private:
     static void checkDim(Dimensions dim)()
     {
         static assert(dim == dimensions,
-            "Dimension error: %s is not compatible with %s".format(dim.toString,
-            dimensions.toString));
+                      "Dimension error: %s is not compatible with %s".format(dim.toString,
+                                                                             dimensions.toString));
     }
 
     static void checkValueType(T)()
     {
         static assert(is(T : valueType),
-            "%s is not implicitly convertible to %s".format(T.stringof, valueType.stringof));
+                      "%s is not implicitly convertible to %s".format(T.stringof,
+                                                                      valueType.stringof));
     }
 
 package:
