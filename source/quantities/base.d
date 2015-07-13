@@ -14,7 +14,7 @@ import std.format;
 import std.string;
 import std.traits;
 
-version (unittest) 
+version (unittest)
 {
     import std.math : approxEqual;
     // import std.conv : text;
@@ -91,7 +91,7 @@ private:
         static assert(dim == dimensions, "Dimension error: %s is not compatible with %s"
             .format(dim.toString, dimensions.toString));
     }
-    
+
     static void checkValueType(T)()
     {
         static assert(is(T : valueType), "%s is not implicitly convertible to %s"
@@ -101,7 +101,7 @@ private:
 package:
     N _value;
     enum dimensions = dims;
-    
+
     // Should be a constructor
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
@@ -114,7 +114,7 @@ package:
         ret._value = value;
         return ret;
     }
-    
+
     // Gets the internal number of this quantity.
     package N rawValue() const
     {
@@ -268,7 +268,7 @@ public:
     {
         return Quantity.make(mixin(op ~ "_value"));
     }
-    
+
     // Unary ++ and --
     /// ditto
     auto opUnary(string op)()
@@ -502,13 +502,13 @@ pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
     assert(length == 1 * meter);
     auto length2 = - meter;
     assert(length2 == -1 * meter);
-    
+
     auto len = ++meter;
     assert(len.value(meter).approxEqual(2));
     len = --meter;
     assert(len.value(meter).approxEqual(0));
     len++;
-    assert(len.value(meter).approxEqual(1));    
+    assert(len.value(meter).approxEqual(1));
 }
 
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
@@ -574,7 +574,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
 {
     enum meter = unit!(double, "L");
-    
+
     auto length = meter + meter;
     assert(length.value(meter) == 2);
     auto length2 = length - meter;
@@ -584,7 +584,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
-    
+
     auto angle = radian + 1;
     assert(angle.value(radian) == 2);
     angle = angle - 1;
@@ -607,7 +607,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
 pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
-    
+
     auto angle = 1 * radian;
     angle += 1;
     assert(angle.value(radian) == 2);
@@ -632,7 +632,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     enum second = unit!(double, "T");
     enum meter = unit!(double, "L");
-    
+
     auto time = 20 * second;
     time *= (2 * meter) / meter;
     assert(time.value(second).approxEqual(40));
@@ -667,7 +667,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
 pure nothrow @nogc @safe unittest // Quantity.opCmp
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
-    
+
     auto angle = 2 * radian;
     assert(angle < 4);
     assert(angle <= 2);
@@ -726,13 +726,7 @@ pure nothrow @nogc @safe unittest // immutable Quantity
 }
 
 /// Tests whether T is a quantity type
-template isQuantity(T)
-{
-    static if (is(Unqual!T == Quantity!X, X...))
-        enum isQuantity = true;
-    else
-        enum isQuantity = false;
-}
+enum isQuantity(T) = is(Unqual!T == Quantity!X, X...);
 
 /// Creates a new monodimensional unit.
 template unit(N, string symbol)
