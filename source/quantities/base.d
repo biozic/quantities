@@ -17,6 +17,7 @@ import std.traits;
 version (unittest)
 {
     import std.math : approxEqual;
+
     // import std.conv : text;
 }
 
@@ -88,14 +89,15 @@ struct Quantity(N, Dimensions dims)
 private:
     static void checkDim(Dimensions dim)()
     {
-        static assert(dim == dimensions, "Dimension error: %s is not compatible with %s"
-            .format(dim.toString, dimensions.toString));
+        static assert(dim == dimensions,
+            "Dimension error: %s is not compatible with %s".format(dim.toString,
+            dimensions.toString));
     }
 
     static void checkValueType(T)()
     {
-        static assert(is(T : valueType), "%s is not implicitly convertible to %s"
-            .format(T.stringof, valueType.stringof));
+        static assert(is(T : valueType),
+            "%s is not implicitly convertible to %s".format(T.stringof, valueType.stringof));
     }
 
 package:
@@ -106,8 +108,7 @@ package:
     // Workaround for @@BUG 5770@@
     // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
     // "Template constructor bypass access check"
-    package static Quantity make(T)(T value)
-        if (isNumeric!T)
+    package static Quantity make(T)(T value) if (isNumeric!T)
     {
         checkValueType!T;
         Quantity ret;
@@ -133,6 +134,7 @@ public:
         {
             return _value;
         }
+
         alias get this;
     }
 
@@ -143,8 +145,7 @@ public:
     }
 
     // Creates a new quantity from another one with the same dimensions
-    this(Q)(Q other)
-        if (isQuantity!Q)
+    this(Q)(Q other) if (isQuantity!Q)
     {
         checkDim!(other.dimensions);
         checkValueType!(Q.valueType);
@@ -152,8 +153,7 @@ public:
     }
 
     // Creates a new dimensionless quantity from a number
-    this(T)(T value)
-        if (isNumeric!T && dimensions.empty)
+    this(T)(T value) if (isNumeric!T && dimensions.empty)
     {
         checkValueType!T;
         _value = value;
@@ -162,13 +162,13 @@ public:
     /++
     Gets the _value of this quantity expressed in the given target unit.
     +/
-    N value(Q)(Q target) const
-        if (isQuantity!Q)
+    N value(Q)(Q target) const if (isQuantity!Q)
     {
         checkDim!(target.dimensions);
         checkValueType!(Q.valueType);
         return _value / target._value;
     }
+
     ///
     pure nothrow @nogc @safe unittest
     {
@@ -184,12 +184,12 @@ public:
     /++
     Tests wheter this quantity has the same dimensions as another one.
     +/
-    bool isConsistentWith(Q)(Q other) const
-        if (isQuantity!Q)
+    bool isConsistentWith(Q)(Q other) const if (isQuantity!Q)
     {
         enum ret = dimensions == other.dimensions;
         return ret;
     }
+
     ///
     pure nothrow @nogc @safe unittest
     {
@@ -204,11 +204,11 @@ public:
     /++
     Convert a quantity to another one with the same dimensions.
     +/
-    Q convert(Q)(Q target) const
-        if (isQuantity!Q)
+    Q convert(Q)(Q target) const if (isQuantity!Q)
     {
         return Q.make(_value / target._value);
     }
+
     ///
     pure nothrow @nogc @safe unittest
     {
@@ -224,8 +224,7 @@ public:
     /// Only dimensionally correct operations will compile.
 
     // Cast a quantity to another quantity type with the same dimensions
-    Q opCast(Q)() const
-        if (isQuantity!Q)
+    Q opCast(Q)() const if (isQuantity!Q)
     {
         checkDim!(Q.dimensions);
         checkValueType!(Q.valueType);
@@ -233,18 +232,17 @@ public:
     }
 
     // Cast a dimensionless quantity to a numeric type
-    T opCast(T)() const
-        if (isNumeric!T)
+    T opCast(T)() const if (isNumeric!T)
     {
         import std.conv;
+
         checkDim!(Dimensions.init);
         checkValueType!T;
         return _value.to!T;
     }
 
     // Assign from another quantity
-    void opAssign(Q)(Q other)
-        if (isQuantity!Q)
+    void opAssign(Q)(Q other) if (isQuantity!Q)
     {
         checkDim!(other.dimensions);
         checkValueType!(Q.valueType);
@@ -253,8 +251,7 @@ public:
 
     // Assign from a numeric value if this quantity is dimensionless
     /// ditto
-    void opAssign(T)(T other)
-        if (isNumeric!T)
+    void opAssign(T)(T other) if (isNumeric!T)
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -263,16 +260,14 @@ public:
 
     // Unary + and -
     /// ditto
-    auto opUnary(string op)() const
-        if (op == "+" || op == "-")
+    auto opUnary(string op)() const if (op == "+" || op == "-")
     {
         return Quantity.make(mixin(op ~ "_value"));
     }
 
     // Unary ++ and --
     /// ditto
-    auto opUnary(string op)()
-        if (op == "++" || op == "--")
+    auto opUnary(string op)() if (op == "++" || op == "--")
     {
         mixin(op ~ "_value;");
         return this;
@@ -280,18 +275,17 @@ public:
 
     // Add (or substract) two quantities if they share the same dimensions
     /// ditto
-    auto opBinary(string op, Q)(Q other) const
-        if (isQuantity!Q && (op == "+" || op == "-"))
+    auto opBinary(string op, Q)(Q other) const if (isQuantity!Q && (op == "+" || op == "-"))
     {
         checkDim!(other.dimensions);
         checkValueType!(Q.valueType);
-        return Quantity.make(mixin("_value" ~ op ~ "other._value"));
+        auto result = mixin("_value" ~ op ~ "other._value");
+        return Quantity!(typeof(result), dimensions).make(result);
     }
 
     // Add (or substract) a dimensionless quantity and a number
     /// ditto
-    auto opBinary(string op, T)(T other) const
-        if (isNumeric!T && (op == "+" || op == "-"))
+    auto opBinary(string op, T)(T other) const if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -299,57 +293,52 @@ public:
     }
 
     /// ditto
-    auto opBinaryRight(string op, T)(T other) const
-        if (isNumeric!T && (op == "+" || op == "-"))
+    auto opBinaryRight(string op, T)(T other) const if (isNumeric!T && (op == "+" || op == "-"))
     {
         return opBinary!op(other);
     }
 
     // Multiply or divide two quantities
     /// ditto
-    auto opBinary(string op, Q)(Q other) const
-        if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
+    auto opBinary(string op, Q)(Q other) const if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!(Q.valueType);
-        return Quantity!(N, dimensions.binop!op(other.dimensions))
-            .make(mixin("(_value" ~ op ~ "other._value)"));
+        auto result = mixin("(_value" ~ op ~ "other._value)");
+        return Quantity!(typeof(result), dimensions.binop!op(other.dimensions)).make(result);
     }
 
     // Multiply or divide a quantity by a number
     /// ditto
-    auto opBinary(string op, T)(T other) const
-        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
+    auto opBinary(string op, T)(T other) const if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
-        return Quantity.make(mixin("_value" ~ op ~ "other"));
+        auto result = mixin("_value" ~ op ~ "other");
+        return Quantity!(typeof(result), dimensions).make(result);
     }
 
     /// ditto
-    auto opBinaryRight(string op, T)(T other) const
-        if (isNumeric!T && op == "*")
+    auto opBinaryRight(string op, T)(T other) const if (isNumeric!T && op == "*")
     {
         checkValueType!T;
         return this * other;
     }
 
     /// ditto
-    auto opBinaryRight(string op, T)(T other) const
-        if (isNumeric!T && (op == "/" || op == "%"))
+    auto opBinaryRight(string op, T)(T other) const if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
-        return Quantity!(N, dimensions.invert()).make(mixin("other" ~ op ~ "_value"));
+        auto result = mixin("other" ~ op ~ "_value");
+        return Quantity!(typeof(result), dimensions.invert()).make(result);
     }
 
-    auto opBinary(string op, T)(T power) const
-        if (op == "^^")
+    auto opBinary(string op, T)(T power) const if (op == "^^")
     {
-        static assert(false, "Unsupporter operator: ^^");
+        static assert(false, "Unsupported operator: ^^");
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
     /// ditto
-    void opOpAssign(string op, Q)(Q other)
-        if (isQuantity!Q && (op == "+" || op == "-"))
+    void opOpAssign(string op, Q)(Q other) if (isQuantity!Q && (op == "+" || op == "-"))
     {
         checkDim!(other.dimensions);
         checkValueType!(Q.valueType);
@@ -358,8 +347,7 @@ public:
 
     // Add/sub assign a number to a dimensionless quantity
     /// ditto
-    void opOpAssign(string op, T)(T other)
-        if (isNumeric!T && (op == "+" || op == "-"))
+    void opOpAssign(string op, T)(T other) if (isNumeric!T && (op == "+" || op == "-"))
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
@@ -368,8 +356,7 @@ public:
 
     // Mul/div assign with a dimensionless quantity
     /// ditto
-    void opOpAssign(string op, Q)(Q other)
-        if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
+    void opOpAssign(string op, Q)(Q other) if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         Q.checkDim!(Dimensions.init);
         checkValueType!(Q.valueType);
@@ -378,8 +365,7 @@ public:
 
     // Mul/div assign with a number
     /// ditto
-    void opOpAssign(string op, T)(T other)
-        if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
+    void opOpAssign(string op, T)(T other) if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
         mixin("_value" ~ op ~ "= other;");
@@ -387,8 +373,7 @@ public:
 
     // Exact equality between quantities
     /// ditto
-    bool opEquals(Q)(Q other) const
-        if (isQuantity!Q)
+    bool opEquals(Q)(Q other) const if (isQuantity!Q)
     {
         checkDim!(other.dimensions);
         return _value == other._value;
@@ -396,8 +381,7 @@ public:
 
     // Exact equality between a dimensionless quantity and a number
     /// ditto
-    bool opEquals(T)(T other) const
-        if (isNumeric!T)
+    bool opEquals(T)(T other) const if (isNumeric!T)
     {
         checkValueType!T;
         checkDim!(Dimensions.init);
@@ -406,8 +390,7 @@ public:
 
     // Comparison between two quantities
     /// ditto
-    int opCmp(Q)(Q other) const
-        if (isQuantity!Q)
+    int opCmp(Q)(Q other) const if (isQuantity!Q)
     {
         checkDim!(other.dimensions);
         if (_value == other._value)
@@ -419,8 +402,7 @@ public:
 
     // Comparison between a dimensionless quantity and a number
     /// ditto
-    int opCmp(T)(T other) const
-        if (isNumeric!T)
+    int opCmp(T)(T other) const if (isNumeric!T)
     {
         checkValueType!T;
         checkDim!(Dimensions.init);
@@ -440,14 +422,37 @@ public:
     }
 }
 
-pure nothrow @nogc @safe unittest // Quantity.baseUnit
+pure nothrow @nogc @safe unittest
+{
+    enum md = unit!(double, "L");
+    enum mr = unit!(real, "L");
+    enum mtu = md * mr;
+    static assert(is(mtu.valueType == real)); // assert highest precision
+    enum mdu = md / mr;
+    static assert(is(mdu.valueType == real)); // assert highest precision
+    enum mru = md % mr;
+    static assert(is(mru.valueType == real)); // assert highest precision
+}
+
+pure nothrow @nogc @safe unittest
+{
+    enum md = unit!(double, "L");
+    enum mr = unit!(real, "L");
+    enum mpu = md + mr;
+    static assert(is(mpu.valueType == real)); // assert highest precision
+    enum mmu = md - mr;
+    static assert(is(mmu.valueType == real)); // assert highest precision
+}
+
+pure nothrow @nogc @safe unittest  // Quantity.baseUnit
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
+    static assert(is(minute.valueType == double));
     assert(minute.baseUnit == second);
 }
 
-pure nothrow @nogc @safe unittest // Quantity constructor
+pure nothrow @nogc @safe unittest  // Quantity constructor
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
@@ -462,15 +467,19 @@ pure nothrow @nogc @safe unittest // Quantity constructor
     assert(angle.value(radian).approxEqual(3.14));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.alias this
+pure nothrow @nogc @safe unittest  // Quantity.alias this
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
 
-    static double foo(double d) nothrow @nogc { return d; }
+    static double foo(double d) nothrow @nogc
+    {
+        return d;
+    }
+
     assert(foo(2 * radian) == 2);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opCast
+pure nothrow @nogc @safe unittest  // Quantity.opCast
 {
     enum second = unit!(double, "T");
     enum radian = unit!(double, "L") / unit!(double, "L");
@@ -481,7 +490,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCast
     assert(cast(double) angle == 12);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opAssign Q = Q
+pure nothrow @nogc @safe unittest  // Quantity.opAssign Q = Q
 {
     enum meter = unit!(double, "L");
     enum radian = meter / meter;
@@ -494,13 +503,13 @@ pure nothrow @nogc @safe unittest // Quantity.opAssign Q = Q
     assert(angle.value(radian) == 2);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
+pure nothrow @nogc @safe unittest  // Quantity.opUnary +Q -Q ++Q --Q
 {
     enum meter = unit!(double, "L");
 
-    auto length = + meter;
+    auto length = +meter;
     assert(length == 1 * meter);
-    auto length2 = - meter;
+    auto length2 = -meter;
     assert(length2 == -1 * meter);
 
     auto len = ++meter;
@@ -511,7 +520,7 @@ pure nothrow @nogc @safe unittest // Quantity.opUnary +Q -Q ++Q --Q
     assert(len.value(meter).approxEqual(1));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q*N Q/N
 {
     enum second = unit!(double, "T");
     import std.math : approxEqual;
@@ -522,7 +531,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q*N Q/N
     assert(time2.value(second).approxEqual(0.5));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q*Q Q/Q
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
@@ -532,7 +541,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
 
     auto length = meter * 5;
     auto surface = length * length;
-    assert(surface.value(meter * meter) == 5*5);
+    assert(surface.value(meter * meter) == 5 * 5);
     auto length2 = surface / length;
     assert(length2.value(meter) == 5);
 
@@ -543,7 +552,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q*Q Q/Q
     assert(y.rawValue == 60);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
+pure nothrow @nogc @safe unittest  // Quantity.opBinaryRight N*Q
 {
     enum meter = unit!(double, "L");
 
@@ -551,7 +560,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinaryRight N*Q
     assert(length == meter * 100);
 }
 
-pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
+pure nothrow @nogc @safe unittest  // Quantity.opBinaryRight N/Q
 {
     enum meter = unit!(double, "L");
     import std.math : approxEqual;
@@ -560,7 +569,7 @@ pure nothrow @nogc @safe  unittest // Quantity.opBinaryRight N/Q
     assert(x.value(1 / meter).approxEqual(0.5));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q%Q Q%N N%Q
 {
     enum meter = unit!(double, "L");
 
@@ -571,7 +580,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q%Q Q%N N%Q
     assert(y2.value(meter).approxEqual(8.1));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q+Q Q-Q
 {
     enum meter = unit!(double, "L");
 
@@ -581,7 +590,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+Q Q-Q
     assert(length2.value(meter) == 1);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q+N Q-N
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
 
@@ -593,7 +602,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
     assert(angle.value(radian) == 2);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
+pure nothrow @nogc @safe unittest  // Quantity.opOpAssign Q+=Q Q-=Q
 {
     enum second = unit!(double, "T");
 
@@ -604,7 +613,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q+=Q Q-=Q
     assert(time.value(second).approxEqual(20));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
+pure nothrow @nogc @safe unittest  // Quantity.opBinary Q+N Q-N
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
 
@@ -615,7 +624,7 @@ pure nothrow @nogc @safe unittest // Quantity.opBinary Q+N Q-N
     assert(angle.value(radian) == 1);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
+pure nothrow @nogc @safe unittest  // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     enum second = unit!(double, "T");
 
@@ -628,7 +637,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
     assert(time.value(second).approxEqual(1));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
+pure nothrow @nogc @safe unittest  // Quantity.opOpAssign Q*=N Q/=N Q%=N
 {
     enum second = unit!(double, "T");
     enum meter = unit!(double, "L");
@@ -642,7 +651,7 @@ pure nothrow @nogc @safe unittest // Quantity.opOpAssign Q*=N Q/=N Q%=N
     assert(time.value(second).approxEqual(1));
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opEquals
+pure nothrow @nogc @safe unittest  // Quantity.opEquals
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
@@ -652,7 +661,7 @@ pure nothrow @nogc @safe unittest // Quantity.opEquals
     assert(1 * radian == 1);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opCmp
+pure nothrow @nogc @safe unittest  // Quantity.opCmp
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
@@ -664,7 +673,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
     assert(hour >= hour);
 }
 
-pure nothrow @nogc @safe unittest // Quantity.opCmp
+pure nothrow @nogc @safe unittest  // Quantity.opCmp
 {
     enum radian = unit!(double, "L") / unit!(double, "L");
 
@@ -675,7 +684,7 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
     assert(angle >= 2);
 }
 
-unittest // Quantity.toString
+unittest  // Quantity.toString
 {
     enum meter = unit!(double, "L");
     import std.conv : text;
@@ -684,7 +693,7 @@ unittest // Quantity.toString
     assert(length.text == "12 [L]", length.text);
 }
 
-pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensions
+pure nothrow @nogc @safe unittest  // Compilation errors for incompatible dimensions
 {
     enum second = unit!(double, "T");
     enum meter = unit!(double, "L");
@@ -712,7 +721,7 @@ pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensi
     static assert(!__traits(compiles, m < 1));
 }
 
-pure nothrow @nogc @safe unittest // immutable Quantity
+pure nothrow @nogc @safe unittest  // immutable Quantity
 {
     enum second = unit!(double, "T");
     enum minute = 60 * second;
@@ -732,8 +741,9 @@ enum isQuantity(T) = is(Unqual!T == Quantity!X, X...);
 template unit(N, string symbol)
 {
     enum dim = Dimensions.mono(symbol);
-    enum unit = {return Quantity!(N, dim).make(1); }();
+    enum unit = { return Quantity!(N, dim).make(1); }();
 }
+
 ///
 pure nothrow @nogc @safe unittest
 {
@@ -744,19 +754,19 @@ pure nothrow @nogc @safe unittest
 }
 
 /// Check that two quantity types are dimensionally consistent.
-template AreConsistent(Q1, Q2)
-    if (isQuantity!Q1 && isQuantity!Q2)
+template AreConsistent(Q1, Q2) if (isQuantity!Q1 && isQuantity!Q2)
 {
     enum AreConsistent = Q1.dimensions == Q2.dimensions;
 }
+
 ///
 pure nothrow @nogc @safe unittest
 {
     enum second = unit!(double, "T");
     enum meter = unit!(double, "L");
 
-    alias Speed = typeof(meter/second);
-    alias Velocity = typeof((1/second * meter));
+    alias Speed = typeof(meter / second);
+    alias Velocity = typeof((1 / second * meter));
     static assert(AreConsistent!(Speed, Velocity));
 }
 
@@ -768,12 +778,12 @@ template prefix(alias factor)
     alias N = typeof(factor);
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
-    auto prefix(Q)(Q base)
-        if (isQuantity!Q)
+    auto prefix(Q)(Q base) if (isQuantity!Q)
     {
         return base * factor;
     }
 }
+
 ///
 pure nothrow @nogc @safe unittest
 {
