@@ -49,12 +49,12 @@ alias metre = meter; /// ditto
 
 /// Base Units Shorthands
 auto m (N = StdN)(N n) { return n * meter!N; }
-auto kg(N = StdN)(N n) { return n * kilogram!N; }
-auto g (N = StdN)(N n) { return n * gram!N; }
-auto s (N = StdN)(N n) { return n * second!N; }
-auto A (N = StdN)(N n) { return n * ampere!N; }
-auto K (N = StdN)(N n) { return n * kelvin!N; }
-auto cd(N = StdN)(N n) { return n * candela!N; }
+auto kg(N = StdN)(N n) { return n * kilogram!N; } /// ditto
+auto g (N = StdN)(N n) { return n * gram!N; } /// ditto
+auto s (N = StdN)(N n) { return n * second!N; } /// ditto
+auto A (N = StdN)(N n) { return n * ampere!N; } /// ditto
+auto K (N = StdN)(N n) { return n * kelvin!N; } /// ditto
+auto cd(N = StdN)(N n) { return n * candela!N; } /// ditto
 
 unittest
 {
