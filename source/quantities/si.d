@@ -57,7 +57,7 @@ auto A (N = StdN)(N n) { return n * ampere!N; } /// ditto
 auto K (N = StdN)(N n) { return n * kelvin!N; } /// ditto
 auto cd(N = StdN)(N n) { return n * candela!N; } /// ditto
 
-unittest
+@safe @nogc pure nothrow unittest
 {
     auto m = 1.0L; // m can be overloaded as variable
     auto y = m.m; // inferred as real
@@ -297,23 +297,6 @@ Q parseSI(Q)(string str)
 
 /// A compile-time parser with automatic type deduction for SI quantities.
 alias SI(N = StdN) = compileTimeParser!(N, siSymbols!N, std.conv.parse!(N, string));
-///
-pure nothrow @safe @nogc unittest
-{
-    alias N = double;
-    alias siN = SI!N;
-
-    enum min = siN!"min";
-    enum inch = siN!"2.54 cm";
-    auto conc = siN!"1 µmol/L";
-    auto speed = siN!"m s^-1";
-    auto value = siN!"0.5";
-
-    static assert(is(typeof(inch) == Length!N));
-    static assert(is(typeof(conc) == Concentration!N));
-    static assert(is(typeof(speed) == Speed!N));
-    static assert(is(typeof(value) == Dimensionless!N));
-}
 
 /// Instantiator for $(D SI).
 auto si(string str, T)(T n)
@@ -325,19 +308,20 @@ auto si(string str, T)(T n)
 ///
 pure nothrow @safe @nogc unittest
 {
-    enum c = 1.0;
-    alias T = typeof(c);
+    enum min = 1.0.si!"min";
+    static assert(is(typeof(min) == Time!double));
 
-    enum min = c.si!"min";
-    enum inch = c.si!"2.54 cm";
-    auto conc = c.si!"1 µmol/L";
-    auto speed = c.si!"m s^-1";
-    auto value = c.si!"0.5";
+    enum inch = 1.0f.si!"2.54 cm";
+    static assert(is(typeof(inch) == Length!float));
 
-    static assert(is(typeof(inch) == Length!T));
-    static assert(is(typeof(conc) == Concentration!T));
-    static assert(is(typeof(speed) == Speed!T));
-    static assert(is(typeof(value) == Dimensionless!T));
+    auto conc = 1.0L.si!"1 µmol/L";
+    static assert(is(typeof(conc) == Concentration!real));
+
+    auto speed = 1.0.si!"m s^-1";
+    static assert(is(typeof(speed) == Speed!double));
+
+    auto value = 1.0f.si!"0.5";
+    static assert(is(typeof(value) == Dimensionless!float));
 }
 
 /++
