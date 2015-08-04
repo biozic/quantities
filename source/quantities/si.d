@@ -59,8 +59,8 @@ auto cd(N = StdN)(N n) { return n * candela!N; } /// ditto
 
 @safe @nogc pure nothrow unittest
 {
-    auto m = 1.0L; // m can be overloaded as variable
-    auto y = m.m; // inferred as real
+    auto m = 1.0L; // `m` can be overloaded as variable
+    static assert(is(typeof(m.m) == Length!real));
 }
 
 /// Derived Units
