@@ -299,7 +299,7 @@ Q parseSI(Q)(string str)
 alias SI(N = StdN) = compileTimeParser!(N, siSymbols!N, std.conv.parse!(N, string));
 
 /// Instantiator for $(D SI) of unit expression $(D unitExpression).
-auto si(string unitExpression, T)(T n)
+auto si(string unitExpression, T)(T n = 1.0)
     if (isNumeric!T)
 {
     alias siN = SI!T;
@@ -308,6 +308,9 @@ auto si(string unitExpression, T)(T n)
 ///
 pure nothrow @safe @nogc unittest
 {
+    enum min_ = si!"min";
+    static assert(is(typeof(min_) == Time!double));
+
     enum min = 1.0.si!"min";
     static assert(is(typeof(min) == Time!double));
 
