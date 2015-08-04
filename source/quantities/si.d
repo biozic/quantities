@@ -298,12 +298,12 @@ Q parseSI(Q)(string str)
 /// A compile-time parser with automatic type deduction for SI quantities.
 alias SI(N = StdN) = compileTimeParser!(N, siSymbols!N, std.conv.parse!(N, string));
 
-/// Instantiator for $(D SI).
-auto si(string str, T)(T n)
+/// Instantiator for $(D SI) of unit expression $(D unitExpression).
+auto si(string unitExpression, T)(T n)
     if (isNumeric!T)
 {
     alias siN = SI!T;
-    return n * siN!str;
+    return n * siN!unitExpression;
 }
 ///
 pure nothrow @safe @nogc unittest
