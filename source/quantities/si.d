@@ -29,6 +29,7 @@ import std.math : PI;
 import std.format;
 import std.string;
 import std.typetuple;
+import std.traits : isNumeric;
 import core.time : Duration, dur;
 
 version (unittest) import std.math : approxEqual;
@@ -295,12 +296,12 @@ Q parseSI(Q)(string str)
 }
 
 /// A compile-time parser with automatic type deduction for SI quantities.
-alias si(N = StdN) = compileTimeParser!(N, siSymbols!N, std.conv.parse!(N, string));
+alias SI(N = StdN) = compileTimeParser!(N, siSymbols!N, std.conv.parse!(N, string));
 ///
-pure @safe unittest
+pure nothrow @safe @nogc unittest
 {
     alias N = double;
-    alias siN = si!N;
+    alias siN = SI!N;
 
     enum min = siN!"min";
     enum inch = siN!"2.54 cm";
@@ -312,6 +313,31 @@ pure @safe unittest
     static assert(is(typeof(conc) == Concentration!N));
     static assert(is(typeof(speed) == Speed!N));
     static assert(is(typeof(value) == Dimensionless!N));
+}
+
+/// Instantiator for $(D SI).
+auto si(string str, T)(T n)
+    if (isNumeric!T)
+{
+    alias siN = SI!T;
+    return n * siN!str;
+}
+///
+pure nothrow @safe @nogc unittest
+{
+    enum c = 1.0;
+    alias T = typeof(c);
+
+    enum min = c.si!"min";
+    enum inch = c.si!"2.54 cm";
+    auto conc = c.si!"1 µmol/L";
+    auto speed = c.si!"m s^-1";
+    auto value = c.si!"0.5";
+
+    static assert(is(typeof(inch) == Length!T));
+    static assert(is(typeof(conc) == Concentration!T));
+    static assert(is(typeof(speed) == Speed!T));
+    static assert(is(typeof(value) == Dimensionless!T));
 }
 
 /++
@@ -377,7 +403,7 @@ unittest
 {
     alias N = double;
     auto sf = SIFormatWrapper!(Speed!N)("%.1f km/h");
-    alias siN = si!N;
+    alias siN = SI!N;
     assert(text(sf(siN!"343.4 m/s")) == "1236.2 km/h");
     assert(text(sf("343.4 m/s".parseSI!(Speed!N))) == "1236.2 km/h");
 }
@@ -388,7 +414,7 @@ known at compile-time.
 +/
 auto siFormatWrapper(N, string fmt)()
 {
-    alias siN = si!N;
+    alias siN = SI!N;
     enum unit = siN!({
             auto spec = FormatSpec!char(fmt);
             auto dummy = appender!string;
