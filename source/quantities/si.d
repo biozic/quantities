@@ -309,7 +309,7 @@ auto si(string unitExpression, T)(T n = 1.0)
 pure nothrow @safe @nogc unittest
 {
     auto min__ = si!"min";
-    assert(is(typeof(min__) == Time!double));
+    static assert(is(typeof(min__) == Time!double));
 
     enum min_ = si!"min";
     static assert(is(typeof(min_) == Time!double));
