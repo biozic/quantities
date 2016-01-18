@@ -2,17 +2,17 @@ module quantities.internal.dimensions;
 
 package:
 
-struct Dim
+struct DimImpl(N)
 {
     string symbol;
-    int power;
+    N power;
 
-    bool opEquals(Dim other) const pure @safe nothrow
+    bool opEquals(DimImpl!N other) const
     {
         return power == other.power && symbol == other.symbol;
     }
 
-    int opCmp(Dim other) const pure @safe nothrow
+    int opCmp(DimImpl!N other) const
     {
         if (symbol < other.symbol)
             return -1;
@@ -22,22 +22,22 @@ struct Dim
             return 0;
     }
 
-    string toString() const pure @safe
+    string toString() const
     {
         import std.string : format;
         
-        if (power == 0)
+        if (power == N(0))
             return null;
-        else if (power == 1)
+        else if (power == N(1))
             return symbol;
         else 
-            return "%s^%d".format(symbol, power);
+            return "%s^%s".format(symbol, power);
     }
 }
 
-struct DimList
+struct DimListImpl(N)
 {
-    private Dim[] list;
+    private DimImpl!N[] list;
 
     invariant()
     {
@@ -45,17 +45,17 @@ struct DimList
         assert(list.isSorted);
     }
 
-    DimList dup() const pure @safe nothrow
+    DimListImpl!N dup() const
     {
-        return DimList(list.dup);
+        return DimListImpl!N(list.dup);
     }
 
-    void insert(bool invert = false)(string symbol, int power) pure @safe nothrow
+    void insert(bool invert = false)(string symbol, N power)
     {
         import std.algorithm : countUntil, remove;
         import std.array : insertInPlace;
 
-        if (power == 0)
+        if (power == N(0))
             return;
 
         static if (invert)
@@ -63,7 +63,7 @@ struct DimList
 
         if (!list.length)
         {
-            list = [Dim(symbol, power)];
+            list = [DimImpl!N(symbol, power)];
             return;
         }
 
@@ -72,13 +72,25 @@ struct DimList
         {
             // Merge the dimensions
             list[pos].power += power;
-            if (list[pos].power == 0)
+            if (list[pos].power == N(0))
             {
-                try
-                    () @trusted { list = list.remove(pos); } ();
-                catch (Exception)
-                    // remove only throws when it has multiple arguments
-                    assert(false);
+                if (__ctfe)
+                {
+                    auto d = list[pos];
+                    DimImpl!N[] newList;
+                    foreach (dim; list)
+                        if (dim != d)
+                            newList ~= dim;
+                    list = newList;
+                }
+                else
+                {
+                    try
+                        list = list.remove(pos);
+                    catch (Exception)
+                        // remove only throws when it has multiple arguments
+                        assert(false);
+                }
 
                 // Necessary to compare dimensionless values
                 if (!list.length)
@@ -91,73 +103,69 @@ struct DimList
             pos = list.countUntil!(d => d.symbol > symbol)();
             if (pos < 0)
                 pos = list.length;
-            list.insertInPlace(pos, Dim(symbol, power));
+            list.insertInPlace(pos, DimImpl!N(symbol, power));
         }
     }
 
-    void insert(bool invert = false)(in DimList other) pure @safe nothrow
+    void insert(bool invert = false)(in DimListImpl!N other)
     {
         foreach (dim; other.list)
             insert!invert(dim.symbol, dim.power);
     }
 
-    bool opEquals(in DimList other) const pure @safe nothrow
+    bool opEquals(in DimListImpl!N other) const
     {
         return list == other.list;
     }
 
-    string toString() const pure @safe
+    string toString() const
     {
         import std.string;
         return "[%(%s %)]".format(list);
     }
+
+    // Unit tests
+
+    unittest
+    {
+        auto list = DimListImpl!N([DimImpl!N("a", N(1)), DimImpl!N("c", N(2)), DimImpl!N("e", N(1))]);
+        list.insert("f", N(-1));
+        list.insert("f", N(1));
+        list.insert("b", N(3));
+        list.insert("0", N(1));
+        list.insert("0", N(-1));
+        list.insert("a", N(-1));
+        list.insert("b", N(-3));
+        list.insert("c", N(-2));
+        list.insert("e", N(-1));
+        list.insert("x", N(0));
+        list.insert("x", N(1));
+    }
+    
+    unittest // Compile-time
+    {
+        enum list = {
+            DimListImpl!N list;
+            list.insert("a", N(1));
+            return list;
+        }();
+    }
 }
 
-unittest
-{
-    auto list = DimList([Dim("a", 1), Dim("c", 2), Dim("e", 1)]);
-    list.insert("f", -1);
-    assert(list.toString == "[a c^2 e f^-1]");
-    list.insert("f", 1);
-    assert(list.toString == "[a c^2 e]");
-    list.insert("b", 3);
-    assert(list.toString == "[a b^3 c^2 e]");
-    list.insert("0", 1);
-    assert(list.toString == "[0 a b^3 c^2 e]");
-    list.insert("0", -1);
-    list.insert("a", -1);
-    list.insert("b", -3);
-    list.insert("c", -2);
-    list.insert("e", -1);
-    assert(list.toString == "[]");
-    list.insert("x", 0);
-    assert(list.toString == "[]");
-    list.insert("x", 1);
-    assert(list.toString == "[x]");
-}
 
-unittest // Compile-time
-{
-    enum list = {
-        DimList list;
-        list.insert("a", 1);
-        return list;
-    }();
-}
-
-struct Dimensions
+struct DimensionsImpl(N)
 {
 private:
-    DimList dimList;
+    DimListImpl!N dimList;
 
     version (unittest)
     {
-        this(DimList list) pure @safe nothrow
+        private this(DimListImpl!N list)
         {
             dimList = list;
         }
 
-        this(int[string] dims) pure @safe
+        private this(N[string] dims)
         {
             foreach (k, v; dims)
                 dimList.insert(k, v);
@@ -165,133 +173,125 @@ private:
     }
 
 public:
-    static Dimensions mono(string symbol) pure @safe nothrow
+    static DimensionsImpl!N mono(string symbol)
     {
-        DimList list;
-        list.insert(symbol, 1);
-        return Dimensions(list);
+        DimListImpl!N list;
+        list.insert(symbol, N(1));
+        return DimensionsImpl(list);
     }
     
-    bool empty() const pure @safe nothrow
+    bool empty() const
     {
         return !dimList.list.length;
     }
 
-    Dimensions dup() const pure @safe nothrow
+    DimensionsImpl!N dup() const
     {
-        return Dimensions(dimList.dup);
+        return DimensionsImpl!N(dimList.dup);
     }
-    
-    Dimensions invert() const pure @safe nothrow
+
+    DimensionsImpl!N invert() const
     {
         auto list = dimList.dup;
         foreach (ref dim; list.list)
             dim.power = -dim.power;
-        return Dimensions(list);
+        return DimensionsImpl!N(list);
     }
-    pure @safe unittest
+    unittest
     {
-        auto dim = Dimensions(["a": 5, "b": -2]);
-        assert(dim.invert == Dimensions(["a": -5, "b": 2]));
+        auto dim = DimensionsImpl!N(["a": N(5), "b": N(-2)]);
+        assert(dim.invert == DimensionsImpl!N(["a": N(-5), "b": N(2)]));
     }
 
-    Dimensions binop(string op)(in Dimensions other) const pure @safe nothrow
+    DimensionsImpl!N binop(string op)(in DimensionsImpl!N other) const
         if (op == "*")
     {
         auto list = dimList.dup;
         list.insert(other.dimList);
-        return Dimensions(list);
+        return DimensionsImpl(list);
     }
-    pure @safe unittest
+    unittest
     {
-        auto dim1 = Dimensions(["a": 1, "b": -2]);
-        auto dim2 = Dimensions(["a": -1, "c": 2]);
-        assert(dim1.binop!"*"(dim2) == Dimensions(["b": -2, "c": 2]));
+        auto dim1 = DimensionsImpl!N(["a": N(1), "b": N(-2)]);
+        auto dim2 = DimensionsImpl!N(["a": N(-1), "c": N(2)]);
+        assert(dim1.binop!"*"(dim2) == DimensionsImpl!N(["b": N(-2), "c": N(2)]));
     }
-    
-    Dimensions binop(string op)(in Dimensions other) const pure @safe
+
+    DimensionsImpl!N binop(string op)(in DimensionsImpl!N other) const
         if (op == "/" || op == "%")
     {
         auto list = dimList.dup;
         list.insert!true(other.dimList);
-        return Dimensions(list);
+        return DimensionsImpl(list);
     }
-    pure @safe unittest
+    unittest
     {
-        auto dim1 = Dimensions(["a": 1, "b": -2]);
-        auto dim2 = Dimensions(["a": 1, "c": 2]);
-        assert(dim1.binop!"/"(dim2) == Dimensions(["b": -2, "c": -2]));
+        auto dim1 = DimensionsImpl!N(["a": N(1), "b": N(-2)]);
+        auto dim2 = DimensionsImpl!N(["a": N(1), "c": N(2)]);
+        assert(dim1.binop!"/"(dim2) == DimensionsImpl!N(["b": N(-2), "c": N(-2)]));
     }
     
-    Dimensions pow(int n) const pure @safe
+    DimensionsImpl!N pow(int n) const
     {
         if (n == 0)
-            return Dimensions.init;
+            return DimensionsImpl!N.init;
 
         auto list = dimList.dup;
         foreach (ref dim; list.list)
             dim.power = dim.power * n;
-        return Dimensions(list);
+        return DimensionsImpl!N(list);
     }
-    pure @safe unittest
+    unittest
     {
-        auto dim = Dimensions(["a": 5, "b": -2]);
-        assert(dim.pow(2) == Dimensions(["a": 10, "b": -4]));
-        assert(dim.pow(0) == Dimensions.init);
+        auto dim = DimensionsImpl!N(["a": N(5), "b": N(-2)]);
+        assert(dim.pow(2) == DimensionsImpl!N(["a": N(10), "b": N(-4)]));
+        assert(dim.pow(0) == DimensionsImpl!N.init);
     }
     
-    Dimensions powinverse(int n) const pure @safe
+    DimensionsImpl!N powinverse(int n) const
     {
         import std.exception : enforce;
         import std.string : format;
 
         auto list = dimList.dup;
         foreach (ref dim; list.list)
-        {
-            enforce(dim.power % n == 0, 
-                "Dimension error: '%s^%s' is not divisible by %s"
-                .format(dim.symbol, dim.power, n));
             dim.power = dim.power / n;
-        }
-        return Dimensions(list);
-    }
-    pure @safe unittest
-    {
-        auto dim = Dimensions(["a": 6, "b": -2]);
-        assert(dim.powinverse(2) == Dimensions(["a": 3, "b": -1]));
-    }
-    
-    bool opEquals(in Dimensions other) const pure @safe  nothrow
-    {
-        return dimList == other.dimList;
-    }
-    pure @safe unittest
-    {
-        assert(Dimensions.init == Dimensions.init);
-        assert(Dimensions(["a": 1, "b": 2]) == Dimensions(["a": 1, "b": 2]));
-        assert(Dimensions(["a": 1, "b": 1]) != Dimensions(["a": 1, "b": 2]));
-        assert(Dimensions(["a": 1]) != Dimensions(["a": 1, "b": 2]));
-        assert(Dimensions(["a": 1, "b": 2]) != Dimensions(["a": 1]));
-    }
 
-    string toString() const pure @safe
-    {
-        return dimList.toString;
+        return DimensionsImpl!N(list);
     }
     unittest
     {
-        assert(Dimensions(["a": 2, "b": -1, "c": 1, "d": 0]).toString == "[a^2 b^-1 c]");
+        auto dim = DimensionsImpl!N(["a": N(6), "b": N(-2)]);
+        assert(dim.powinverse(2) == DimensionsImpl!N(["a": N(3), "b": N(-1)]));
     }
-}
+    
+    bool opEquals(in DimensionsImpl!N other) const
+    {
+        return dimList == other.dimList;
+    }
+    unittest
+    {
+        assert(DimensionsImpl!N.init == DimensionsImpl!N.init);
+        assert(DimensionsImpl!N(["a": N(1), "b": N(2)]) == DimensionsImpl!N(["a": N(1), "b": N(2)]));
+        assert(DimensionsImpl!N(["a": N(1), "b": N(1)]) != DimensionsImpl!N(["a": N(1), "b": N(2)]));
+        assert(DimensionsImpl!N(["a": N(1)]) != DimensionsImpl!N(["a": N(1), "b": N(2)]));
+        assert(DimensionsImpl!N(["a": N(1), "b": N(2)]) != DimensionsImpl!N(["a": N(1)]));
+    }
 
-unittest // Compile-time
-{
-    enum dim = {
-        DimList list;
-        list.insert("a", 1);
-        return Dimensions(list);
-    }();
+    string toString() const
+    {
+        return dimList.toString;
+    }
 
-    int foo(Dimensions d)() { return 0; }
-    enum a = foo!dim();
+    unittest // Compile time
+    {
+        enum dim = {
+            DimListImpl!N list;
+            list.insert("a", N(1));
+            return DimensionsImpl!N(list);
+        }();
+        
+        N foo(DimensionsImpl!N d)() { return N(0); }
+        enum a = foo!dim();
+    }
 }

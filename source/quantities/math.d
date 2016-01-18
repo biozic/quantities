@@ -44,7 +44,7 @@ auto sqrt(Q)(Q quantity)
     return Q.make(std.math.sqrt(quantity.rawValue), quantity.dimensions.powinverse(2));
 }
 
-pure nothrow @nogc @safe unittest
+unittest
 {
     auto meter = unit!(double, "L");
     auto surface = 25 * square(meter);
@@ -52,7 +52,15 @@ pure nothrow @nogc @safe unittest
     assert(side.value(meter).approxEqual(5));
 }
 
-pure @safe unittest
+unittest
+{
+    import std.stdio;
+    auto meter = unit!(double, "L");
+    auto sqrtm = sqrt(meter);
+    assert(square(5 * sqrtm) == 25 * meter);
+}
+
+unittest
 {
     auto meter = unit!(double, "L").qVariant;
     auto surface = 25 * square(meter);
@@ -88,7 +96,7 @@ auto cbrt(Q)(Q quantity)
     return Q.make(std.math.cbrt(quantity.rawValue), quantity.dimensions.powinverse(3));
 }
 
-@safe /+pure+/ /+nothrow+/ @nogc unittest
+unittest
 {
     auto meter = unit!(double, "L");
     auto vol = 27 * cubic(meter);
@@ -96,7 +104,7 @@ auto cbrt(Q)(Q quantity)
     assert(side.value(meter).approxEqual(3));
 }
 
-@safe /+pure+/ unittest
+unittest
 {
     auto meter = unit!(double, "L").qVariant;
     auto vol = 27 * cubic(meter);
@@ -132,7 +140,7 @@ auto nthRoot(int n, Q)(Q quantity)
     return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions.powinverse(n));
 }
 
-pure nothrow @nogc @safe unittest
+unittest
 {
     auto meter = unit!(double, "L");
     auto x = 16 * pow!4(meter);
@@ -140,7 +148,7 @@ pure nothrow @nogc @safe unittest
     assert(side.value(meter).approxEqual(2));
 }
 
-pure @safe unittest
+unittest
 {
     auto meter = unit!(double, "L").qVariant;
     auto x = 16 * pow!4(meter);
@@ -162,7 +170,7 @@ Q abs(Q)(Q quantity)
     return Q.make(std.math.fabs(quantity.rawValue), quantity.dimensions);
 }
 
-pure nothrow @nogc @safe unittest
+unittest
 {
     auto meter = unit!(double, "L");
     auto mlength = -12 * meter;
@@ -170,7 +178,7 @@ pure nothrow @nogc @safe unittest
     assert(length.value(meter).approxEqual(12));
 }
 
-pure @safe unittest
+unittest
 {
     auto meter = unit!(double, "L").qVariant;
     auto mlength = -12 * meter;
@@ -214,8 +222,15 @@ template Cubic(Q)
     alias Cubic = typeof(Q.init * Q.init * Q.init);
 }
 
+/// ditto
+template Pow(Q, int n)
+    if (isQuantity!Q)
+{
+    alias Pow = typeof(pow!n(Q.init));
+}
+
 ///
-pure nothrow @nogc @safe unittest
+unittest
 {
     enum meter = unit!(double, "L");
     enum second = unit!(double, "T");

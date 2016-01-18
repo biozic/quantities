@@ -9,6 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import quantities.internal.dimensions;
+import quantities.rational;
 import std.exception;
 import std.format;
 import std.string;
@@ -19,6 +20,9 @@ version (unittest)
     import std.math : approxEqual;
     // import std.conv : text;
 }
+
+alias Rational = RationalImpl!int;
+alias Dimensions = DimensionsImpl!Rational;
 
 /++
 A quantity  that can  be represented as  the product  of a number  and a  set of

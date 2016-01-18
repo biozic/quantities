@@ -99,13 +99,13 @@ import std.utf;
 /// Exception thrown when operating on two units that are not interconvertible.
 class DimensionException : Exception
 {
-    pure @safe nothrow
+    nothrow
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
         super(msg, file, line, next);
     }
     
-    pure @safe nothrow
+    nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line, next);
@@ -152,7 +152,7 @@ struct SymbolList(N)
 }
 
 /// Type of a function that can parse a string for a numeric value of type N.
-alias NumberParser(N) = N function(ref string s) pure @safe;
+alias NumberParser(N) = N function(ref string s);
 
 /// A quantity parser
 struct Parser(N)
@@ -184,7 +184,7 @@ struct Parser(N)
     }
 }
 ///
-pure @safe unittest
+unittest
 {
     // From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
 
@@ -214,7 +214,7 @@ template compileTimeParser(N, alias symbolList, alias numberParser)
     }
 }
 ///
-pure @safe unittest
+unittest
 {
     enum century = unit!(real, "century");
     alias LectureLength = typeof(century);
@@ -231,13 +231,13 @@ pure @safe unittest
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
 {
-    pure @safe nothrow
+    nothrow
     this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
     {
         super(msg, file, line, next);
     }
 
-    pure @safe nothrow
+    nothrow
     this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
     {
         super(msg, file, line, next);
@@ -263,7 +263,7 @@ QVariant!N parseQuantityImpl(N)(string input, SymbolList!N symbolList, NumberPar
     return value * parser.parseCompoundUnit();
 }
 
-pure @safe unittest // Test parsing
+unittest // Test parsing
 {
     auto meter = unit!(double, "L");
     auto kilogram = unit!(double, "M");
@@ -332,7 +332,7 @@ struct QuantityParser(N)
         SymbolList!N symbolList;
     }
 
-    QVariant!N parseCompoundUnit(bool inParens = false) pure @safe
+    QVariant!N parseCompoundUnit(bool inParens = false)
     {
         QVariant!N ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
@@ -369,7 +369,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    QVariant!N parseExponentUnit() pure @safe
+    QVariant!N parseExponentUnit()
     {
         QVariant!N ret = parseUnit();
 
@@ -395,7 +395,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    int parseInteger() pure @safe
+    int parseInteger()
     {
         tokens.check(Tok.integer, Tok.supinteger);
         int n = tokens.front.integer;
@@ -404,7 +404,7 @@ struct QuantityParser(N)
         return n;
     }
 
-    QVariant!N parseUnit() pure @safe
+    QVariant!N parseUnit()
     {
         if (!tokens.length)
             return QVariant!N.make(1, Dimensions.init);
@@ -423,7 +423,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    QVariant!N parsePrefixUnit() pure @safe
+    QVariant!N parsePrefixUnit()
     {
         tokens.check(Tok.symbol);
         auto str = tokens.front.slice;
@@ -478,7 +478,7 @@ struct Token
     int integer = int.max;
 }
 
-Token[] lex(string input) pure @safe
+Token[] lex(string input)
 {
     enum State
     {
@@ -655,12 +655,12 @@ void advance(Types...)(ref Token[] tokens, Types types)
         check(tokens, types);
 }
 
-void check(Token[] tokens) pure @safe
+void check(Token[] tokens)
 {
     enforceEx!ParsingException(tokens.length, "Unexpected end of input");
 }
 
-void check(Token[] tokens, Tok tok) pure @safe
+void check(Token[] tokens, Tok tok)
 {
     tokens.check();
     enforceEx!ParsingException(tokens[0].type == tok,
@@ -668,7 +668,7 @@ void check(Token[] tokens, Tok tok) pure @safe
             tokens[0].slice, tok));
 }
 
-void check(Token[] tokens, Tok tok1, Tok tok2) pure @safe
+void check(Token[] tokens, Tok tok1, Tok tok2)
 {
     tokens.check();
     enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
