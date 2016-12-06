@@ -1,6 +1,6 @@
 module quantities.internal.dimensions;
 
-package:
+package(quantities):
 
 struct DimImpl(N)
 {
@@ -121,6 +121,7 @@ struct DimListImpl(N)
     string toString() const
     {
         import std.string;
+        import std.stdio;
         return "[%(%s %)]".format(list);
     }
 
@@ -185,11 +186,6 @@ public:
         return !dimList.list.length;
     }
 
-    DimensionsImpl!N dup() const
-    {
-        return DimensionsImpl!N(dimList.dup);
-    }
-
     DimensionsImpl!N invert() const
     {
         auto list = dimList.dup;
@@ -231,9 +227,9 @@ public:
         assert(dim1.binop!"/"(dim2) == DimensionsImpl!N(["b": N(-2), "c": N(-2)]));
     }
     
-    DimensionsImpl!N pow(int n) const
+    DimensionsImpl!N pow(N n) const
     {
-        if (n == 0)
+        if (n == N(0))
             return DimensionsImpl!N.init;
 
         auto list = dimList.dup;
@@ -247,8 +243,13 @@ public:
         assert(dim.pow(2) == DimensionsImpl!N(["a": N(10), "b": N(-4)]));
         assert(dim.pow(0) == DimensionsImpl!N.init);
     }
+
+    DimensionsImpl!N pow(int i) const
+    {
+        return pow(N(i));
+    }
     
-    DimensionsImpl!N powinverse(int n) const
+    DimensionsImpl!N powinverse(N n) const
     {
         import std.exception : enforce;
         import std.string : format;
@@ -263,6 +264,11 @@ public:
     {
         auto dim = DimensionsImpl!N(["a": N(6), "b": N(-2)]);
         assert(dim.powinverse(2) == DimensionsImpl!N(["a": N(3), "b": N(-1)]));
+    }
+
+    DimensionsImpl!N powinverse(int i) const
+    {
+        return powinverse(N(i));
     }
     
     bool opEquals(in DimensionsImpl!N other) const

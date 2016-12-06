@@ -1,11 +1,12 @@
-﻿module quantities.rational;
+﻿module quantities.internal.rational;
 
 import std.conv;
+import std.exception;
 import std.math;
 import std.string;
 import std.traits;
 
-package:
+package(quantities):
 
 struct RationalImpl(I)
     if (isIntegral!I)
@@ -27,6 +28,11 @@ struct RationalImpl(I)
 
     this(F)(F value, int precision = 6)
         if (isFloatingPoint!F)
+    out
+    {
+        assert(isNormalized);
+    }
+    body
     {
         immutable I coef = pow(10, precision);
         this(round(value * coef).to!I, coef);
@@ -34,18 +40,33 @@ struct RationalImpl(I)
 
     void opOpAssign(string op)(RationalImpl!I other)
         if (op == "+" || op == "-" || op == "*" || op =="/")
+    out
+    {
+        assert(isNormalized);
+    }
+    body
     {
         mixin("this = this" ~ op ~ "other;");
     }
 
     void opOpAssign(string op, I)(I value)
         if (isIntegral!I && (op == "+" || op == "-" || op == "*" || op =="/"))
+    out
+    {
+        assert(isNormalized);
+    }
+    body
     {
         mixin("this = this" ~ op ~ "value;");
     }
 
     RationalImpl!I opUnary(string op)() const
         if (op == "+" || op == "-")
+    out(result)
+    {
+        assert(result.isNormalized);
+    }
+    body
     {
         return RationalImpl!I(mixin(op ~ "num"), den);
     }
@@ -76,6 +97,11 @@ struct RationalImpl(I)
 
     RationalImpl!I opBinary(string op, I)(I value) const
         if (isIntegral!I && (op == "+" || op == "-" || op == "*" || op == "/"))
+    out
+    {
+        assert(isNormalized);
+    }
+    body
     {
         return mixin("this" ~ op ~ "RationalImpl!I(value)");
     }
@@ -88,17 +114,6 @@ struct RationalImpl(I)
     int opCmp(RationalImpl!I other) const
     {
         immutable diff = (num / cast(double) den) - (other.num / cast(double) other.den);
-        if (diff == 0)
-            return 0;
-        if (diff > 0)
-            return 1;
-        return -1;
-    }
-
-    int opCmp(I)(I value) const
-        if (isIntegral!I)
-    {
-        immutable diff = (num / cast(double) den) - value;
         if (diff == 0)
             return 0;
         if (diff > 0)
@@ -125,11 +140,17 @@ struct RationalImpl(I)
             return "%s".format(num);
         return "%s/%s".format(num, den);
     }
+
+private:
+    bool isNormalized() const
+    {
+        return den >= 0 && gcd(num, den) == 1;
+    }
 }
 
 unittest
 {
-    /+auto r = RationalImpl!int(6, -8);
+    auto r = RationalImpl!int(6, -8);
     assert(r.toString == "-3/4");
     assert((+r).toString == "-3/4");
     assert((-r).toString == "3/4");
@@ -152,23 +173,26 @@ unittest
     assert(r.toString == "-12/7", r.toString);
 
     assert(RationalImpl!int(8, 7) == RationalImpl!int(-16, -14));
-+/
     assert(RationalImpl!int(2, 5) < RationalImpl!int(3, 7));
-    /+
+    
     assert(RationalImpl!int(2.5).toString == "5/2");
-    assert(RationalImpl!int(0.1250001).toString == "1/8");+/
+    assert(RationalImpl!int(0.1250001).toString == "1/8");
 }
 
 private:
 
-auto gcd(I)(I a, I b)
+auto gcd(I)(I x, I y)
     if (isIntegral!I)
 {
-    import std.math : abs;
-    
-    I tmp;
-    a = abs(a);
-    b = abs(b);
+    import std.typecons : Unqual;
+    alias UI = Unqual!I;
+
+    if (x == 0 || y == 0)
+        return 1;
+
+    UI tmp;
+    UI a = abs(x);
+    UI b = abs(y);
     while (a > 0) {
         tmp = a;
         a = b % a;

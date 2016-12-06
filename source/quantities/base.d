@@ -9,7 +9,7 @@ Source: $(LINK https://github.com/biozic/quantities)
 module quantities.base;
 
 import quantities.internal.dimensions;
-import quantities.rational;
+import quantities.internal.rational;
 import std.exception;
 import std.format;
 import std.string;
@@ -82,8 +82,8 @@ alias Currency = typeof(euro);
 This means that all currencies will be defined with respect to euro.
 
 Params:
-    N = The numeric type of the quantity used to store the value internally (e.g. `double`).
-    dims = The dimensions of the quantity.
+    N = The numeric type of the quantity used to store the value internally (e.g.
+    `double`). dims = The dimensions of the quantity.
 +/
 struct Quantity(N, Dimensions dims)
 {
@@ -104,6 +104,10 @@ private:
 
 package:
     N _value;
+
+    // A Quantity is binary equivalent to its _value field.
+    static assert(typeof(this).sizeof == N.sizeof);
+
     enum dimensions = dims;
     
     // Should be a constructor

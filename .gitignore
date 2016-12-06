@@ -9,3 +9,4 @@ run-examples.sh
 *.lst
 benchmark
 docs
+docs.json

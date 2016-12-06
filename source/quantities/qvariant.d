@@ -173,9 +173,6 @@ public:
         return _value;
     }
 
-    // Overloaded operators.
-    // Only dimensionally correct operations will compile.
-
     // Assign from another quantity
     void opAssign(Q)(Q other)
         if (isQVariant!Q || isQuantity!Q)

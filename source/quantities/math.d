@@ -13,8 +13,10 @@ import quantities.internal.dimensions;
 import quantities.base;
 import quantities.qvariant;
 
-import std.math;
-import std.traits;
+static import std.math;
+version (unittest)
+    import std.math : approxEqual;
+
 
 /// Basic math functions that work with Quantity and QVariant.
 auto square(Q)(Q quantity)
@@ -54,7 +56,6 @@ unittest
 
 unittest
 {
-    import std.stdio;
     auto meter = unit!(double, "L");
     auto sqrtm = sqrt(meter);
     assert(square(5 * sqrtm) == 25 * meter);

@@ -53,6 +53,7 @@ $(BR)
 $(DT Unit:)
     $(DD Base)
     $(DD Base $(B ^) Integer)
+    $(DD Base $(B ^) Rational)
     $(DD Base SupInteger)
 $(BR)
 $(DT Base:)
@@ -65,6 +66,9 @@ $(DT Symbol:)
 $(BR)
 $(DT Prefix:)
     $(DD $(I The symbol of a valid prefix))
+$(BR)
+$(DT Rational:)
+    $(DD Integer / Integer)
 $(BR)
 $(DT Integer:)
     $(DD $(I Integer value parsed by std.conv.parse!int))
@@ -151,27 +155,30 @@ struct SymbolList(N)
     }
 }
 
-/// Type of a function that can parse a string for a numeric value of type N.
-alias NumberParser(N) = N function(ref string s);
+/// Type of a function that can parse a `const(char)[]` for a numeric value of type N.
+alias NumberParser(N) = N function(ref const(char)[] s);
 
 /// A quantity parser
 struct Parser(N)
 {
-    SymbolList!N symbolList; /// A list of registered symbols for units and prefixes.
-    NumberParser!N numberParser; /// A function that can parse a string for a numeric value of type N.
+    /// A list of registered symbols for units and prefixes.
+    SymbolList!N symbolList;
+    
+    /// A function that can parse a `const(char)[]` for a numeric value of type N.
+    NumberParser!N numberParser; 
 
     /++
-    Parses a QVariant from a string.
+    Parses a QVariant from a `const(char)[]`.
     +/
-    QVariant!N parseVariant(string str)
+    QVariant!N parseVariant(const(char)[] str)
     {
         return parseQuantityImpl!N(str, symbolList, numberParser);
     }
 
     /++
-    Parses a quantity of a known type Q from a string.
+    Parses a quantity of a known type Q from a `const(char)[]`.
     +/
-    Q parse(Q)(string str)
+    Q parse(Q)(const(char)[] str)
         if (isQuantity!Q)
     {
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
@@ -196,7 +203,7 @@ unittest
         .addPrefix("µ", 1e-6L);
 
     import std.conv;
-    auto parser = Parser!real(symbolList, &std.conv.parse!(real, string));
+    auto parser = Parser!real(symbolList, &std.conv.parse!(real, const(char)[]));
 
     auto timing = 1e-6L * century;
     assert(timing == parser.parse!LectureLength("1 µCy"));
@@ -207,7 +214,7 @@ unittest
 /// automatically deduces the quantity type.
 template compileTimeParser(N, alias symbolList, alias numberParser)
 {
-    template compileTimeParser(string str)
+    template compileTimeParser(const(char)[] str)
     {
         enum q = parseQuantityImpl!N(str, symbolList, &numberParser); 
         enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.rawValue);
@@ -223,7 +230,7 @@ unittest
         .addUnit("Cy", century)
         .addPrefix("µ", 1e-6L);
     
-    alias ctParser = compileTimeParser!(real, symbolList, std.conv.parse!(real, string));
+    alias ctParser = compileTimeParser!(real, symbolList, std.conv.parse!(real, const(char)[]));
     enum timing = 1e-6L * century;
     static assert(timing == ctParser!"1 µCy");
 }
@@ -246,7 +253,7 @@ class ParsingException : Exception
 
 private:
 
-QVariant!N parseQuantityImpl(N)(string input, SymbolList!N symbolList, NumberParser!N parseFun)
+QVariant!N parseQuantityImpl(N)(const(char)[] input, SymbolList!N symbolList, NumberParser!N parseFun)
 {
     N value;
     try
@@ -265,6 +272,8 @@ QVariant!N parseQuantityImpl(N)(string input, SymbolList!N symbolList, NumberPar
 
 unittest // Test parsing
 {
+    import quantities.math;
+
     auto meter = unit!(double, "L");
     auto kilogram = unit!(double, "M");
     auto second = unit!(double, "T");
@@ -280,7 +289,7 @@ unittest // Test parsing
 
     bool checkParse(Q)(string input, Q quantity)
     {
-        return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, string))
+        return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, const(char)[]))
             == quantity.qVariant;
     }
 
@@ -288,6 +297,8 @@ unittest // Test parsing
     assert(checkParse("1m", meter));
     assert(checkParse("1 mm", 0.001 * meter));
     assert(checkParse("1 m^-1", 1 / meter));
+    assert(checkParse("1 m^1/2", sqrt(meter)));
+    assert(checkParse("1 m^-1/2", 1 / sqrt(meter)));
     assert(checkParse("1 m²", meter * meter));
     assert(checkParse("1 m⁺²", meter * meter));
     assert(checkParse("1 m⁻¹", 1 / meter));
@@ -383,16 +394,21 @@ struct QuantityParser(N)
         if (next.type == Tok.exp)
             tokens.advance(Tok.integer);
 
-        int n = parseInteger();
-
-        // Cannot use ret ^^ n because of CTFE limitation
-        static if (__traits(compiles, std.math.pow(ret.value, n)))
-            ret._value = std.math.pow(ret.value, n);
-        else
-            foreach (i; 1 .. n)
-                ret._value *= ret._value;
-        ret.dimensions = ret.dimensions.pow(n);
+        Rational r = parseRationalOrInteger();
+        ret.dimensions = ret.dimensions.pow(r);
         return ret;
+    }
+
+    Rational parseRationalOrInteger()
+    {
+        int num = parseInteger();
+        int den = 1;
+        if (tokens.length && tokens.front.type == Tok.div)
+        {
+            tokens.advance();
+            den = parseInteger();
+        }
+        return Rational(num, den);
     }
 
     int parseInteger()
@@ -474,11 +490,11 @@ enum Tok
 struct Token
 {
     Tok type;
-    string slice;
+    const(char)[] slice;
     int integer = int.max;
 }
 
-Token[] lex(string input)
+Token[] lex(const(char)[] input)
 {
     enum State
     {
@@ -538,7 +554,7 @@ Token[] lex(string input)
             enforce(slice.empty);
         }
         catch (Exception)
-            throw new ParsingException("Unexpected integer format: " ~ original[i .. j]);
+            throw new ParsingException("Unexpected integer format: %s".format(original[i .. j]));
             
         tokapp.put(Token(type, original[i .. j], n));
         i = j;
