@@ -11,6 +11,7 @@ $(DT Standalone units are preferred over prefixed ones:)
 $(BR)
 $(DT Powers of units:)
     $(DD "1 m^2")
+    $(DD "1 m^-1/2" $(I (rational exponent)))
     $(DD "1 m²" $(I (superscript integer)))
 $(BR)
 $(DT Multiplication of to units:)
@@ -68,7 +69,7 @@ $(DT Prefix:)
     $(DD $(I The symbol of a valid prefix))
 $(BR)
 $(DT Rational:)
-    $(DD Integer / Integer)
+    $(DD Integer $(B /) Integer)
 $(BR)
 $(DT Integer:)
     $(DD $(I Integer value parsed by std.conv.parse!int))
@@ -168,7 +169,7 @@ struct Parser(N)
     NumberParser!N numberParser; 
 
     /++
-    Parses a QVariant from a `const(char)[]`.
+    Parses a QVariant from str.
     +/
     QVariant!N parseVariant(const(char)[] str)
     {
@@ -176,7 +177,7 @@ struct Parser(N)
     }
 
     /++
-    Parses a quantity of a known type Q from a `const(char)[]`.
+    Parses a quantity of a known type Q from str.
     +/
     Q parse(Q)(const(char)[] str)
         if (isQuantity!Q)
