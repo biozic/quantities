@@ -4,20 +4,30 @@ SI units, prefixes and utility functions.
 +/
 module quantities.si.definitions;
 
+public import quantities.base;
+public import quantities.math;
+public import quantities.parsing;
+public import quantities.format;
+
+public import std.conv : parse;
+public import std.math : PI;
+import std.traits;
+
 /// 
-mixin template SI(Numeric)
+mixin template SI(N)
+    if (isFloatingPoint!N)
 {
     /++
     Predefined SI units.
     +/
-    enum meter = unit!(Numeric, "L");
+    enum meter = unit!(N, "L");
     alias metre = meter; /// ditto
-    enum kilogram = unit!(Numeric, "M"); /// ditto
-    enum second = unit!(Numeric, "T"); /// ditto
-    enum ampere = unit!(Numeric, "I"); /// ditto
-    enum kelvin = unit!(Numeric, "Θ"); /// ditto
-    enum mole = unit!(Numeric, "N"); /// ditto
-    enum candela = unit!(Numeric, "J"); /// ditto
+    enum kilogram = unit!(N, "M"); /// ditto
+    enum second = unit!(N, "T"); /// ditto
+    enum ampere = unit!(N, "I"); /// ditto
+    enum kelvin = unit!(N, "Θ"); /// ditto
+    enum mole = unit!(N, "N"); /// ditto
+    enum candela = unit!(N, "J"); /// ditto
 
     enum radian = meter / meter; // ditto
     enum steradian = square(meter) / square(meter); /// ditto
@@ -56,7 +66,7 @@ mixin template SI(Numeric)
     enum electronVolt = 1.60217653e-19 * joule; /// ditto
     enum dalton = 1.66053886e-27 * kilogram; /// ditto
 
-    enum one = Quantity!(Numeric, Dimensions.init)(1); /// The dimensionless unit 'one'
+    enum one = Quantity!(N, Dimensions.init)(1); /// The dimensionless unit 'one'
 
     alias Length = typeof(meter); /// Predefined quantity type templates for SI quantities
     alias Mass = typeof(kilogram); /// ditto
@@ -130,7 +140,7 @@ mixin template SI(Numeric)
     alias yocto = prefix!1e-24; /// ditto
 
     /// A list of common SI symbols and prefixes
-    enum siSymbols = SymbolList!Numeric()
+    enum siSymbols = SymbolList!N()
         .addUnit("m", meter)
         .addUnit("kg", kilogram)
         .addUnit("s", second)
@@ -197,12 +207,12 @@ mixin template SI(Numeric)
         .addPrefix("Mi", 1024.0^^2)
         .addPrefix("Ki", 1024.0);
 
-    private static SymbolList!Numeric _siSymbols;
-    private static Parser!Numeric _siParser;
+    private static SymbolList!N _siSymbols;
+    private static Parser!N _siParser;
     static this()
     {
         _siSymbols = siSymbols;
-        _siParser = Parser!Numeric(_siSymbols, &std.conv.parse!(Numeric, const(char)[]));
+        _siParser = Parser!N(_siSymbols, &parse!(N, const(char)[]));
     } 
 
     /// Parses a string for a quantity of type Q at runtime
@@ -224,7 +234,7 @@ mixin template SI(Numeric)
     }
 
     /// A compile-time parser with automatic type deduction for SI quantities.
-    alias si = compileTimeParser!(Numeric, siSymbols, std.conv.parse!(Numeric, const(char)[]));
+    alias si = compileTimeParser!(N, siSymbols, parse!(N, const(char)[]));
     ///
     unittest
     {
