@@ -1,7 +1,7 @@
 /++
-This module defines dimensionnaly variant quantities.
+This module defines dimensionally variant quantities.
 
-Copyright: Copyright 2013-2015, Nicolas Sicard
+Copyright: Copyright 2013-2016, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
@@ -20,9 +20,9 @@ version (unittest) import std.math : approxEqual;
 
 /++
 QVariant  is analog  to Quantity  except  that the  dimensions are  stored in  a
-private field  instead of a  type parameter. This makes  QVariant "dimensionnaly
+private field  instead of a  type parameter. This makes  QVariant "dimensionally
 variant", so  that a variable of  type QVariant can hold  quantities of variable
-dimensions.  Yet,  only operations  that  are  dimensionnaly consistent  can  be
+dimensions.  Yet,  only operations  that  are  dimensionally consistent  can  be
 performed on QVariant variables.
 
 Warning:  Contrary to  Quantity, where  all dimensional  operations are  done at

@@ -78,7 +78,7 @@ $(DT SupInteger:)
     $(DD $(I Superscript version of Integer))
 )
 
-Copyright: Copyright 2013-2015, Nicolas Sicard
+Copyright: Copyright 2013-2016, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
@@ -104,17 +104,7 @@ import std.utf;
 /// Exception thrown when operating on two units that are not interconvertible.
 class DimensionException : Exception
 {
-    nothrow
-    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-    {
-        super(msg, file, line, next);
-    }
-    
-    nothrow
-    this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line, next);
-    }
+    mixin basicExceptionCtors;
 }
 
 /++
@@ -124,7 +114,7 @@ struct SymbolList(N)
 {
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
-    package
+    private
     {
         QVariant!N[string] units;
         N[string] prefixes;
@@ -156,35 +146,31 @@ struct SymbolList(N)
     }
 }
 
-/// Type of a function that can parse a `const(char)[]` for a numeric value of type N.
-alias NumberParser(N) = N function(ref const(char)[] s);
-
 /// A quantity parser
-struct Parser(N)
+struct Parser(N, alias numberParser)
+    if (isNumeric!N)
 {
     /// A list of registered symbols for units and prefixes.
     SymbolList!N symbolList;
     
-    /// A function that can parse a `const(char)[]` for a numeric value of type N.
-    NumberParser!N numberParser; 
-
     /++
     Parses a QVariant from str.
     +/
-    QVariant!N parseVariant(const(char)[] str)
+    QVariant!N parseQVariant(S)(S str)
+        if (isSomeString!S)
     {
-        return parseQuantityImpl!N(str, symbolList, numberParser);
+        return parseQuantityImpl!(N, numberParser)(str, symbolList);
     }
 
     /++
-    Parses a quantity of a known type Q from str.
+    Parses a quantity of a known type Q from a string.
     +/
-    Q parse(Q)(const(char)[] str)
-        if (isQuantity!Q)
+    Q parse(Q, S)(S str)
+        if (isQuantity!Q && isSomeString!S)
     {
         static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
         
-        auto q = parseQuantityImpl!(Q.valueType)(str, symbolList, numberParser);
+        auto q = parseQuantityImpl!(Q.valueType, numberParser)(str, symbolList);
         enforceEx!DimensionException(Q.dimensions == q.dimensions,
             "Dimension error: [%s] is not compatible with [%s]".format(
                 Q.dimensions.toString, q.dimensions.toString));
@@ -204,20 +190,22 @@ unittest
         .addPrefix("µ", 1e-6L);
 
     import std.conv;
-    auto parser = Parser!real(symbolList, &std.conv.parse!(real, const(char)[]));
+    alias numberParser = std.conv.parse!(real, string);
+    auto parser = Parser!(real, numberParser)(symbolList);
 
     auto timing = 1e-6L * century;
     assert(timing == parser.parse!LectureLength("1 µCy"));
-    assert(timing == parser.parseVariant("1 µCy"));
+    assert(timing == parser.parseQVariant("1 µCy"));
 }
 
 /// Creates a compile-time parser that parses a string for a quantity and
 /// automatically deduces the quantity type.
 template compileTimeParser(N, alias symbolList, alias numberParser)
 {
-    template compileTimeParser(const(char)[] str)
+    template compileTimeParser(alias str)
+        if (isSomeString!(typeof(str)))
     {
-        enum q = parseQuantityImpl!N(str, symbolList, &numberParser); 
+        enum q = parseQuantityImpl!(N, numberParser)(str, symbolList); 
         enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.rawValue);
     }
 }
@@ -231,7 +219,8 @@ unittest
         .addUnit("Cy", century)
         .addPrefix("µ", 1e-6L);
     
-    alias ctParser = compileTimeParser!(real, symbolList, std.conv.parse!(real, const(char)[]));
+    alias numberParser = std.conv.parse!(real, string);
+    alias ctParser = compileTimeParser!(real, symbolList, numberParser);
     enum timing = 1e-6L * century;
     static assert(timing == ctParser!"1 µCy");
 }
@@ -239,33 +228,26 @@ unittest
 /// Exception thrown when parsing encounters an unexpected token.
 class ParsingException : Exception
 {
-    nothrow
-    this(string msg, string file = __FILE__, size_t line = __LINE__, Throwable next = null)
-    {
-        super(msg, file, line, next);
-    }
-
-    nothrow
-    this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line, next);
-    }
+    mixin basicExceptionCtors;
 }
 
 private:
 
-QVariant!N parseQuantityImpl(N)(const(char)[] input, SymbolList!N symbolList, NumberParser!N parseFun)
+QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolList)
+    if (isSomeString!S)
 {
     N value;
+    auto str = input[];
+
     try
-        value = parseFun(input);
+        value = parseFun(str);
     catch (Exception)
         value = 1;
 
-    if (input.empty)
+    if (str.empty)
         return QVariant!N.make(value, Dimensions.init);
 
-    auto tokens = lex(input);
+    auto tokens = lex(str);
     auto parser = QuantityParser!N(tokens, symbolList);
 
     return value * parser.parseCompoundUnit();
@@ -288,10 +270,11 @@ unittest // Test parsing
         .addPrefix("c", 0.01L)
         .addPrefix("m", 0.001L);
 
-    bool checkParse(Q)(string input, Q quantity)
+    bool checkParse(Q, S)(S input, Q quantity)
+        if (isSomeString!S)
     {
-        return parseQuantityImpl!double(input, siSL, &std.conv.parse!(double, const(char)[]))
-            == quantity.qVariant;
+        alias numberParser = std.conv.parse!(Q.valueType, S);
+        return parseQuantityImpl!(double, numberParser)(input, siSL) == quantity.qVariant;
     }
 
     assert(checkParse("1    m    ", meter));
@@ -691,4 +674,35 @@ void check(Token[] tokens, Tok tok1, Tok tok2)
     enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
         format("Found '%s' while expecting %s or %s", 
             tokens[0].slice, tok1, tok2));
+}
+
+private:
+// Copied from std.exception until LDC/GDC has it.
+mixin template basicExceptionCtors()
+{
+    /++
+        Params:
+            msg  = The message for the exception.
+            file = The file where the exception occurred.
+            line = The line number where the exception occurred.
+            next = The previous exception in the chain of exceptions, if any.
+    +/
+    this(string msg, string file = __FILE__, size_t line = __LINE__,
+         Throwable next = null) @nogc @safe pure nothrow
+    {
+        super(msg, file, line, next);
+    }
+
+    /++
+        Params:
+            msg  = The message for the exception.
+            next = The previous exception in the chain of exceptions.
+            file = The file where the exception occurred.
+            line = The line number where the exception occurred.
+    +/
+    this(string msg, Throwable next, string file = __FILE__,
+         size_t line = __LINE__) @nogc @safe pure nothrow
+    {
+        super(msg, file, line, next);
+    }
 }

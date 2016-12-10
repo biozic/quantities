@@ -1,7 +1,7 @@
 /++
 This module defines the base types for unit and quantity handling.
 
-Copyright: Copyright 2013-2015, Nicolas Sicard
+Copyright: Copyright 2013-2016, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
@@ -14,12 +14,7 @@ import std.exception;
 import std.format;
 import std.string;
 import std.traits;
-
-version (unittest) 
-{
-    import std.math : approxEqual;
-    // import std.conv : text;
-}
+version (unittest) import std.math : approxEqual;
 
 alias Rational = RationalImpl!int;
 alias Dimensions = DimensionsImpl!Rational;
@@ -30,7 +25,7 @@ dimensions. The  number is  stored internally as  a member of  type N,  which is
 enforced to  be a built-in  numeric type  (isNumeric!N is true).  The dimensions
 are stored as a private struct that  is equivalent to an associative array where
 keys are dimension symbols (e.g. "L" for  length, "T" for time, etc.) and values
-are dimension exponents.
+are dimension exponents (rational numbers).
 
 Units are  just instances  of a  Quantity struct where  the value  is 1  and the
 dimensions only  contain one symbol, with  the power 1. For  instance, the meter

@@ -1,19 +1,25 @@
 /++
 This module only contains a template mixin used to generate
 SI units, prefixes and utility functions.
+
+Copyright: Copyright 2013-2016, Nicolas Sicard
+Authors: Nicolas Sicard
+License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
+Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.si.definitions;
 
 public import quantities.base;
 public import quantities.math;
 public import quantities.parsing;
-public import quantities.format;
 
-public import std.conv : parse;
 public import std.math : PI;
-import std.traits;
+public import std.traits : isFloatingPoint, isSomeString;
 
-/// 
+/++
+Defines SI units, prefixes and deveral utility functions
+(parsing and formatting).
++/
 mixin template SI(N)
     if (isFloatingPoint!N)
 {
@@ -197,44 +203,62 @@ mixin template SI(N)
         .addPrefix("f", 1e-15)
         .addPrefix("a", 1e-18)
         .addPrefix("z", 1e-21)
-        .addPrefix("y", 1e-24)
-        .addPrefix("Yi", 1024.0^^8)
-        .addPrefix("Zi", 1024.0^^7)
-        .addPrefix("Ei", 1024.0^^6)
-        .addPrefix("Pi", 1024.0^^5)
-        .addPrefix("Ti", 1024.0^^4)
-        .addPrefix("Gi", 1024.0^^3)
-        .addPrefix("Mi", 1024.0^^2)
-        .addPrefix("Ki", 1024.0);
+        .addPrefix("y", 1e-24);
 
-    private static SymbolList!N _siSymbols;
-    private static Parser!N _siParser;
-    static this()
-    {
-        _siSymbols = siSymbols;
-        _siParser = Parser!N(_siSymbols, &parse!(N, const(char)[]));
-    } 
+    /++
+    Parses a string for a quantity of type Q at run time.
 
-    /// Parses a string for a quantity of type Q at runtime
-    Q parseSI(Q)(const(char)[] str)
-        if (isQuantity!Q)
+    Throws a DimensionException.
+
+    Params:
+        Q = the type of the returned quantity.
+        str = the string to parse.
+    +/
+    Q si(Q, S)(S str)
+        if (isQuantity!Q && isSomeString!S)
     {
-        return _siParser.parse!Q(str);
+        import std.conv : parse;
+
+        static Parser!(N, parse!(N, S)) siParser;
+        static bool initialized = false;
+        if (!initialized)
+            siParser.symbolList = siSymbols;
+        return siParser.parse!Q(str);
     }
     ///
     unittest
     {
-        auto t = parseSI!Time("90 min");
+        auto t = si!Time("90 min");
         assert(t == 90 * minute);
-        t = parseSI!Time("h");
+        t = si!Time("h");
         assert(t == 1 * hour);
 
-        auto v = parseSI!Dimensionless("2");
+        auto v = si!Dimensionless("2");
         assert(v == (2 * meter) / meter);
     }
+    unittest
+    {
+        char[] timeStr = "90 min".dup;
+        assert(si!Time(timeStr) == 90 * minute);
+    }
 
-    /// A compile-time parser with automatic type deduction for SI quantities.
-    alias si = compileTimeParser!(N, siSymbols, parse!(N, const(char)[]));
+    deprecated("Use si instead of parseSI")
+    alias parseSI = si;
+
+    /++
+    Parses a string for a quantity of type Q at compile time.
+    
+    Params:
+        str = the string to parse.
+    +/
+    auto si(alias str)()
+        if (isSomeString!(typeof(str)))
+    {
+        import std.conv : parse;
+        alias ct = compileTimeParser!(N, siSymbols, parse!(N, typeof(str)));
+        enum result = ct!str;
+        return result;
+    }
     ///
     unittest
     {
@@ -248,5 +272,39 @@ mixin template SI(N)
         static assert(is(typeof(conc) == Concentration));
         static assert(is(typeof(speed) == Speed));
         static assert(is(typeof(value) == Dimensionless));
+    }
+
+    /++
+    Formats a SI quantity according to a format string known at compile time.
+
+    Params:
+        fmt = The format string. Must start with a format specification
+              for the value of the quantity (a numeric type), that must be 
+              followed by the symbol of a SI unit.
+
+        quantity = The quantity that must be formatted.
+    +/
+    string siFormat(string fmt, Q)(Q quantity)
+    {
+        import std.string : format;
+
+        // Get the unit part of the spec.
+        static auto extractUnit(string formatStr)
+        {
+            import std.format : FormatSpec;
+            import std.array : Appender;
+            auto spec = FormatSpec!char(formatStr);
+            spec.writeUpToNextSpec(Appender!string());
+            return spec.trailing;
+        }
+
+        enum unit = si!(extractUnit(fmt));
+        return format(fmt, quantity.value(unit));
+    }
+    ///
+    unittest
+    {
+        auto conc = 0.025463 * mole/litre;
+        assert(conc.siFormat!"%.1f mmol/L" == "25.5 mmol/L");
     }
 }

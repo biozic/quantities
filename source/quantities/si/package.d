@@ -1,4 +1,3 @@
-// Written in the D programming language
 /++
 This packages defines the SI units, prefixes and utility functions.
 
