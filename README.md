@@ -65,24 +65,45 @@ provided format helpers, or use the result of the `value` method.
 
 ### Synopsis
 
+#### Introductory example
+
+```d
+// Use the predefined quantity types (in module quantities.si)
+Volume volume;
+Concentration concentration;
+Mass mass;
+
+// Define a new quantity type
+alias MolarMass = typeof(kilogram/mole);
+
+// I have to make a new solution at the concentration of 5 mmol/L
+concentration = 5.0 * milli(mole)/liter;
+
+// The final volume is 100 ml.
+volume = 100.0 * milli(liter);
+
+// The molar mass of my compound is 118.9 g/mol
+MolarMass mm = 118.9 * gram/mole;
+
+// What mass should I weigh?
+mass = concentration * volume * mm;
+writefln("Weigh %s of substance", mass); 
+// prints: Weigh 5.945e-05 [M] of substance
+// Wait! That's not really useful!
+writefln("Weigh %s of substance", siFormat!"%.1f mg"(mass));
+// prints: Weigh 59.5 mg of substance
+```
+
 #### Working with predefined units
 
 The package defines all the main SI units and prefixes, as well as aliases for
 their types.
 
 ```d
-import quantities;
-import std.math : approxEqual;
-import std.stdio : writeln, writefln;
-
-void main()
-{
-    auto distance = 384_400 * kilo(meter);
-    auto speed = 299_792_458  * meter/second;
-    
-    Time time;
-    time = distance / speed;
-    writefln("Travel time of light from the moon: %s s", time.value(second));
+auto distance = 384_400 * kilo(meter);
+auto speed = 299_792_458  * meter/second;
+auto time = distance / speed;
+writefln("Travel time of light from the moon: %s s", time.value(second));
 }
 ```
 
@@ -100,14 +121,15 @@ static assert(!__traits(compiles, mass = 1.2));
 enum distance = 384_400 * kilo(meter);
 enum speed = 299_792_458  * meter/second;
 enum time = distance / speed;
-writefln("Travel time of light from the moon: %s s", time.value(second));
+writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
 ```
 
 #### Create a new unit from the predefined ones
 ```d
-enum inch = 2.54 * centi(meter);
-enum mile = 1609 * meter;
-writefln("There are %s inches in a mile", mile.value(inch));
+    enum inch = 2.54 * centi(meter);
+    enum mile = 1609 * meter;
+    writefln("There are %s inches in a mile", mile.value(inch));
+    // NB. Cannot use siFormat, because inches are not SI units
 ```
 
 #### Create a new unit with new dimensions
@@ -129,7 +151,7 @@ At compile time:
 enum distance = si!"384_400 km";
 enum speed = si!"299_792_458 m/s";
 enum time = distance / speed;
-writefln("Travel time of light from the moon: %s s", time.value(second));
+writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
 
 static assert(is(typeof(distance) == Length));
 static assert(is(typeof(speed) == Speed));
@@ -141,40 +163,9 @@ At runtime:
 auto data = [
     "distance-to-the-moon": "384_400 km",
     "speed-of-light": "299_792_458 m/s"
-    ];
+];
 auto distance = si!Length(data["distance-to-the-moon"]);
 auto speed = si!Speed(data["speed-of-light"]);
 auto time = distance / speed;
-writefln("Travel time of light from the moon: %s s", time.value(second));
-```
-
-#### Example: chemistry session
-
-```d
-// Use the predefined quantity types (in module quantities.si)
-Volume volume;
-Concentration concentration;
-Mass mass;
-
-// Define a new quantity type
-alias MolarMass = typeof(kilogram/mole);
-
-// I have to make a new solution at the concentration of 25 mmol/L
-concentration = 25 * milli(mole)/liter;
-
-// The final volume is 100 ml.
-volume = 100 * milli(liter);
-
-// The molar mass of my compound is 118.9 g/mol
-MolarMass mm = 118.9 * gram/mole;
-
-// What mass should I weigh?
-mass = concentration * volume * mm;
-writefln("Weigh %s of substance", mass); 
-// prints: Weigh 0.00029725 [M] of substance
-// Wait! That's not really useful!
-// My scales graduations are in 1/10 milligrams!
-writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
-// prints: Weigh 297.3 mg of substance
-}
+writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
 ```

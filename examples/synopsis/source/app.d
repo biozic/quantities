@@ -4,97 +4,95 @@ import std.stdio : writeln, writefln;
 
 void main()
 {
-// Working with predefined units
-{
-    auto distance = 384_400 * kilo(meter);
-    auto speed = 299_792_458  * meter/second;
-    
-    Time time;
-    time = distance / speed;
-    writefln("Travel time of light from the moon: %s s", time.value(second));
-}
+    // Introductory example
+    {
+        // Use the predefined quantity types (in module quantities.si)
+        Volume volume;
+        Concentration concentration;
+        Mass mass;
 
-// Dimensional correctness is check at compile-time
-{
-    Mass mass;
-    static assert(!__traits(compiles, mass = 15 * meter));
-    static assert(!__traits(compiles, mass = 1.2));
-}
+        // Define a new quantity type
+        alias MolarMass = typeof(kilogram/mole);
 
-// Calculations can be done at compile-time
-{
-    enum distance = 384_400 * kilo(meter);
-    enum speed = 299_792_458  * meter/second;
-    enum time = distance / speed;
-    writefln("Travel time of light from the moon: %s s", time.value(second));
-}
+        // I have to make a new solution at the concentration of 5 mmol/L
+        concentration = 5.0 * milli(mole)/liter;
 
-// Create a new unit from the predefined ones
-{
-    enum inch = 2.54 * centi(meter);
-    enum mile = 1609 * meter;
-    writefln("There are %s inches in a mile", mile.value(inch));
-}
+        // The final volume is 100 ml.
+        volume = 100.0 * milli(liter);
 
-// Create a new unit with new dimensions
-{
-    // Create a new base unit of currency
-    enum euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
+        // The molar mass of my compound is 118.9 g/mol
+        MolarMass mm = 118.9 * gram/mole;
 
-    auto dollar = euro / 1.35;
-    auto price = 2000 * dollar;
-    writefln("This computer costs €%.2f", price.value(euro));
-}
+        // What mass should I weigh?
+        mass = concentration * volume * mm;
+        writefln("Weigh %s of substance", mass); 
+        // prints: Weigh 5.945e-05 [M] of substance
+        // Wait! That's not really useful!
+        writefln("Weigh %s of substance", siFormat!"%.1f mg"(mass));
+        // prints: Weigh 59.5 mg of substance
+    }
 
-// Compile-time parsing
-{
-    enum distance = si!"384_400 km";
-    enum speed = si!"299_792_458 m/s";
-    enum time = distance / speed;
-    writefln("Travel time of light from the moon: %s s", time.value(second));
+    // Working with predefined units
+    {
+        auto distance = 384_400 * kilo(meter);
+        auto speed = 299_792_458  * meter/second;
+        auto time = distance / speed;
+        writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+    }
 
-    static assert(is(typeof(distance) == Length));
-    static assert(is(typeof(speed) == Speed));
-}
+    // Dimensional correctness is check at compile-time
+    {
+        Mass mass;
+        static assert(!__traits(compiles, mass = 15 * meter));
+        static assert(!__traits(compiles, mass = 1.2));
+    }
 
-// Runtime parsing
-{
-    auto data = [
-        "distance-to-the-moon": "384_400 km",
-        "speed-of-light": "299_792_458 m/s"
-    ];
-    auto distance = si!Length(data["distance-to-the-moon"]);
-    auto speed = si!Speed(data["speed-of-light"]);
-    auto time = distance / speed;
-    writefln("Travel time of light from the moon: %s s", time.value(second));
-}
+    // Calculations can be done at compile-time
+    {
+        enum distance = 384_400 * kilo(meter);
+        enum speed = 299_792_458  * meter/second;
+        enum time = distance / speed;
+        writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+    }
 
-// Chemistry session
-{
-    // Use the predefined quantity types (in module quantities.si)
-    Volume volume;
-    Concentration concentration;
-    Mass mass;
+    // Create a new unit from the predefined ones
+    {
+        enum inch = 2.54 * centi(meter);
+        enum mile = 1609 * meter;
+        writefln("There are %s inches in a mile", mile.value(inch));
+        // NB. Cannot use siFormat, because inches are not SI units
+    }
 
-    // Define a new quantity type
-    alias MolarMass = typeof(kilogram/mole);
+    // Create a new unit with new dimensions
+    {
+        // Create a new base unit of currency
+        enum euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
 
-    // I have to make a new solution at the concentration of 25 mmol/L
-    concentration = 25 * milli(mole)/liter;
+        auto dollar = euro / 1.35;
+        auto price = 2000 * dollar;
+        writefln("This computer costs €%.2f", price.value(euro));
+    }
 
-    // The final volume is 100 ml.
-    volume = 100 * milli(liter);
+    // Compile-time parsing
+    {
+        enum distance = si!"384_400 km";
+        enum speed = si!"299_792_458 m/s";
+        enum time = distance / speed;
+        writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
 
-    // The molar mass of my compound is 118.9 g/mol
-    MolarMass mm = 118.9 * gram/mole;
+        static assert(is(typeof(distance) == Length));
+        static assert(is(typeof(speed) == Speed));
+    }
 
-    // What mass should I weigh?
-    mass = concentration * volume * mm;
-    writefln("Weigh %s of substance", mass); 
-    // prints: Weigh 0.00029725 [M] of substance
-    // Wait! That's not really useful!
-    // My scales graduations are in 1/10 milligrams!
-    writefln("Weigh %.1f mg of substance", mass.value(milli(gram)));
-    // prints: Weigh 297.3 mg of substance
-}
+    // Runtime parsing
+    {
+        auto data = [
+            "distance-to-the-moon": "384_400 km",
+            "speed-of-light": "299_792_458 m/s"
+        ];
+        auto distance = si!Length(data["distance-to-the-moon"]);
+        auto speed = si!Speed(data["speed-of-light"]);
+        auto time = distance / speed;
+        writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+    }
 }
