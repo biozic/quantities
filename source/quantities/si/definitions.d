@@ -294,7 +294,8 @@ mixin template SI(N)
             import std.format : FormatSpec;
             import std.array : Appender;
             auto spec = FormatSpec!char(formatStr);
-            spec.writeUpToNextSpec(Appender!string());
+            auto app = Appender!string();
+            spec.writeUpToNextSpec(app);
             return spec.trailing;
         }
 
