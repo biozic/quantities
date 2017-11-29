@@ -164,8 +164,8 @@ auto data = [
     "distance-to-the-moon": "384_400 km",
     "speed-of-light": "299_792_458 m/s"
 ];
-auto distance = si!Length(data["distance-to-the-moon"]);
-auto speed = si!Speed(data["speed-of-light"]);
+auto distance = parseSI!Length(data["distance-to-the-moon"]);
+auto speed = parseSI!Speed(data["speed-of-light"]);
 auto time = distance / speed;
 writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
 ```

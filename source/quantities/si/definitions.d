@@ -214,7 +214,7 @@ mixin template SI(N)
         Q = the type of the returned quantity.
         str = the string to parse.
     +/
-    Q si(Q, S)(S str)
+    Q parseSI(Q, S)(S str)
         if (isQuantity!Q && isSomeString!S)
     {
         import std.conv : parse;
@@ -228,46 +228,43 @@ mixin template SI(N)
     ///
     unittest
     {
-        auto t = si!Time("90 min");
+        auto t = parseSI!Time("90 min");
         assert(t == 90 * minute);
-        t = si!Time("h");
+        t = parseSI!Time("h");
         assert(t == 1 * hour);
 
-        auto v = si!Dimensionless("2");
+        auto v = parseSI!Dimensionless("2");
         assert(v == (2 * meter) / meter);
     }
     unittest
     {
         char[] timeStr = "90 min".dup;
-        assert(si!Time(timeStr) == 90 * minute);
+        assert(parseSI!Time(timeStr) == 90 * minute);
     }
 
-    deprecated("Use si instead of parseSI")
-    alias parseSI = si;
-
     /++
-    Parses a string for a quantity of type Q at compile time.
+    Creates a quantity of type Q from a string at compile time.
     
     Params:
-        str = the string to parse.
+        qty = the string describing the quantity.
     +/
-    auto si(alias str)()
-        if (isSomeString!(typeof(str)))
+    template si(alias qty)
+        if (isSomeString!(typeof(qty)))
     {
-        import std.conv : parse;
-        alias ct = compileTimeParser!(N, siSymbols, parse!(N, typeof(str)));
-        enum result = ct!str;
-        return result;
+        enum si = () {
+            import std.conv : parse;
+            alias ct = compileTimeParser!(N, siSymbols, parse!(N, typeof(qty)));
+            return ct!qty;
+        } ();
     }
     ///
     unittest
     {
-        enum min = si!"min";
         enum inch = si!"2.54 cm";
-        auto conc = si!"1 µmol/L";
-        auto speed = si!"m s^-1";
-        auto value = si!"0.5";
-        
+        enum conc = si!"1 µmol/L";
+        enum speed = si!"m s^-1";
+        enum value = si!"0.5";      
+          
         static assert(is(typeof(inch) == Length));
         static assert(is(typeof(conc) == Concentration));
         static assert(is(typeof(speed) == Speed));
