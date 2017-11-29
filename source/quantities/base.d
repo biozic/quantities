@@ -104,22 +104,17 @@ package:
     static assert(typeof(this).sizeof == N.sizeof);
 
     enum dimensions = dims;
-    
-    // Should be a constructor
-    // Workaround for @@BUG 5770@@
-    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
-    // "Template constructor bypass access check"
-    package static Quantity make(T)(T value)
-        if (isNumeric!T)
+
+    // Creates a quantity of the same non-empty dimensions
+    this(T)(T value)
+        if (isNumeric!T && !dimensions.empty)
     {
         checkValueType!T;
-        Quantity ret;
-        ret._value = value;
-        return ret;
+        _value = value;
     }
     
     // Gets the internal number of this quantity.
-    package N rawValue() const
+    N rawValue() const
     {
         return _value;
     }
@@ -142,7 +137,7 @@ public:
     /// Gets the base unit of this quantity.
     static Quantity baseUnit()
     {
-        return Quantity.make(1);
+        return Quantity(1);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -210,7 +205,7 @@ public:
     Q convert(Q)(Q target) const
         if (isQuantity!Q)
     {
-        return Q.make(_value / target._value);
+        return Q(_value / target._value);
     }
     ///
     pure nothrow @nogc @safe unittest
@@ -232,7 +227,7 @@ public:
     {
         checkDim!(Q.dimensions);
         checkValueType!(Q.valueType);
-        return Q.make(_value);
+        return Q(_value);
     }
 
     // Cast a dimensionless quantity to a numeric type
@@ -269,7 +264,7 @@ public:
     auto opUnary(string op)() const
         if (op == "+" || op == "-")
     {
-        return Quantity.make(mixin(op ~ "_value"));
+        return Quantity(mixin(op ~ "_value"));
     }
     
     // Unary ++ and --
@@ -288,7 +283,7 @@ public:
     {
         checkDim!(other.dimensions);
         checkValueType!(Q.valueType);
-        return Quantity.make(mixin("_value" ~ op ~ "other._value"));
+        return Quantity(mixin("_value" ~ op ~ "other._value"));
     }
 
     // Add (or substract) a dimensionless quantity and a number
@@ -298,7 +293,7 @@ public:
     {
         checkDim!(Dimensions.init);
         checkValueType!T;
-        return Quantity.make(mixin("_value" ~ op ~ "other"));
+        return Quantity(mixin("_value" ~ op ~ "other"));
     }
 
     /// ditto
@@ -314,8 +309,8 @@ public:
         if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!(Q.valueType);
-        return Quantity!(N, dimensions.binop!op(other.dimensions))
-            .make(mixin("(_value" ~ op ~ "other._value)"));
+        return Quantity!(N, dimensions.binop!op(other.dimensions))(
+            mixin("(_value" ~ op ~ "other._value)"));
     }
 
     // Multiply or divide a quantity by a number
@@ -324,7 +319,7 @@ public:
         if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
-        return Quantity.make(mixin("_value" ~ op ~ "other"));
+        return Quantity(mixin("_value" ~ op ~ "other"));
     }
 
     /// ditto
@@ -340,7 +335,7 @@ public:
         if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
-        return Quantity!(N, dimensions.invert()).make(mixin("other" ~ op ~ "_value"));
+        return Quantity!(N, dimensions.invert())(mixin("other" ~ op ~ "_value"));
     }
 
     auto opBinary(string op, T)(T power) const
@@ -741,7 +736,7 @@ template isQuantity(T)
 template unit(N, string symbol)
 {
     enum dim = Dimensions.mono(symbol);
-    enum unit = {return Quantity!(N, dim).make(1); }();
+    enum unit = {return Quantity!(N, dim)(1); }();
 }
 ///
 pure nothrow @nogc @safe unittest

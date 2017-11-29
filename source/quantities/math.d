@@ -21,28 +21,28 @@ version (unittest)
 auto square(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.pow(2)).make(quantity.rawValue ^^ 2);
+    return Quantity!(Q.valueType, Q.dimensions.pow(2))(quantity.rawValue ^^ 2);
 }
 
 /// ditto
 auto square(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(quantity.rawValue ^^ 2, quantity.dimensions.pow(2));
+    return Q(quantity.rawValue ^^ 2, quantity.dimensions.pow(2));
 }
 
 /// ditto
 auto sqrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.powinverse(2)).make(std.math.sqrt(quantity.rawValue));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(2))(std.math.sqrt(quantity.rawValue));
 }
 
 /// ditto
 auto sqrt(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.sqrt(quantity.rawValue), quantity.dimensions.powinverse(2));
+    return Q(std.math.sqrt(quantity.rawValue), quantity.dimensions.powinverse(2));
 }
 
 unittest
@@ -72,28 +72,28 @@ unittest
 auto cubic(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.pow(3)).make(quantity.rawValue ^^ 3);
+    return Quantity!(Q.valueType, Q.dimensions.pow(3))(quantity.rawValue ^^ 3);
 }
 
 /// ditto
 auto cubic(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(quantity.rawValue ^^ 3, quantity.dimensions.pow(3));
+    return Q(quantity.rawValue ^^ 3, quantity.dimensions.pow(3));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.powinverse(3)).make(std.math.cbrt(quantity.rawValue));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(3))(std.math.cbrt(quantity.rawValue));
 }
 
 /// ditto
 auto cbrt(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.cbrt(quantity.rawValue), quantity.dimensions.powinverse(3));
+    return Q(std.math.cbrt(quantity.rawValue), quantity.dimensions.powinverse(3));
 }
 
 unittest
@@ -116,28 +116,28 @@ unittest
 auto pow(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.pow(n)).make(std.math.pow(quantity.rawValue, n));
+    return Quantity!(Q.valueType, Q.dimensions.pow(n))(std.math.pow(quantity.rawValue, n));
 }
 
 /// ditto
 auto pow(int n, Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.pow(quantity.rawValue, n), quantity.dimensions.pow(n));
+    return Q(std.math.pow(quantity.rawValue, n), quantity.dimensions.pow(n));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Quantity!(Q.valueType, Q.dimensions.powinverse(n)).make(std.math.pow(quantity.rawValue, 1.0 / n));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(n))(std.math.pow(quantity.rawValue, 1.0 / n));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions.powinverse(n));
+    return Q(std.math.pow(quantity.rawValue, 1.0 / n), quantity.dimensions.powinverse(n));
 }
 
 unittest
@@ -160,14 +160,14 @@ unittest
 Q abs(Q)(Q quantity)
     if (isQuantity!Q)
 {
-    return Q.make(std.math.fabs(quantity.rawValue));
+    return Q(std.math.fabs(quantity.rawValue));
 }
 
 /// ditto
 Q abs(Q)(Q quantity)
     if (isQVariant!Q)
 {
-    return Q.make(std.math.fabs(quantity.rawValue), quantity.dimensions);
+    return Q(std.math.fabs(quantity.rawValue), quantity.dimensions);
 }
 
 unittest

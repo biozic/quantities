@@ -174,7 +174,7 @@ struct Parser(N, alias numberParser)
         enforceEx!DimensionException(Q.dimensions == q.dimensions,
             "Dimension error: [%s] is not compatible with [%s]".format(
                 Q.dimensions.toString, q.dimensions.toString));
-        return Q.make(q.rawValue);
+        return Q(q.rawValue);
     }
 }
 ///
@@ -206,7 +206,7 @@ template compileTimeParser(N, alias symbolList, alias numberParser)
         if (isSomeString!(typeof(str)))
     {
         enum q = parseQuantityImpl!(N, numberParser)(str, symbolList); 
-        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions).make(q.rawValue);
+        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions)(q.rawValue);
     }
 }
 ///
@@ -245,7 +245,7 @@ QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolL
         value = 1;
 
     if (str.empty)
-        return QVariant!N.make(value, Dimensions.init);
+        return QVariant!N(value, Dimensions.init);
 
     auto tokens = lex(str);
     auto parser = QuantityParser!N(tokens, symbolList);
@@ -407,7 +407,7 @@ struct QuantityParser(N)
     QVariant!N parseUnit()
     {
         if (!tokens.length)
-            return QVariant!N.make(1, Dimensions.init);
+            return QVariant!N(1, Dimensions.init);
 
         QVariant!N ret;        
         if (tokens.front.type == Tok.lparen)

@@ -59,19 +59,14 @@ package:
     N _value;
     Dimensions dimensions;
     
-    // Should be a constructor
-    // Workaround for @@BUG 5770@@
-    // (https://d.puremagic.com/issues/show_bug.cgi?id=5770)
-    // "Template constructor bypass access check"
-    static QVariant make(T)(T value, in Dimensions dim)
+    // Creates a new quantity with non-empty dimensions
+    this(T)(T value, in Dimensions dim)
         if (isNumeric!T)
     {
         checkValueType!T;
-        QVariant result = void;
-        result._value = value;
+        _value = value;
         // The cast if safe: dim is a unique duplicate
-        result.dimensions = cast(Dimensions) dim;
-        return result;
+        dimensions = cast(Dimensions) dim;
     }
     
     // Gets the internal number of this quantity.
@@ -86,7 +81,7 @@ public:
     // Gets the base unit of this quantity.
     QVariant baseUnit()
     {
-        return QVariant.make(1, dimensions);
+        return QVariant(1, dimensions);
     }
 
     // Creates a new quantity from another one with the same dimensions
@@ -161,7 +156,7 @@ public:
     {
         checkDim(Q.dimensions);
         checkValueType!(Q.valueType);
-        return Q.make(_value);
+        return Q(_value);
     }
 
     // Cast a dimensionless quantity to a numeric type
@@ -197,7 +192,7 @@ public:
     auto opUnary(string op)() const
         if (op == "+" || op == "-")
     {
-        return QVariant.make(mixin(op ~ "_value"), dimensions);
+        return QVariant(mixin(op ~ "_value"), dimensions);
     }
     
     // Unary ++ and --
@@ -216,7 +211,7 @@ public:
     {
         checkDim(other.dimensions);
         checkValueType!(Q.valueType);
-        return QVariant.make(mixin("_value" ~ op ~ "other.rawValue"), dimensions);
+        return QVariant(mixin("_value" ~ op ~ "other.rawValue"), dimensions);
     }
 
     // ditto
@@ -233,7 +228,7 @@ public:
     {
         checkDim(Dimensions.init);
         checkValueType!T;
-        return QVariant.make(mixin("_value" ~ op ~ "other"), dimensions);
+        return QVariant(mixin("_value" ~ op ~ "other"), dimensions);
     }
 
     // ditto
@@ -249,7 +244,7 @@ public:
         if ((isQVariant!Q || isQuantity!Q) && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!(Q.valueType);
-        return QVariant.make(mixin("(_value" ~ op ~ "other.rawValue)"),
+        return QVariant(mixin("(_value" ~ op ~ "other.rawValue)"),
             dimensions.binop!op(other.dimensions));
     }
 
@@ -266,7 +261,7 @@ public:
         if (isNumeric!T && (op == "*" || op == "/" || op == "%"))
     {
         checkValueType!T;
-        return QVariant.make(mixin("_value" ~ op ~ "other"), dimensions);
+        return QVariant(mixin("_value" ~ op ~ "other"), dimensions);
     }
 
     // ditto
@@ -282,7 +277,7 @@ public:
         if (isNumeric!T && (op == "/" || op == "%"))
     {
         checkValueType!T;
-        return QVariant.make(mixin("other" ~ op ~ "_value"), dimensions.invert());
+        return QVariant(mixin("other" ~ op ~ "_value"), dimensions.invert());
     }
 
     // ditto
@@ -293,7 +288,7 @@ public:
             assert(false, "QVariant operator ^^ is not supported at compile-time");
 
         checkValueType!T;
-        return QVariant.make(_value^^power, dimensions.pow(power));
+        return QVariant(_value^^power, dimensions.pow(power));
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
@@ -391,7 +386,7 @@ public:
 /// Converts a Quantity to an equivalent QVariant
 auto qVariant(Q)(Q quantity)
 {
-    return QVariant!(Q.valueType).make(quantity.rawValue, quantity.dimensions);
+    return QVariant!(Q.valueType)(quantity.rawValue, quantity.dimensions);
 }
 ///
 unittest
