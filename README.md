@@ -90,7 +90,7 @@ mass = concentration * volume * mm;
 writefln("Weigh %s of substance", mass); 
 // prints: Weigh 5.945e-05 [M] of substance
 // Wait! That's not really useful!
-writefln("Weigh %s of substance", siFormat!"%.1f mg"(mass));
+writefln("Weigh %s of substance", mass.siFormat!"%.1f mg");
 // prints: Weigh 59.5 mg of substance
 ```
 
@@ -103,7 +103,7 @@ their types.
 auto distance = 384_400 * kilo(meter);
 auto speed = 299_792_458  * meter/second;
 auto time = distance / speed;
-writefln("Travel time of light from the moon: %s s", time.value(second));
+writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
 }
 ```
 
@@ -121,15 +121,15 @@ static assert(!__traits(compiles, mass = 1.2));
 enum distance = 384_400 * kilo(meter);
 enum speed = 299_792_458  * meter/second;
 enum time = distance / speed;
-writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
 ```
 
 #### Create a new unit from the predefined ones
 ```d
-    enum inch = 2.54 * centi(meter);
-    enum mile = 1609 * meter;
-    writefln("There are %s inches in a mile", mile.value(inch));
-    // NB. Cannot use siFormat, because inches are not SI units
+enum inch = 2.54 * centi(meter);
+enum mile = 1609 * meter;
+writefln("There are %s inches in a mile", mile.value(inch));
+// NB. Cannot use siFormat, because inches are not SI units
 ```
 
 #### Create a new unit with new dimensions
@@ -151,7 +151,7 @@ At compile time:
 enum distance = si!"384_400 km";
 enum speed = si!"299_792_458 m/s";
 enum time = distance / speed;
-writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
 
 static assert(is(typeof(distance) == Length));
 static assert(is(typeof(speed) == Speed));
@@ -167,5 +167,5 @@ auto data = [
 auto distance = parseSI!Length(data["distance-to-the-moon"]);
 auto speed = parseSI!Speed(data["speed-of-light"]);
 auto time = distance / speed;
-writefln("Travel time of light from the moon: %s", siFormat!"%.3f s"(time));
+writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
 ```
