@@ -82,6 +82,8 @@ struct Quantity(N, Dimensions dims)
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
 private:
+    import std.string : format;
+
     static void checkDim(Dimensions dim)()
     {
         static assert(dim == dimensions, "Dimension error: %s is not compatible with %s"
