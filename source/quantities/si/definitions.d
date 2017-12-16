@@ -281,28 +281,37 @@ mixin template SI(N)
 
         quantity = The quantity that must be formatted.
     +/
-    string siFormat(string fmt, Q)(Q quantity)
+    auto siFormat(string fmt, Q)(Q quantity)
     {
-        import std.string : format;
-
-        // Get the unit part of the spec.
-        static auto extractUnit(string formatStr)
-        {
-            import std.format : FormatSpec;
-            import std.array : Appender;
-            auto spec = FormatSpec!char(formatStr);
-            auto app = Appender!string();
-            spec.writeUpToNextSpec(app);
-            return spec.trailing;
-        }
-
-        enum unit = si!(extractUnit(fmt));
-        return format(fmt, quantity.value(unit));
+        return SIFormatter!(fmt, Q)(quantity);
     }
     ///
     unittest
     {
+        import std.conv : text;
+
         auto conc = 0.025463 * mole/litre;
-        assert(conc.siFormat!"%.1f mmol/L" == "25.5 mmol/L");
+        assert(conc.siFormat!"%.1f mmol/L".text == "25.5 mmol/L");
+    }
+
+    struct SIFormatter(string fmt, Q)
+    {
+        // Get the unit part of the spec.
+        enum unit = si!({
+            import std.format : FormatSpec;
+            import std.array : Appender;
+            auto spec = FormatSpec!char(fmt);
+            auto app = Appender!string();
+            spec.writeUpToNextSpec(app);
+            return spec.trailing;
+        }());
+
+        Q quantity;
+
+        void toString(scope void delegate(const(char)[]) sink) const
+        {
+            import std.format : formattedWrite;
+            sink.formattedWrite!fmt(quantity.value(unit));
+        }
     }
 }

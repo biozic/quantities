@@ -10,9 +10,6 @@ module quantities.base;
 
 import quantities.internal.dimensions;
 import quantities.internal.rational;
-import std.exception;
-import std.format;
-import std.string;
 import std.traits;
 version (unittest) import std.math : approxEqual;
 
@@ -431,14 +428,6 @@ public:
             return 1;
         return 0;
     }
-
-    // Default string formatting function
-    void toString(scope void delegate(const(char)[]) sink, FormatSpec!char fmt) const
-    {
-        sink.formatValue(_value, fmt);
-        sink(" ");
-        sink(dimensions.toString);
-    }
 }
 
 pure nothrow @nogc @safe unittest // Quantity.baseUnit
@@ -674,15 +663,6 @@ pure nothrow @nogc @safe unittest // Quantity.opCmp
     assert(angle <= 2);
     assert(angle > 1);
     assert(angle >= 2);
-}
-
-unittest // Quantity.toString
-{
-    enum meter = unit!(double, "L");
-    import std.conv : text;
-
-    auto length = 12 * meter;
-    assert(length.text == "12 [L]", length.text);
 }
 
 pure nothrow @nogc @safe unittest // Compilation errors for incompatible dimensions
