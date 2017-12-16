@@ -1,9 +1,0 @@
-{
-    "name": "quantities",
-    "description": "A library to work with quantities and units",
-    "copyright": "Copyright © 2013-2017, Nicolas Sicard",
-    "authors": ["Nicolas Sicard"],
-    "homepage": "https://github.com/biozic/quantities",
-    "license": "BSL-1.0",
-    "targetType": "library"
-}

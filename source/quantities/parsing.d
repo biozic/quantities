@@ -1,6 +1,8 @@
 /++
-This module defines functions to parse units and quantities. The text
-input is parsed according to the following grammar. For example:
+This module defines functions to parse units and quantities.
+
+The text input is parsed according to the following grammar.
+For example:
 $(DL
 $(DT Prefixes and unit symbols must be joined:)
     $(DD "1 mm" = 1 millimeter)

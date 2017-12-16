@@ -1,12 +1,4 @@
 .dub
-__test__*
-generated_values.txt
-trace.*
-TODO.txt
-dub.selections.json
-libquantities.a
-run-examples.sh
-*.lst
-benchmark
-docs
+bin
+docs/
 docs.json

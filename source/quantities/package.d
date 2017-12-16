@@ -6,9 +6,6 @@ public import quantities.parsing;
 public import quantities.qvariant;
 public import quantities.si;
 
-version (unittest)
-    private void writefln(T...)(T args) {}
-
 ///
 unittest
 {
@@ -104,3 +101,12 @@ unittest
         writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
     }
 }
+
+version (unittest)
+{
+    version (QuantitiesPrintTests)
+        import std.stdio : writefln;
+    else
+        private void writefln(T...)(T args) {}
+}
+
