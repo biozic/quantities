@@ -168,6 +168,7 @@ public:
         return _value / target._value;
     }
     ///
+    version (D_Ddoc)
     pure nothrow @nogc @safe unittest
     {
         enum second = unit!(int, "T");
@@ -189,6 +190,7 @@ public:
         return ret;
     }
     ///
+    version (D_Ddoc)
     pure nothrow @nogc @safe unittest
     {
         enum second = unit!(double, "T");
@@ -208,6 +210,7 @@ public:
         return Q(_value / target._value);
     }
     ///
+    version (D_Ddoc)
     pure nothrow @nogc @safe unittest
     {
         enum second = unit!(int, "T");
