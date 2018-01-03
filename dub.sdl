@@ -2,7 +2,17 @@ name        "quantities"
 description "A library to work with quantities and units"
 homepage    "https://github.com/biozic/quantities"
 authors     "Nicolas Sicard"
-copyright   "Copyright © 2013-2017, Nicolas Sicard"
+copyright   "Copyright © 2013-2018, Nicolas Sicard"
 license     "BSL-1.0"
 targetType  "library"
 targetPath  "bin"
+configuration "library" {
+    excludedSourceFiles "source/tests/*.d" 
+}
+configuration "unittest" {
+    excludedSourceFiles ""
+}
+configuration "printing-unittest" {
+    versions "QuantitiesPrintTests"
+    excludedSourceFiles ""
+}

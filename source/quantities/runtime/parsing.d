@@ -80,16 +80,16 @@ $(DT SupInteger:)
     $(DD $(I Superscript version of Integer))
 )
 
-Copyright: Copyright 2013-2016, Nicolas Sicard
+Copyright: Copyright 2013-2018, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-module quantities.parsing;
+module quantities.runtime.parsing;
 
 import quantities.internal.dimensions;
-import quantities.base;
-import quantities.qvariant;
+import quantities.runtime.qvariant;
+import quantities.compiletime.quantity;
 
 import std.array;
 import std.algorithm;
@@ -101,13 +101,6 @@ import std.string;
 import std.traits;
 import std.typetuple;
 import std.utf;
-
-
-/// Exception thrown when operating on two units that are not interconvertible.
-class DimensionException : Exception
-{
-    mixin basicExceptionCtors;
-}
 
 /++
 Contains the symbols of the units and the prefixes that a parser can handle.
@@ -125,21 +118,20 @@ struct SymbolList(N)
 
     /// Adds (or replaces) a unit in the list
     auto addUnit(Q)(string symbol, Q unit)
-        if (isQVariant!Q)
+            if (isQVariantOrQuantity!Q)
     {
-        units[symbol] = unit;
+        static if (isQVariant!Q)
+            units[symbol] = unit;
+        else static if (isQuantity!Q)
+            units[symbol] = unit.qVariant;
+        else
+            static assert(false);
         return this;
-    }
-    /// ditto
-    auto addUnit(Q)(string symbol, Q unit)
-        if (isQuantity!Q)
-    {
-        return addUnit(symbol, unit.qVariant);
     }
 
     /// Adds (or replaces) a prefix in the list
     auto addPrefix(N)(string symbol, N factor)
-        if (isNumeric!N)
+            if (isNumeric!N)
     {
         prefixes[symbol] = factor;
         if (symbol.length > maxPrefixLength)
@@ -148,35 +140,27 @@ struct SymbolList(N)
     }
 }
 
-/// A quantity parser
+/++
+A quantity parser.
+
+Params:
+    N = The numeric type of the quantities.
+    numberParser = a function that takes a reference to a string and returns the
+        parsed number.
++/
 struct Parser(N, alias numberParser)
-    if (isNumeric!N)
+        if (isNumeric!N)
 {
     /// A list of registered symbols for units and prefixes.
     SymbolList!N symbolList;
-    
+
     /++
     Parses a QVariant from str.
     +/
-    QVariant!N parseQVariant(S)(S str)
-        if (isSomeString!S)
+    QVariant!N parse(S)(S str)
+            if (isSomeString!S)
     {
         return parseQuantityImpl!(N, numberParser)(str, symbolList);
-    }
-
-    /++
-    Parses a quantity of a known type Q from a string.
-    +/
-    Q parse(Q, S)(S str)
-        if (isQuantity!Q && isSomeString!S)
-    {
-        static assert(is(N : Q.valueType), "Incompatible value type: " ~ Q.valueType.stringof);
-        
-        auto q = parseQuantityImpl!(Q.valueType, numberParser)(str, symbolList);
-        enforceEx!DimensionException(Q.dimensions == q.dimensions,
-            "Dimension error: [%s] is not compatible with [%s]".format(
-                Q.dimensions.toString, q.dimensions.toString));
-        return Q(q.rawValue);
     }
 }
 ///
@@ -184,47 +168,32 @@ unittest
 {
     // From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
 
-    auto century = unit!(real, "century");
-    alias LectureLength = typeof(century);
-    
-    auto symbolList = SymbolList!real()
-        .addUnit("Cy", century)
-        .addPrefix("µ", 1e-6L);
+    import std.conv : parse;
 
-    import std.conv;
-    alias numberParser = std.conv.parse!(real, string);
+    auto century = unit!real("T");
+    alias LectureLength = typeof(century);
+
+    auto symbolList = SymbolList!real().addUnit("Cy", century).addPrefix("µ", 1e-6L);
+    alias numberParser = (ref string s) => std.conv.parse!real(s);
     auto parser = Parser!(real, numberParser)(symbolList);
 
     auto timing = 1e-6L * century;
-    assert(timing == parser.parse!LectureLength("1 µCy"));
-    assert(timing == parser.parseQVariant("1 µCy"));
+    assert(timing == parser.parse("1 µCy"));
 }
 
-/// Creates a compile-time parser that parses a string for a quantity and
-/// automatically deduces the quantity type.
-template compileTimeParser(N, alias symbolList, alias numberParser)
+version (none) unittest  // Compile-time
 {
-    template compileTimeParser(alias str)
-        if (isSomeString!(typeof(str)))
-    {
-        enum q = parseQuantityImpl!(N, numberParser)(str, symbolList); 
-        enum compileTimeParser = Quantity!(N, cast(Dimensions) q.dimensions)(q.rawValue);
-    }
-}
-///
-unittest
-{
-    enum century = unit!(real, "century");
-    alias LectureLength = typeof(century);
-    
-    enum symbolList = SymbolList!real()
-        .addUnit("Cy", century)
-        .addPrefix("µ", 1e-6L);
-    
-    alias numberParser = std.conv.parse!(real, string);
-    alias ctParser = compileTimeParser!(real, symbolList, numberParser);
-    enum timing = 1e-6L * century;
-    static assert(timing == ctParser!"1 µCy");
+    import std.conv : parse;
+
+    enum euro = unit!int("@");
+    alias Currency = typeof(euro);
+
+    enum symbolList = SymbolList!int().addUnit("€", euro).addPrefix("k", 1000);
+    alias intParser = (ref string s) => std.conv.parse!int(s);
+    enum parser = Parser!(int, intParser)(symbolList);
+
+    enum cost = 2_500_000 * euro;
+    static assert(cost == parser.parse("2500 k€"));
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -236,7 +205,7 @@ class ParsingException : Exception
 private:
 
 QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolList)
-    if (isSomeString!S)
+        if (isSomeString!S)
 {
     N value;
     auto str = input[];
@@ -255,36 +224,30 @@ QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolL
     return value * parser.parseCompoundUnit();
 }
 
-unittest // Test parsing
+unittest  // Test parsing
 {
-    import quantities.math;
-
-    auto meter = unit!(double, "L");
-    auto kilogram = unit!(double, "M");
-    auto second = unit!(double, "T");
+    auto meter = unit!double("L");
+    auto kilogram = unit!double("M");
+    auto second = unit!double("T");
     auto one = meter / meter;
     auto unknown = one;
 
-    auto siSL = SymbolList!double()
-        .addUnit("m", meter)
-        .addUnit("kg", kilogram)
-        .addUnit("s", second)
-        .addPrefix("c", 0.01L)
-        .addPrefix("m", 0.001L);
+    auto siSL = SymbolList!double().addUnit("m", meter).addUnit("kg", kilogram)
+        .addUnit("s", second).addPrefix("c", 0.01L).addPrefix("m", 0.001L);
 
-    bool checkParse(Q, S)(S input, Q quantity)
-        if (isSomeString!S)
+    bool checkParse(S, Q)(S input, Q quantity)
+            if (isSomeString!S)
     {
         alias numberParser = std.conv.parse!(Q.valueType, S);
-        return parseQuantityImpl!(double, numberParser)(input, siSL) == quantity.qVariant;
+        return parseQuantityImpl!(double, numberParser)(input, siSL) == quantity;
     }
 
     assert(checkParse("1    m    ", meter));
     assert(checkParse("1m", meter));
     assert(checkParse("1 mm", 0.001 * meter));
     assert(checkParse("1 m^-1", 1 / meter));
-    assert(checkParse("1 m^1/2", sqrt(meter)));
-    assert(checkParse("1 m^-1/2", 1 / sqrt(meter)));
+    assert(checkParse("1 m^2/2", meter));
+    assert(checkParse("1 m^-2/2", 1 / meter));
     assert(checkParse("1 m²", meter * meter));
     assert(checkParse("1 m⁺²", meter * meter));
     assert(checkParse("1 m⁻¹", 1 / meter));
@@ -323,7 +286,7 @@ unittest // Test parsing
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser(N)
 {
-    private 
+    private
     {
         Token[] tokens;
         SymbolList!N symbolList;
@@ -335,7 +298,8 @@ struct QuantityParser(N)
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
             return ret;
 
-        do {
+        do
+        {
             tokens.check();
             auto cur = tokens.front;
 
@@ -381,8 +345,7 @@ struct QuantityParser(N)
             tokens.advance(Tok.integer);
 
         Rational r = parseRationalOrInteger();
-        ret.dimensions = ret.dimensions.pow(r);
-        return ret;
+        return ret ^^ r;
     }
 
     Rational parseRationalOrInteger()
@@ -411,18 +374,16 @@ struct QuantityParser(N)
         if (!tokens.length)
             return QVariant!N(1, Dimensions.init);
 
-        QVariant!N ret;        
         if (tokens.front.type == Tok.lparen)
         {
             tokens.advance();
-            ret = parseCompoundUnit(true);
+            auto ret = parseCompoundUnit(true);
             tokens.check(Tok.rparen);
             tokens.advance();
+            return ret;
         }
         else
-            ret = parsePrefixUnit();
-
-        return ret;
+            return parsePrefixUnit();
     }
 
     QVariant!N parsePrefixUnit()
@@ -448,7 +409,8 @@ struct QuantityParser(N)
                 if (factor)
                 {
                     string unit = str[i .. $].to!string;
-                    enforceEx!ParsingException(unit.length, "Expecting a unit after the prefix " ~ prefix);
+                    enforceEx!ParsingException(unit.length,
+                            "Expecting a unit after the prefix " ~ prefix);
                     uptr = unit in symbolList.units;
                     if (uptr)
                         return *factor * *uptr;
@@ -515,19 +477,44 @@ Token[] lex(const(char)[] input)
             {
                 switch (c)
                 {
-                    case '⁰': a.put('0'); break;
-                    case '¹': a.put('1'); break;
-                    case '²': a.put('2'); break;
-                    case '³': a.put('3'); break;
-                    case '⁴': a.put('4'); break;
-                    case '⁵': a.put('5'); break;
-                    case '⁶': a.put('6'); break;
-                    case '⁷': a.put('7'); break;
-                    case '⁸': a.put('8'); break;
-                    case '⁹': a.put('9'); break;
-                    case '⁺': a.put('+'); break;
-                    case '⁻': a.put('-'); break;
-                    default: assert(false, "Error in pushInteger()");
+                case '⁰':
+                    a.put('0');
+                    break;
+                case '¹':
+                    a.put('1');
+                    break;
+                case '²':
+                    a.put('2');
+                    break;
+                case '³':
+                    a.put('3');
+                    break;
+                case '⁴':
+                    a.put('4');
+                    break;
+                case '⁵':
+                    a.put('5');
+                    break;
+                case '⁶':
+                    a.put('6');
+                    break;
+                case '⁷':
+                    a.put('7');
+                    break;
+                case '⁸':
+                    a.put('8');
+                    break;
+                case '⁹':
+                    a.put('9');
+                    break;
+                case '⁺':
+                    a.put('+');
+                    break;
+                case '⁻':
+                    a.put('-');
+                    break;
+                default:
+                    assert(false, "Error in pushInteger()");
                 }
             }
             slice = a.data;
@@ -541,7 +528,7 @@ Token[] lex(const(char)[] input)
         }
         catch (Exception)
             throw new ParsingException("Unexpected integer format: %s".format(original[i .. j]));
-            
+
         tokapp.put(Token(type, original[i .. j], n));
         i = j;
         state = State.none;
@@ -563,84 +550,84 @@ Token[] lex(const(char)[] input)
         switch (cur)
         {
             // Whitespace
-            case ' ':
-            case '\t':
-            case '\u00A0':
-            case '\u2000': .. case '\u200A':
-            case '\u202F':
-            case '\u205F':
+        case ' ':
+        case '\t':
+        case '\u00A0':
+        case '\u2000': .. case '\u200A':
+        case '\u202F':
+        case '\u205F':
+            push();
+            j += len;
+            i = j;
+            break;
+
+        case '(':
+            push();
+            j += len;
+            pushToken(Tok.lparen);
+            break;
+
+        case ')':
+            push();
+            j += len;
+            pushToken(Tok.rparen);
+            break;
+
+        case '*':
+        case '.':
+        case '⋅':
+        case '×':
+            push();
+            j += len;
+            pushToken(Tok.mul);
+            break;
+
+        case '/':
+        case '÷':
+            push();
+            j += len;
+            pushToken(Tok.div);
+            break;
+
+        case '^':
+            push();
+            j += len;
+            pushToken(Tok.exp);
+            break;
+
+        case '0': .. case '9':
+        case '-':
+        case '+':
+            if (state != State.integer)
                 push();
-                j += len;
-                i = j;
-                break;
+            state = State.integer;
+            j += len;
+            break;
 
-            case '(':
+        case '⁰':
+        case '¹':
+        case '²':
+        case '³':
+        case '⁴':
+        case '⁵':
+        case '⁶':
+        case '⁷':
+        case '⁸':
+        case '⁹':
+        case '⁻':
+        case '⁺':
+            if (state != State.supinteger)
                 push();
-                j += len;
-                pushToken(Tok.lparen);
-                break;
+            state = State.supinteger;
+            j += len;
+            break;
 
-            case ')':
+        default:
+            if (state == State.integer || state == State.supinteger)
                 push();
-                j += len;
-                pushToken(Tok.rparen);
-                break;
-
-            case '*':
-            case '.':
-            case '⋅':
-            case '×':
-                push();
-                j += len;
-                pushToken(Tok.mul);
-                break;
-
-            case '/':
-            case '÷':
-                push();
-                j += len;
-                pushToken(Tok.div);
-                break;
-
-            case '^':
-                push();
-                j += len;
-                pushToken(Tok.exp);
-                break;
-
-            case '0': .. case '9':
-            case '-':
-            case '+':
-                if (state != State.integer)
-                    push();
-                state = State.integer;
-                j += len;
-                break;
-
-            case '⁰':
-            case '¹':
-            case '²':
-            case '³':
-            case '⁴':
-            case '⁵':
-            case '⁶':
-            case '⁷':
-            case '⁸':
-            case '⁹':
-            case '⁻':
-            case '⁺':
-                if (state != State.supinteger)
-                    push();
-                state = State.supinteger;
-                j += len;
-                break;
-
-            default:
-                if (state == State.integer || state == State.supinteger)
-                    push();
-                state = State.symbol;
-                j += len;
-                break;
+            state = State.symbol;
+            j += len;
+            break;
         }
     }
     push();
@@ -666,45 +653,12 @@ void check(Token[] tokens, Tok tok)
 {
     tokens.check();
     enforceEx!ParsingException(tokens[0].type == tok,
-        format("Found '%s' while expecting %s", 
-            tokens[0].slice, tok));
+            format("Found '%s' while expecting %s", tokens[0].slice, tok));
 }
 
 void check(Token[] tokens, Tok tok1, Tok tok2)
 {
     tokens.check();
     enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
-        format("Found '%s' while expecting %s or %s", 
-            tokens[0].slice, tok1, tok2));
-}
-
-private:
-// Copied from std.exception until LDC/GDC has it.
-mixin template basicExceptionCtors()
-{
-    /++
-        Params:
-            msg  = The message for the exception.
-            file = The file where the exception occurred.
-            line = The line number where the exception occurred.
-            next = The previous exception in the chain of exceptions, if any.
-    +/
-    this(string msg, string file = __FILE__, size_t line = __LINE__,
-         Throwable next = null) @nogc @safe pure nothrow
-    {
-        super(msg, file, line, next);
-    }
-
-    /++
-        Params:
-            msg  = The message for the exception.
-            next = The previous exception in the chain of exceptions.
-            file = The file where the exception occurred.
-            line = The line number where the exception occurred.
-    +/
-    this(string msg, Throwable next, string file = __FILE__,
-         size_t line = __LINE__) @nogc @safe pure nothrow
-    {
-        super(msg, file, line, next);
-    }
+            format("Found '%s' while expecting %s or %s", tokens[0].slice, tok1, tok2));
 }

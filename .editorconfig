@@ -1,0 +1,12 @@
+root = true
+
+tab_width = 4
+indent_size = 4
+indent_style = space
+max_line_length = 100
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.d]
+dfmt_brace_style = allman
+dfmt_template_constraint_style = always_newline_indent

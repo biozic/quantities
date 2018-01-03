@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/biozic/quantities.svg?branch=master)](https://travis-ci.org/biozic/quantities)
 
 The purpose of this small library is to perform automatic compile-time or
-runtime dimensional checking when dealing with quantities and units.
+run-time dimensional checking when dealing with quantities and units.
 
 There is no actual distinction between units and quantities, so there are no
 distinct quantity and unit types. All operations are actually done on
@@ -11,17 +11,17 @@ quantities. For example, `meter` is both the unit _meter_ and the quantity _1m_.
 New quantities can be derived from other ones using operators or dedicated
 functions.
 
-Quantities can be parsed from strings at runtime and compile-time.
+Quantities can be parsed from strings at run time and compile time.
 
 The main SI units and prefixes are predefined. Units with other dimensions can
 be defined by the user.
 
-Copyright 2013-2015, Nicolas Sicard.
+Copyright 2013-2018, Nicolas Sicard.
 
 License: Boost License 1.0.
 
 
-### Design rationale (work in progress)
+### Design rationale
 
 #### Principles
 
@@ -62,110 +62,52 @@ itself correctly. Instead, for now, the `toString` function prints the value and
 the dimensions vector. To print the units properly, the user can use the
 provided format helpers, or use the result of the `value` method.
 
+### Examples
 
-### Synopsis
-
-#### Introductory example
-
-```d
-// Use the predefined quantity types (in module quantities.si)
-Volume volume;
-Concentration concentration;
-Mass mass;
-
-// Define a new quantity type
-alias MolarMass = typeof(kilogram/mole);
-
-// I have to make a new solution at the concentration of 5 mmol/L
-concentration = 5.0 * milli(mole)/liter;
-
-// The final volume is 100 ml.
-volume = 100.0 * milli(liter);
-
-// The molar mass of my compound is 118.9 g/mol
-MolarMass mm = 118.9 * gram/mole;
-
-// What mass should I weigh?
-mass = concentration * volume * mm;
-writefln("Weigh %s of substance", mass); 
-// prints: Weigh 5.945e-05 [M] of substance
-// Wait! That's not really useful!
-writefln("Weigh %s of substance", mass.siFormat!"%.1f mg");
-// prints: Weigh 59.5 mg of substance
-```
-
-#### Working with predefined units
-
-The package defines all the main SI units and prefixes, as well as aliases for
-their types.
+#### Synopsis at compile time
 
 ```d
+import quantities.compiletime;
+import quantities.si;
+import std.conv : text;
+
+// Define a quantity from SI units
 auto distance = 384_400 * kilo(meter);
-auto speed = 299_792_458  * meter/second;
+
+// Define a quantity from a string
+auto speed = si!"299_792_458 m/s";
+
+// Calculations on quantitites (checked at compile time for consistency)
 auto time = distance / speed;
-writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
-}
-```
+static assert(!__traits(compiles, distance + speed));
 
-#### Dimensional correctness is checked at compile-time
+// Format a quantity with a format specification containing a unit
+assert(time.siFormat!"%.3f s".text == "1.282 s");
+``` 
 
-```d
-Mass mass;
-static assert(!__traits(compiles, mass = 15 * meter));
-static assert(!__traits(compiles, mass = 1.2));
-```
-
-#### Calculations can be done at compile-time
+#### Synopsis at run time
 
 ```d
-enum distance = 384_400 * kilo(meter);
-enum speed = 299_792_458  * meter/second;
-enum time = distance / speed;
-writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
-```
+import quantities.runtime;
+import quantities.si;
+import std.exception : assertThrown;
+import std.conv : text;
 
-#### Create a new unit from the predefined ones
-```d
-enum inch = 2.54 * centi(meter);
-enum mile = 1609 * meter;
-writefln("There are %s inches in a mile", mile.value(inch));
-// NB. Cannot use siFormat, because inches are not SI units
-```
+// Define a quantity from SI units
+auto distance = 384_400 * kilo(meter);
 
-#### Create a new unit with new dimensions
+// Define a quantity from a string
+auto speed = parseSI("299_792_458 m/s");
 
-```d
-// Create a new base unit of currency
-enum euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
-
-auto dollar = euro / 1.35;
-auto price = 2000 * dollar;
-writefln("This computer costs €%.2f", price.value(euro));
-```
-
-#### Parsing
-
-At compile time:
-
-```d
-enum distance = si!"384_400 km";
-enum speed = si!"299_792_458 m/s";
-enum time = distance / speed;
-writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
-
-static assert(is(typeof(distance) == Length));
-static assert(is(typeof(speed) == Speed));
-```
-
-At runtime:
-
-```d
-auto data = [
-    "distance-to-the-moon": "384_400 km",
-    "speed-of-light": "299_792_458 m/s"
-];
-auto distance = parseSI!Length(data["distance-to-the-moon"]);
-auto speed = parseSI!Speed(data["speed-of-light"]);
+// Calculations on quantitites (checked at compile time for consistency)
 auto time = distance / speed;
-writefln("Travel time of light from the moon: %s", time.siFormat!"%.3f s");
+assertThrown!DimensionException(distance + speed);
+
+// Format a quantity with a format specification containing a unit
+assert(siFormat("%.3f s", time).text == "1.282 s");
 ```
+
+See more complete examples [at run
+time](https://github.com/biozic/quantities/blob/master/source/quantities/compiletime/package.d#L13)
+and [at compile
+time](https://github.com/biozic/quantities/blob/master/source/quantities/runtime/package.d#L12).

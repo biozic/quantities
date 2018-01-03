@@ -1,31 +1,31 @@
 /++
-This module only contains a template mixin used to generate
-SI units, prefixes and utility functions.
+This module only contains a template mixin that defines
+SI units, prefixes and symbols.
 
-Copyright: Copyright 2013-2016, Nicolas Sicard
+Copyright: Copyright 2013-2018, Nicolas Sicard
 Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.si.definitions;
 
-public import quantities.base;
-public import quantities.math;
-public import quantities.parsing;
-
-public import std.math : PI;
-public import std.traits : isFloatingPoint, isSomeString;
-
 /++
-Defines SI units, prefixes and deveral utility functions
-(parsing and formatting).
+Generates the definitions of the SI units, prefixes and symbols.
 +/
-mixin template SI(N)
-    if (isFloatingPoint!N)
+mixin template SIDefinitions(N)
 {
-    /++
-    Predefined SI units.
-    +/
+    import quantities.compiletime.quantity : Quantity, unit, square, cubic;
+    import quantities.runtime.qvariant : prefix;
+    import quantities.runtime.parsing : SymbolList;
+    import std.math : PI;
+    import std.traits : isNumeric;
+
+    static assert(isNumeric!N);
+
+    /// The dimensionless unit 1.
+    enum one = unit!(N, "");
+    
+    /// Base SI units.
     enum meter = unit!(N, "L");
     alias metre = meter; /// ditto
     enum kilogram = unit!(N, "M"); /// ditto
@@ -35,6 +35,7 @@ mixin template SI(N)
     enum mole = unit!(N, "N"); /// ditto
     enum candela = unit!(N, "J"); /// ditto
 
+    /// Derived SI units
     enum radian = meter / meter; // ditto
     enum steradian = square(meter) / square(meter); /// ditto
     enum hertz = 1 / second; /// ditto
@@ -58,7 +59,8 @@ mixin template SI(N)
     enum sievert = joule / kilogram; /// ditto
     enum katal = mole / second; /// ditto
 
-    enum gram = 1e-3 * kilogram; /// ditto
+    /// Units compatible with the SI
+    enum gram = 1e-3 * kilogram;
     enum minute = 60 * second; /// ditto
     enum hour = 60 * minute; /// ditto
     enum day = 24 * hour; /// ditto
@@ -71,57 +73,6 @@ mixin template SI(N)
     enum ton = 1e3 * kilogram; /// ditto
     enum electronVolt = 1.60217653e-19 * joule; /// ditto
     enum dalton = 1.66053886e-27 * kilogram; /// ditto
-
-    enum one = Quantity!(N, Dimensions.init)(1); /// The dimensionless unit 'one'
-
-    alias Length = typeof(meter); /// Predefined quantity type templates for SI quantities
-    alias Mass = typeof(kilogram); /// ditto
-    alias Time = typeof(second); /// ditto
-    alias ElectricCurrent = typeof(ampere); /// ditto
-    alias Temperature = typeof(kelvin); /// ditto
-    alias AmountOfSubstance = typeof(mole); /// ditto
-    alias LuminousIntensity = typeof(candela); /// ditto
-
-    alias Area = typeof(square(meter)); /// ditto
-    alias Surface = Area;
-    alias Volume = typeof(cubic(meter)); /// ditto
-    alias Speed = typeof(meter/second); /// ditto
-    alias Acceleration = typeof(meter/square(second)); /// ditto
-    alias MassDensity = typeof(kilogram/cubic(meter)); /// ditto
-    alias CurrentDensity = typeof(ampere/square(meter)); /// ditto
-    alias MagneticFieldStrength = typeof(ampere/meter); /// ditto
-    alias Concentration = typeof(mole/cubic(meter)); /// ditto
-    alias MolarConcentration = Concentration; /// ditto
-    alias MassicConcentration = typeof(kilogram/cubic(meter)); /// ditto
-    alias Luminance = typeof(candela/square(meter)); /// ditto
-    alias RefractiveIndex = typeof(kilogram); /// ditto
-
-    alias Angle = typeof(radian); /// ditto
-    alias SolidAngle = typeof(steradian); /// ditto
-    alias Frequency = typeof(hertz); /// ditto
-    alias Force = typeof(newton); /// ditto
-    alias Pressure = typeof(pascal); /// ditto
-    alias Energy = typeof(joule); /// ditto
-    alias Work = Energy; /// ditto
-    alias Heat = Energy; /// ditto
-    alias Power = typeof(watt); /// ditto
-    alias ElectricCharge = typeof(coulomb); /// ditto
-    alias ElectricPotential = typeof(volt); /// ditto
-    alias Capacitance = typeof(farad); /// ditto
-    alias ElectricResistance = typeof(ohm); /// ditto
-    alias ElectricConductance = typeof(siemens); /// ditto
-    alias MagneticFlux = typeof(weber); /// ditto
-    alias MagneticFluxDensity = typeof(tesla); /// ditto
-    alias Inductance = typeof(henry); /// ditto
-    alias LuminousFlux = typeof(lumen); /// ditto
-    alias Illuminance = typeof(lux); /// ditto
-    alias CelsiusTemperature = typeof(celsius); /// ditto
-    alias Radioactivity = typeof(becquerel); /// ditto
-    alias AbsorbedDose = typeof(gray); /// ditto
-    alias DoseEquivalent = typeof(sievert); /// ditto
-    alias CatalyticActivity = typeof(katal); /// ditto
-
-    alias Dimensionless = typeof(meter/meter); /// The type of dimensionless quantities
 
     /// SI prefixes.
     alias yotta = prefix!1e24;
@@ -146,7 +97,8 @@ mixin template SI(N)
     alias yocto = prefix!1e-24; /// ditto
 
     /// A list of common SI symbols and prefixes
-    enum siSymbols = SymbolList!N()
+    // dfmt off
+    enum siSymbolList = SymbolList!N()
         .addUnit("m", meter)
         .addUnit("kg", kilogram)
         .addUnit("s", second)
@@ -204,114 +156,5 @@ mixin template SI(N)
         .addPrefix("a", 1e-18)
         .addPrefix("z", 1e-21)
         .addPrefix("y", 1e-24);
-
-    /++
-    Parses a string for a quantity of type Q at run time.
-
-    Throws a DimensionException.
-
-    Params:
-        Q = the type of the returned quantity.
-        str = the string to parse.
-    +/
-    Q parseSI(Q, S)(S str)
-        if (isQuantity!Q && isSomeString!S)
-    {
-        import std.conv : parse;
-
-        static Parser!(N, parse!(N, S)) siParser;
-        static bool initialized = false;
-        if (!initialized)
-            siParser.symbolList = siSymbols;
-        return siParser.parse!Q(str);
-    }
-    ///
-    unittest
-    {
-        auto t = parseSI!Time("90 min");
-        assert(t == 90 * minute);
-        t = parseSI!Time("h");
-        assert(t == 1 * hour);
-
-        auto v = parseSI!Dimensionless("2");
-        assert(v == (2 * meter) / meter);
-    }
-    unittest
-    {
-        char[] timeStr = "90 min".dup;
-        assert(parseSI!Time(timeStr) == 90 * minute);
-    }
-
-    /++
-    Creates a quantity of type Q from a string at compile time.
-    
-    Params:
-        qty = the string describing the quantity.
-    +/
-    template si(alias qty)
-        if (isSomeString!(typeof(qty)))
-    {
-        enum si = () {
-            import std.conv : parse;
-            alias ct = compileTimeParser!(N, siSymbols, parse!(N, typeof(qty)));
-            return ct!qty;
-        } ();
-    }
-    ///
-    unittest
-    {
-        enum inch = si!"2.54 cm";
-        enum conc = si!"1 µmol/L";
-        enum speed = si!"m s^-1";
-        enum value = si!"0.5";      
-          
-        static assert(is(typeof(inch) == Length));
-        static assert(is(typeof(conc) == Concentration));
-        static assert(is(typeof(speed) == Speed));
-        static assert(is(typeof(value) == Dimensionless));
-    }
-
-    /++
-    Formats a SI quantity according to a format string known at compile time.
-
-    Params:
-        fmt = The format string. Must start with a format specification
-              for the value of the quantity (a numeric type), that must be 
-              followed by the symbol of a SI unit.
-
-        quantity = The quantity that must be formatted.
-    +/
-    auto siFormat(string fmt, Q)(Q quantity)
-    {
-        return SIFormatter!(fmt, Q)(quantity);
-    }
-    ///
-    unittest
-    {
-        import std.conv : text;
-
-        auto conc = 0.025463 * mole/litre;
-        assert(conc.siFormat!"%.1f mmol/L".text == "25.5 mmol/L");
-    }
-
-    struct SIFormatter(string fmt, Q)
-    {
-        // Get the unit part of the spec.
-        enum unit = si!({
-            import std.format : FormatSpec;
-            import std.array : Appender;
-            auto spec = FormatSpec!char(fmt);
-            auto app = Appender!string();
-            spec.writeUpToNextSpec(app);
-            return spec.trailing;
-        }());
-
-        Q quantity;
-
-        void toString(scope void delegate(const(char)[]) sink) const
-        {
-            import std.format : formattedWrite;
-            sink.formattedWrite!fmt(quantity.value(unit));
-        }
-    }
+    // dfmt on
 }
