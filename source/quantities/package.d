@@ -35,9 +35,17 @@ unittest
 
     // Define a quantity from a string
     auto speed = si!"299_792_458 m/s";
+    // Define a type for a quantity
+    alias Speed = typeof(speed);
 
-    // Calculations on quantitites (checked at compile time for consistency)
-    auto time = distance / speed;
+    // Calculations on quantities
+    auto calculateTime(Length d, Speed s)
+    {
+        return d / s;
+    }
+    Time time = calculateTime(distance, speed);
+
+    // Dimensions are checked at compile time for consistency
     static assert(!__traits(compiles, distance + speed));
 
     // Format a quantity with a format specification containing a unit
@@ -53,14 +61,20 @@ unittest
     import std.exception : assertThrown;
     import std.conv : text;
 
-    // Define a quantity from SI units
-    auto distance = 384_400 * kilo(meter);
+    // Define a quantity from SI units (using the helper function `qVariant`)
+    auto distance = qVariant(384_400 * kilo(meter));
 
     // Define a quantity from a string
     auto speed = parseSI("299_792_458 m/s");
 
-    // Calculations on quantitites (checked at compile time for consistency)
-    auto time = distance / speed;
+    // Calculations on quantities (checked at compile time for consistency)
+    QVariant!double calculateTime(QVariant!double d, QVariant!double s)
+    {
+        return d / s;
+    }
+    auto time = calculateTime(distance, speed);
+
+    // Dimensions are checked at run time for consistency
     assertThrown!DimensionException(distance + speed);
 
     // Format a quantity with a format specification containing a unit
