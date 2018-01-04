@@ -73,7 +73,7 @@ public:
         _value = qty._value;
     }
 
-    /// Ditto
+    /// ditto
     this(Q)(auto ref const Q qty)
             if (isQVariant!Q)
     {

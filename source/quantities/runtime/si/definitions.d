@@ -81,7 +81,7 @@ mixin template RuntimeSI(N)
         assert(siFormat("%.2f m/s", speed).text == "3.47 m/s");
     }
 
-    /// Ditto
+    /// ditto
     struct SIFormatter
     {
         private

@@ -102,7 +102,7 @@ public:
         _dimensions = qty._dimensions;
     }
 
-    /// Ditto
+    /// ditto
     this(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
