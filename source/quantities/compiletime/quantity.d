@@ -117,6 +117,18 @@ public:
         return _value / target._value;
     }
 
+    /// ditto
+    N value(Q)(auto ref const Q target) const 
+            if (isQVariant!Q)
+    {
+        import std.exception;
+
+        enforce(unit.dimensions == target.dimensions,
+                new DimensionException("Incompatible dimensions",
+                    unit.dimensions, target.dimensions));
+        return _value / target.rawValue;
+    }
+
     /++
     Test whether this quantity is dimensionless
     +/
@@ -130,6 +142,13 @@ public:
     {
         enum yesOrNo = unit.isConsistentWith(Q.unit);
         return yesOrNo;
+    }
+
+    /// ditto
+    bool isConsistentWith(Q)(auto ref const Q qty) const 
+            if (isQVariant!Q)
+    {
+        return unit.dimensions == qty.dimensions;
     }
 
     /++
@@ -154,6 +173,18 @@ public:
     {
         mixin checkDim!(Q.unit);
         _value = qty._value;
+        return this;
+    }
+
+    /// ditto
+    ref Quantity opAssign(Q)(auto ref const Q qty)
+            if (isQVariant!Q)
+    {
+        import std.exception;
+
+        enforce(unit.dimensions == qty.dimensions,
+                new DimensionException("Incompatible dimensions", unit.dimensions, qty.dimensions));
+        _value = qty.rawValue;
         return this;
     }
 

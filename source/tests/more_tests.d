@@ -51,6 +51,16 @@ unittest
     assert(test.value(second).approxEqual(0));
 }
 
+@("Quantity/QVariant")
+unittest
+{
+    Time duration = Time(parseSI("60 min"));
+    assert(duration.value(parseSI("min")) == 60);
+    duration = parseSI("60 s");
+    assert(duration.value(parseSI("s")) == 60);
+    assert(duration.isConsistentWith(parseSI("1 h")));
+}
+
 @("Functions with QVariant parameters")
 unittest
 {

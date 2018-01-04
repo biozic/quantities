@@ -58,10 +58,12 @@ possible to make it work with any "number-like" type.
    type, for which the vector of dimensions is not part of the type, but stored
    as a member along the numeric value.
 
-2. Calculations *and* dimensionnal checks are done at run time. Both `QVariant`
-   and `Quantity` can be used in the same expressions to a certain extent.
+2. Calculations *and* dimensionnal checks are done at run time for operations
+   involving only `Quantity`. Yet, both `QVariant` and `Quantity` can be used in
+   the same expressions to a certain extent, and the checks are done at
+   run-time.
 
-3. All quantities stored as `QVariants` share the same type, event if the
+3. All quantities stored as `QVariant` share the same type, event if the
    dimensions of the quantities are different.
 
 4. Only calculations that break dimensional consitencies are checked an throw a
