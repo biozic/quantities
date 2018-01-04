@@ -65,7 +65,13 @@ package(quantities):
     }
 
 public:
-    /// Creates a new quantity from another one with the same dimensions
+    /++
+    Creates a new quantity from another one with the same dimensions.
+
+    If Q is a QVariant, throws a DimensionException if the parsed quantity
+    doesn't have the same dimensions as Q. If Q is a Quantity, inconsistent
+    dimensions produce a compilation error.
+    +/
     this(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
@@ -109,6 +115,10 @@ public:
 
     /++
     Gets the _value of this quantity when expressed in the given target unit.
+
+    If Q is a QVariant, throws a DimensionException if the parsed quantity
+    doesn't have the same dimensions as Q. If Q is a Quantity, inconsistent
+    dimensions produce a compilation error.
     +/
     N value(Q)(auto ref const Q target) const 
             if (isQuantity!Q)
@@ -136,6 +146,10 @@ public:
 
     /++
     Tests wheter this quantity has the same dimensions as another one.
+
+    If Q is a QVariant, throws a DimensionException if the parsed quantity
+    doesn't have the same dimensions as Q. If Q is a Quantity, inconsistent
+    dimensions produce a compilation error.
     +/
     bool isConsistentWith(Q)(auto ref const Q qty) const 
             if (isQuantity!Q)
@@ -376,7 +390,7 @@ public:
     }
 }
 
-/// Creates a new monodimensional unit as a QVariant
+/// Creates a new monodimensional unit as a Quantity.
 auto unit(N, string symbol)()
 {
     import quantities.runtime.qvariant;
@@ -385,7 +399,7 @@ auto unit(N, string symbol)()
     return Quantity!(N, u).make(1);
 }
 
-/// Tests whether T is a quantity type
+/// Tests whether T is a quantity type.
 template isQuantity(T)
 {
     import std.traits : Unqual;

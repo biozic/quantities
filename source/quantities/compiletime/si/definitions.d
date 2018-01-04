@@ -69,7 +69,10 @@ mixin template CompiletimeSI(N)
     import std.traits : isSomeString;
 
     /++
-    Parses a string for a quantity of type Q at run time.
+    Parses a Quantity from a string at run time.
+
+    Throws a DimensionException if the parsed quantity doesn't have the same
+    dimensions as Q.
 
     Params:
         Q = the type of the returned quantity.
@@ -81,7 +84,7 @@ mixin template CompiletimeSI(N)
         import quantities.runtime.parsing : Parser;
         import std.conv : parse;
 
-        enum siParser = Parser!(N, (ref S s) => parse!N(s))(siSymbols);
+        auto siParser = Parser!(N, (ref S s) => parse!N(s))(siSymbols);
         return Q(siParser.parse(str));
     }
     ///

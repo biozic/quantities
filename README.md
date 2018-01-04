@@ -44,12 +44,16 @@ possible to make it work with any "number-like" type.
    quantities generally won't have to be templated if the dimensions of the
    quantities are known at compile time.
 
-4. All operations on instances of `Quantity` types are statically checked for
-   dimensional consistency. If a constuction, an assignment, a calculation
-   (using overloaded operators or special functions) is not dimensionnaly
-   consistent, compilation fails. Most notably, calculations involving plain
-   built-in numeric types (`double`, `int`, etc.) only work with quantities with
-   no dimensions.
+4. All operations on `Quantity` values are statically checked for dimensional
+   consistency. If a constuction, an assignment, a calculation (using overloaded
+   operators or special functions) or parsing from string at compile-time is not
+   dimensionnaly consistent, there's a compilation error. Most notably,
+   calculations involving plain built-in numeric types (`double`, `int`, etc.)
+   only work with quantities with no dimensions.
+
+    Some operations (construction, assignment, `value` function, parsing from a
+   run-time string) can use a `QVariant` argument. In this case, the checks are
+   done at run-time.
 
 #### Quantities at run time
 
@@ -58,10 +62,8 @@ possible to make it work with any "number-like" type.
    type, for which the vector of dimensions is not part of the type, but stored
    as a member along the numeric value.
 
-2. Calculations *and* dimensionnal checks are done at run time for operations
-   involving only `Quantity`. Yet, both `QVariant` and `Quantity` can be used in
-   the same expressions to a certain extent, and the checks are done at
-   run-time.
+2. Calculations *and* dimensionnal checks are done at run time. Both `QVariant`
+   and `Quantity` can be used in the same expressions to a certain extent.
 
 3. All quantities stored as `QVariant` share the same type, event if the
    dimensions of the quantities are different.
