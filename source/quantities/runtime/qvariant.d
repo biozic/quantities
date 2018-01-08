@@ -522,6 +522,12 @@ auto cbrt(Q)(auto ref const Q quantity)
 }
 
 /// ditto
+auto pow(Q, I)(auto ref const Q quantity, I n)
+        if (isQVariant!Q && isIntegral!I)
+{
+    return Q(std.math.pow(quantity._value, n), quantity._dimensions.pow(Rational(n)));
+}
+
 auto pow(int n, Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
@@ -529,6 +535,12 @@ auto pow(int n, Q)(auto ref const Q quantity)
 }
 
 /// ditto
+auto nthRoot(Q, I)(auto ref const Q quantity, I n)
+        if (isQVariant!Q && isIntegral!I)
+{
+    return Q(std.math.pow(quantity._value, 1.0 / n), quantity._dimensions.powinverse(Rational(n)));
+}
+
 auto nthRoot(int n, Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
