@@ -368,12 +368,7 @@ public:
     {
         return _dims;
     }
-
-    /// Test whether the dimension vector is empty.
-    bool empty() @safe pure nothrow const
-    {
-        return _dims.empty;
-    }
+    alias dims this;
 
     Dimensions opUnary(string op)() @safe pure nothrow const 
             if (op == "~")
