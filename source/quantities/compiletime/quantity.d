@@ -166,6 +166,14 @@ public:
     }
 
     /++
+    Returns the base unit of this quantity.
+    +/
+    Quantity baseUnit() @property const
+    {
+        return Quantity.make(1);
+    }
+
+    /++
     Cast a dimensionless quantity to a numeric type.
 
     The cast operation will throw DimensionException if the quantity is not

@@ -187,6 +187,14 @@ public:
     }
 
     /++
+    Returns the base unit of this quantity.
+    +/
+    QVariant baseUnit() @property const
+    {
+        return QVariant(1, _dimensions);
+    }
+
+    /++
     Cast a dimensionless quantity to a numeric type.
 
     The cast operation will throw DimensionException if the quantity is not
