@@ -1,27 +1,19 @@
 module tests.common_tests;
 
-enum TestVariant
-{
-    quantity,
-    qVariant
-}
-
-import quantities.runtime.qvariant;
-import quantities.compiletime.quantity;
+import quantities;
 import quantities.internal.dimensions;
 import std.exception;
+import std.math : approxEqual;
 
-mixin template CommonTests(TestVariant v)
+mixin template CommonTests(alias Q)
 {
-    import std.math : approxEqual;
-
-    static if (v == TestVariant.quantity)
+    static if (__traits(isSame, Q, Quantity))
     {
         enum meter = unit!(double, "L");
         enum second = unit!(double, "T");
         enum radian = unit!(double, null);
     }
-    else static if (v == TestVariant.qVariant)
+    else static if (__traits(isSame, Q, QVariant))
     {
         enum meter = unit!double("L");
         enum second = unit!double("T");
@@ -455,5 +447,5 @@ mixin template CommonTests(TestVariant v)
     }
 }
 
-mixin CommonTests!(TestVariant.qVariant);
-mixin CommonTests!(TestVariant.quantity);
+mixin CommonTests!Quantity;
+mixin CommonTests!QVariant;
