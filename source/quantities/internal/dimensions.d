@@ -141,6 +141,11 @@ public:
         return -1;
     }
 
+    int opCmp(int value) @safe pure nothrow const
+    {
+        return opCmp(Rational(value));
+    }
+
     T opCast(T)() @safe pure nothrow const 
             if (isNumeric!T)
     {
