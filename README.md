@@ -156,6 +156,6 @@ assert(siFormat("%.3f s", time) == "1.282 s");
 ```
 
 See more complete examples [at run
-time](https://github.com/biozic/quantities/blob/master/source/quantities/runtime/package.d#L13)
+time](https://github.com/biozic/quantities/blob/master/source/quantities/runtime.d#L13)
 and [at compile
-time](https://github.com/biozic/quantities/blob/master/source/quantities/compiletime/package.d#L12).
+time](https://github.com/biozic/quantities/blob/master/source/quantities/compiletime.d#L12).
