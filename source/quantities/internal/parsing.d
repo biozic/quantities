@@ -85,11 +85,11 @@ Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-module quantities.runtime.parsing;
+module quantities.internal.parsing;
 
 import quantities.internal.dimensions;
-import quantities.runtime.qvariant;
-import quantities.compiletime.quantity;
+import quantities.runtime;
+import quantities.compiletime;
 
 import std.array;
 import std.algorithm;
@@ -218,8 +218,7 @@ QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolL
     if (str.empty)
         return QVariant!N(value, Dimensions.init);
 
-    auto tokens = lex(str);
-    auto parser = QuantityParser!N(tokens, symbolList);
+    auto parser = QuantityParser!(N, S)(str, symbolList);
 
     return value * parser.parseCompoundUnit();
 }
@@ -284,15 +283,24 @@ unittest  // Test parsing
 }
 
 // A parser that can parse a text for a unit or a quantity
-struct QuantityParser(N)
+struct QuantityParser(N, S)
+        if (isNumeric!N && isSomeString!S)
 {
     private
     {
-        Token[] tokens;
+        S input;
         SymbolList!N symbolList;
+        Token[] tokens;
     }
 
-    QVariant!N parseCompoundUnit(bool inParens = false)
+    this(S input, SymbolList!N symbolList)
+    {
+        this.input = input;
+        this.symbolList = symbolList;
+        tokens = lex(input);
+    }
+
+    QVariant!N parseCompoundUnit(bool inParens = false) pure @safe
     {
         QVariant!N ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
@@ -300,7 +308,7 @@ struct QuantityParser(N)
 
         do
         {
-            tokens.check();
+            check(tokens);
             auto cur = tokens.front;
 
             bool multiply = true;
@@ -309,8 +317,8 @@ struct QuantityParser(N)
 
             if (cur.type == Tok.mul || cur.type == Tok.div)
             {
-                tokens.advance();
-                tokens.check();
+                advance(tokens);
+                check(tokens);
                 cur = tokens.front;
             }
 
@@ -330,7 +338,7 @@ struct QuantityParser(N)
         return ret;
     }
 
-    QVariant!N parseExponentUnit()
+    QVariant!N parseExponentUnit() pure @safe
     {
         QVariant!N ret = parseUnit();
 
@@ -342,56 +350,56 @@ struct QuantityParser(N)
             return ret;
 
         if (next.type == Tok.exp)
-            tokens.advance(Tok.integer);
+            advance(tokens, Tok.integer);
 
         Rational r = parseRationalOrInteger();
         return ret ^^ r;
     }
 
-    Rational parseRationalOrInteger()
+    Rational parseRationalOrInteger() pure @safe
     {
         int num = parseInteger();
         int den = 1;
         if (tokens.length && tokens.front.type == Tok.div)
         {
-            tokens.advance();
+            advance(tokens);
             den = parseInteger();
         }
         return Rational(num, den);
     }
 
-    int parseInteger()
+    int parseInteger() pure @safe
     {
-        tokens.check(Tok.integer, Tok.supinteger);
+        check(tokens, Tok.integer, Tok.supinteger);
         int n = tokens.front.integer;
         if (tokens.length)
-            tokens.advance();
+            advance(tokens);
         return n;
     }
 
-    QVariant!N parseUnit()
+    QVariant!N parseUnit() pure @safe
     {
         if (!tokens.length)
             return QVariant!N(1, Dimensions.init);
 
         if (tokens.front.type == Tok.lparen)
         {
-            tokens.advance();
+            advance(tokens);
             auto ret = parseCompoundUnit(true);
-            tokens.check(Tok.rparen);
-            tokens.advance();
+            check(tokens, Tok.rparen);
+            advance(tokens);
             return ret;
         }
         else
             return parsePrefixUnit();
     }
 
-    QVariant!N parsePrefixUnit()
+    QVariant!N parsePrefixUnit() pure @safe
     {
-        tokens.check(Tok.symbol);
-        auto str = tokens.front.slice;
+        check(tokens, Tok.symbol);
+        auto str = input[tokens.front.begin .. tokens.front.end].to!string;
         if (tokens.length)
-            tokens.advance();
+            advance(tokens);
 
         // Try a standalone unit symbol (no prefix)
         auto uptr = str in symbolList.units;
@@ -420,245 +428,248 @@ struct QuantityParser(N)
 
         throw new ParsingException("Unknown unit symbol: '%s'".format(str));
     }
-}
 
-enum Tok
-{
-    none,
-    symbol,
-    mul,
-    div,
-    exp,
-    integer,
-    supinteger,
-    rparen,
-    lparen
-}
-
-struct Token
-{
-    Tok type;
-    const(char)[] slice;
-    int integer = int.max;
-}
-
-Token[] lex(const(char)[] input)
-{
-    enum State
+    enum Tok
     {
         none,
         symbol,
+        mul,
+        div,
+        exp,
         integer,
-        supinteger
+        supinteger,
+        rparen,
+        lparen
     }
 
-    Token[] tokens;
-    auto tokapp = appender(tokens);
-
-    auto original = input;
-    size_t i, j;
-    State state = State.none;
-
-    void pushToken(Tok type)
+    struct Token
     {
-        tokapp.put(Token(type, original[i .. j]));
-        i = j;
-        state = State.none;
+        Tok type;
+        size_t begin;
+        size_t end;
+        int integer = int.max;
     }
 
-    void pushInteger(Tok type)
+    Token[] lex(S input) pure @safe
     {
-        auto slice = original[i .. j];
-
-        if (type == Tok.supinteger)
+        enum State
         {
-            auto a = appender!string;
-            foreach (dchar c; slice)
-            {
-                switch (c)
-                {
-                case '⁰':
-                    a.put('0');
-                    break;
-                case '¹':
-                    a.put('1');
-                    break;
-                case '²':
-                    a.put('2');
-                    break;
-                case '³':
-                    a.put('3');
-                    break;
-                case '⁴':
-                    a.put('4');
-                    break;
-                case '⁵':
-                    a.put('5');
-                    break;
-                case '⁶':
-                    a.put('6');
-                    break;
-                case '⁷':
-                    a.put('7');
-                    break;
-                case '⁸':
-                    a.put('8');
-                    break;
-                case '⁹':
-                    a.put('9');
-                    break;
-                case '⁺':
-                    a.put('+');
-                    break;
-                case '⁻':
-                    a.put('-');
-                    break;
-                default:
-                    assert(false, "Error in pushInteger()");
-                }
-            }
-            slice = a.data;
+            none,
+            symbol,
+            integer,
+            supinteger
         }
 
-        int n;
-        try
+        Token[] tokens;
+        auto tokapp = appender(tokens);
+
+        auto original = input;
+        size_t i, j;
+        State state = State.none;
+
+        void pushToken(Tok type)
         {
-            n = std.conv.parse!int(slice);
-            enforce(slice.empty);
-        }
-        catch (Exception)
-            throw new ParsingException("Unexpected integer format: %s".format(original[i .. j]));
-
-        tokapp.put(Token(type, original[i .. j], n));
-        i = j;
-        state = State.none;
-    }
-
-    void push()
-    {
-        if (state == State.symbol)
-            pushToken(Tok.symbol);
-        else if (state == State.integer)
-            pushInteger(Tok.integer);
-        else if (state == State.supinteger)
-            pushInteger(Tok.supinteger);
-    }
-
-    foreach (dchar cur; input)
-    {
-        auto len = cur.codeLength!char;
-        switch (cur)
-        {
-            // Whitespace
-        case ' ':
-        case '\t':
-        case '\u00A0':
-        case '\u2000': .. case '\u200A':
-        case '\u202F':
-        case '\u205F':
-            push();
-            j += len;
+            tokapp.put(Token(type, i, j));
             i = j;
-            break;
-
-        case '(':
-            push();
-            j += len;
-            pushToken(Tok.lparen);
-            break;
-
-        case ')':
-            push();
-            j += len;
-            pushToken(Tok.rparen);
-            break;
-
-        case '*':
-        case '.':
-        case '⋅':
-        case '×':
-            push();
-            j += len;
-            pushToken(Tok.mul);
-            break;
-
-        case '/':
-        case '÷':
-            push();
-            j += len;
-            pushToken(Tok.div);
-            break;
-
-        case '^':
-            push();
-            j += len;
-            pushToken(Tok.exp);
-            break;
-
-        case '0': .. case '9':
-        case '-':
-        case '+':
-            if (state != State.integer)
-                push();
-            state = State.integer;
-            j += len;
-            break;
-
-        case '⁰':
-        case '¹':
-        case '²':
-        case '³':
-        case '⁴':
-        case '⁵':
-        case '⁶':
-        case '⁷':
-        case '⁸':
-        case '⁹':
-        case '⁻':
-        case '⁺':
-            if (state != State.supinteger)
-                push();
-            state = State.supinteger;
-            j += len;
-            break;
-
-        default:
-            if (state == State.integer || state == State.supinteger)
-                push();
-            state = State.symbol;
-            j += len;
-            break;
+            state = State.none;
         }
+
+        void pushInteger(Tok type)
+        {
+            auto slice = original[i .. j];
+
+            if (type == Tok.supinteger)
+            {
+                auto a = appender!S;
+                foreach (dchar c; slice)
+                {
+                    switch (c)
+                    {
+                    case '⁰':
+                        a.put('0');
+                        break;
+                    case '¹':
+                        a.put('1');
+                        break;
+                    case '²':
+                        a.put('2');
+                        break;
+                    case '³':
+                        a.put('3');
+                        break;
+                    case '⁴':
+                        a.put('4');
+                        break;
+                    case '⁵':
+                        a.put('5');
+                        break;
+                    case '⁶':
+                        a.put('6');
+                        break;
+                    case '⁷':
+                        a.put('7');
+                        break;
+                    case '⁸':
+                        a.put('8');
+                        break;
+                    case '⁹':
+                        a.put('9');
+                        break;
+                    case '⁺':
+                        a.put('+');
+                        break;
+                    case '⁻':
+                        a.put('-');
+                        break;
+                    default:
+                        assert(false, "Error in pushInteger()");
+                    }
+                }
+                slice = a.data;
+            }
+
+            int n;
+            try
+            {
+                n = std.conv.parse!int(slice);
+                enforce(slice.empty);
+            }
+            catch (Exception)
+                throw new ParsingException("Unexpected integer format: %s".format(original[i .. j]));
+
+            tokapp.put(Token(type, i, j, n));
+            i = j;
+            state = State.none;
+        }
+
+        void push()
+        {
+            if (state == State.symbol)
+                pushToken(Tok.symbol);
+            else if (state == State.integer)
+                pushInteger(Tok.integer);
+            else if (state == State.supinteger)
+                pushInteger(Tok.supinteger);
+        }
+
+        foreach (dchar cur; input)
+        {
+            auto len = cur.codeLength!char;
+            switch (cur)
+            {
+                // Whitespace
+            case ' ':
+            case '\t':
+            case '\u00A0':
+            case '\u2000': .. case '\u200A':
+            case '\u202F':
+            case '\u205F':
+                push();
+                j += len;
+                i = j;
+                break;
+
+            case '(':
+                push();
+                j += len;
+                pushToken(Tok.lparen);
+                break;
+
+            case ')':
+                push();
+                j += len;
+                pushToken(Tok.rparen);
+                break;
+
+            case '*':
+            case '.':
+            case '⋅':
+            case '×':
+                push();
+                j += len;
+                pushToken(Tok.mul);
+                break;
+
+            case '/':
+            case '÷':
+                push();
+                j += len;
+                pushToken(Tok.div);
+                break;
+
+            case '^':
+                push();
+                j += len;
+                pushToken(Tok.exp);
+                break;
+
+            case '0': .. case '9':
+            case '-':
+            case '+':
+                if (state != State.integer)
+                    push();
+                state = State.integer;
+                j += len;
+                break;
+
+            case '⁰':
+            case '¹':
+            case '²':
+            case '³':
+            case '⁴':
+            case '⁵':
+            case '⁶':
+            case '⁷':
+            case '⁸':
+            case '⁹':
+            case '⁻':
+            case '⁺':
+                if (state != State.supinteger)
+                    push();
+                state = State.supinteger;
+                j += len;
+                break;
+
+            default:
+                if (state == State.integer || state == State.supinteger)
+                    push();
+                state = State.symbol;
+                j += len;
+                break;
+            }
+        }
+        push();
+
+        return tokapp.data;
     }
-    push();
 
-    return tokapp.data;
-}
+    void advance(Types...)(ref Token[] tokens, Types types) pure @safe
+    {
+        enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
+        tokens.popFront();
 
-void advance(Types...)(ref Token[] tokens, Types types)
-{
-    enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
-    tokens.popFront();
+        static if (Types.length)
+            check(tokens, types);
+    }
 
-    static if (Types.length)
-        check(tokens, types);
-}
+    void check(Token[] tokens) pure @safe
+    {
+        enforceEx!ParsingException(tokens.length, "Unexpected end of input");
+    }
 
-void check(Token[] tokens)
-{
-    enforceEx!ParsingException(tokens.length, "Unexpected end of input");
-}
+    void check(Token[] tokens, Tok tok) pure @safe
+    {
+        check(tokens);
+        enforceEx!ParsingException(tokens[0].type == tok,
+                format("Found '%s' while expecting %s", input[tokens[0].begin .. tokens[0].end],
+                    tok));
+    }
 
-void check(Token[] tokens, Tok tok)
-{
-    tokens.check();
-    enforceEx!ParsingException(tokens[0].type == tok,
-            format("Found '%s' while expecting %s", tokens[0].slice, tok));
-}
-
-void check(Token[] tokens, Tok tok1, Tok tok2)
-{
-    tokens.check();
-    enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
-            format("Found '%s' while expecting %s or %s", tokens[0].slice, tok1, tok2));
+    void check(Token[] tokens, Tok tok1, Tok tok2) pure @safe
+    {
+        check(tokens);
+        enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
+                format("Found '%s' while expecting %s or %s",
+                    input[tokens[0].begin .. tokens[0].end], tok1, tok2));
+    }
 }

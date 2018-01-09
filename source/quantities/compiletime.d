@@ -7,13 +7,108 @@ Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-module quantities.compiletime.quantity;
+module quantities.compiletime;
 
 import quantities.internal.dimensions;
-import quantities.runtime.qvariant;
+import quantities.runtime;
 import std.format;
 import std.math;
 import std.traits : isNumeric, isIntegral;
+
+///
+unittest
+{
+    import quantities.compiletime;
+    import quantities.si;
+    import std.format : format;
+    import std.math : approxEqual;
+    
+    // Introductory example
+    {
+        // Use the predefined quantity types (in module quantities.si)
+        Volume volume;
+        Concentration concentration;
+        Mass mass;
+
+        // Define a new quantity type
+        alias MolarMass = typeof(kilogram/mole);
+
+        // I have to make a new solution at the concentration of 5 mmol/L
+        concentration = 5.0 * milli(mole)/liter;
+
+        // The final volume is 100 ml.
+        volume = 100.0 * milli(liter);
+
+        // The molar mass of my compound is 118.9 g/mol
+        MolarMass mm = 118.9 * gram/mole;
+
+        // What mass should I weigh?
+        mass = concentration * volume * mm;
+        assert(format("%s", mass) == "5.945e-05 [M]"); 
+        // Wait! That's not really useful!
+        assert(siFormat!"%.1f mg"(mass) == "59.5 mg");
+    }
+
+    // Working with predefined units
+    {
+        auto distance = 384_400 * kilo(meter); // From Earth to Moon
+        auto speed = 299_792_458  * meter/second; // Speed of light
+        auto time = distance / speed;
+        assert(time.siFormat!"%.3f s" == "1.282 s");
+    }
+
+    // Dimensional correctness is check at compile-time
+    {
+        Mass mass;
+        static assert(!__traits(compiles, mass = 15 * meter));
+        static assert(!__traits(compiles, mass = 1.2));
+    }
+
+    // Calculations can be done at compile-time
+    {
+        enum distance = 384_400 * kilo(meter); // From Earth to Moon
+        enum speed = 299_792_458  * meter/second; // Speed of light
+        enum time = distance / speed;
+        /* static */ assert(time.siFormat!"%.3f s" == "1.282 s");
+        // NB. Phobos can't format floating point values at run-time.
+    }
+
+    // Create a new unit from the predefined ones
+    {
+        auto inch = 2.54 * centi(meter);
+        auto mile = 1609 * meter;
+        assert(mile.value(inch).approxEqual(63_346)); // inches in a mile
+        // NB. Cannot use siFormatter, because inches are not SI units
+    }
+
+    // Create a new unit with new dimensions
+    {
+        // Create a new base unit of currency
+        auto euro = unit!(double, "C"); // C is the chosen dimension symol (for currency...)
+
+        auto dollar = euro / 1.35;
+        auto price = 2000 * dollar;
+        assert(price.value(euro).approxEqual(1481)); // Price in euros
+    }
+
+    // Compile-time parsing
+    {
+        enum distance = si!"384_400 km";
+        enum speed = si!"299_792_458 m/s";
+        static assert(is(typeof(distance) == Length));
+        static assert(is(typeof(speed) == Speed));
+    }
+
+    // Run-time parsing of statically typed Quantities
+    {
+        auto data = [
+            "distance-to-the-moon": "384_400 km",
+            "speed-of-light": "299_792_458 m/s"
+        ];
+        auto distance = parseSI!Length(data["distance-to-the-moon"]);
+        auto speed = parseSI!Speed(data["speed-of-light"]);
+    }
+}
 
 /++
 A quantity checked at compile-time for dimensional consistency.
@@ -401,9 +496,9 @@ public:
 /// Creates a new monodimensional unit as a Quantity.
 auto unit(N, string symbol)()
 {
-    import quantities.runtime.qvariant;
+    import quantities.runtime;
 
-    enum u = quantities.runtime.qvariant.unit!N(symbol);
+    enum u = quantities.runtime.unit!N(symbol);
     return Quantity!(N, u).make(1);
 }
 

@@ -48,15 +48,13 @@ mixin template CommonTests(alias Q)
     alias Angle = typeof(radian);
 
     @("this()")
-    @safe pure unittest
+    @safe unittest
     {
         enum distance = Length(meter);
         enum angle = Angle(3.14);
 
         static if (isQuantity!Length)
         {
-            import quantities.runtime.qvariant;
-
             enum length = unit!double("L");
             static assert(length.dimensions == distance.dimensions);
             static assert(!__traits(compiles, Length(2.0)));
@@ -445,6 +443,8 @@ mixin template CommonTests(alias Q)
     {
         static assert(abs(-meter) == meter);
     }
+
+    // TODO: test generic parsing
 }
 
 mixin CommonTests!Quantity;

@@ -105,7 +105,6 @@ now, the `toString` function prints the value and the dimensions vector.
 ```d
 import quantities.compiletime;
 import quantities.si;
-import std.conv : text;
 
 // Define a quantity from SI units
 auto distance = 384_400 * kilo(meter);
@@ -125,8 +124,8 @@ Time time = calculateTime(distance, speed);
 // Dimensions are checked at compile time for consistency
 static assert(!__traits(compiles, distance + speed));
 
-// Format a quantity with a format specification containing a unit
-assert(time.siFormat!"%.3f s".text == "1.282 s");
+// Format a quantity with a format specification known at compile-time
+assert(siFormat!"%.3f s"(time) == "1.282 s");
 ``` 
 
 #### Synopsis at run time
@@ -135,7 +134,6 @@ assert(time.siFormat!"%.3f s".text == "1.282 s");
 import quantities.runtime;
 import quantities.si;
 import std.exception : assertThrown;
-import std.conv : text;
 
 // Define a quantity from SI units (using the helper function `qVariant`)
 auto distance = qVariant(384_400 * kilo(meter));
@@ -153,8 +151,8 @@ auto time = calculateTime(distance, speed);
 // Dimensions are checked at run time for consistency
 assertThrown!DimensionException(distance + speed);
 
-// Format a quantity with a format specification containing a unit
-assert(siFormat("%.3f s", time).text == "1.282 s");
+// Format a quantity with a format specification known at run-time
+assert(siFormat("%.3f s", time) == "1.282 s");
 ```
 
 See more complete examples [at run

@@ -28,7 +28,7 @@ unittest
     static assert(meterVariant == meter);
     static assert(meterVariant < 2 * meter);
 
-    auto secondVariant = (2 * second).qVariant;
+    immutable secondVariant = (2 * second).qVariant;
     auto test = secondVariant + second;
     assert(test.value(second).approxEqual(3));
     test = second + secondVariant;
@@ -52,7 +52,7 @@ unittest
 }
 
 @("Quantity/QVariant")
-unittest
+@safe unittest
 {
     Time duration = Time(parseSI("60 min"));
     assert(duration.value(parseSI("min")) == 60);
@@ -62,7 +62,7 @@ unittest
 }
 
 @("Functions with QVariant parameters")
-unittest
+@safe unittest
 {
     static QVariant!double catc(QVariant!double deltaAbs, QVariant!double deltaTime = 1 * minute)
     out (result)
@@ -82,7 +82,7 @@ unittest
 }
 
 @("Functions with Quantity parameters")
-unittest
+@safe pure unittest
 {
     static auto catc(Dimensionless deltaAbs, Time deltaTime = 1 * minute)
     {
@@ -94,4 +94,24 @@ unittest
     }
 
     static assert(catc(0.031 * one).value(si!"µmol/min/L").approxEqual(93.5));
+}
+
+@("siFormat RT")
+@safe unittest
+{
+    QVariant!double speed = 12.5 * kilo(meter) / hour;
+
+    assert(siFormat("%.2f m/s", speed) == "3.47 m/s");
+    assert(siFormat("%.2f m/s"w, speed) == "3.47 m/s"w);
+    assert(siFormat("%.2f m/s"d, speed) == "3.47 m/s"d);
+}
+
+@("siFormat RT")
+@safe unittest
+{
+    QVariant!double speed = 12.5 * kilo(meter) / hour;
+
+    assert(siFormat!"%.2f m/s"(speed) == "3.47 m/s");
+    assert(siFormat!"%.2f m/s"w(speed) == "3.47 m/s"w);
+    assert(siFormat!"%.2f m/s"d(speed) == "3.47 m/s"d);
 }

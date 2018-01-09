@@ -6,9 +6,9 @@ Authors: Nicolas Sicard
 License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
 Source: $(LINK https://github.com/biozic/quantities)
 +/
-module quantities.runtime.qvariant;
+module quantities.runtime;
 
-import quantities.compiletime.quantity : isQuantity;
+import quantities.compiletime;
 import quantities.internal.dimensions;
 
 import std.conv;
@@ -17,6 +17,79 @@ import std.format;
 import std.math;
 import std.string;
 import std.traits;
+
+///
+unittest
+{
+    import quantities.runtime;
+    import quantities.si;
+
+    // Note: the types of the predefined SI units (gram, mole, liter...)
+    // are Quantity instances, not QVariant instance.
+
+    // Introductory example
+    {
+        // I have to make a new solution at the concentration of 5 mmol/L
+        QVariant!double concentration = 5.0 * milli(mole)/liter;
+
+        // The final volume is 100 ml.
+        QVariant!double volume = 100.0 * milli(liter);
+
+        // The molar mass of my compound is 118.9 g/mol
+        QVariant!double molarMass = 118.9 * gram/mole;
+
+        // What mass should I weigh?
+        QVariant!double mass = concentration * volume * molarMass;
+        assert(format("%s", mass) == "5.945e-05 [M]"); 
+        // Wait! That's not really useful!
+        assert(siFormat!"%.1f mg"(mass) == "59.5 mg");
+    }
+
+    // Working with predefined units
+    {
+        QVariant!double distance = 384_400 * kilo(meter); // From Earth to Moon
+        QVariant!double speed = 299_792_458  * meter/second; // Speed of light
+        QVariant!double time = distance / speed;
+        assert(time.siFormat!"%.3f s" == "1.282 s");
+    }
+
+    // Dimensional correctness
+    {
+        import std.exception : assertThrown;
+        QVariant!double mass = 4 * kilogram;
+        assertThrown!DimensionException(mass + meter);
+        assertThrown!DimensionException(mass == 1.2);
+    }
+
+    // Create a new unit from the predefined ones
+    {
+        QVariant!double inch = 2.54 * centi(meter);
+        QVariant!double mile = 1609 * meter;
+        assert(mile.value(inch).approxEqual(63_346)); // inches in a mile
+        // NB. Cannot use siFormatter, because inches are not SI units
+    }
+
+    // Create a new unit with new dimensions
+    {
+        // Create a new base unit of currency
+        QVariant!double euro = unit!double("C"); // C is the chosen dimension symol (for currency...)
+
+        QVariant!double dollar = euro / 1.35;
+        QVariant!double price = 2000 * dollar;
+        assert(price.value(euro).approxEqual(1481)); // Price in euros
+    }
+
+    // Run-time parsing
+    {
+        auto data = [
+            "distance-to-the-moon": "384_400 km",
+            "speed-of-light": "299_792_458 m/s"
+        ];
+        QVariant!double distance = parseSI(data["distance-to-the-moon"]);
+        QVariant!double speed = parseSI(data["speed-of-light"]);
+        QVariant!double time = distance / speed;
+    }
+}
 
 /++
 Exception thrown when operating on two units that are not interconvertible.
@@ -106,7 +179,7 @@ public:
     this(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
-        import quantities.compiletime.quantity : qVariant;
+        import quantities.compiletime : qVariant;
 
         this = qty.qVariant;
     }
