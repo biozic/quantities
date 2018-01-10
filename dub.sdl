@@ -6,13 +6,16 @@ copyright   "Copyright © 2013-2018, Nicolas Sicard"
 license     "BSL-1.0"
 targetType  "library"
 targetPath  "bin"
+dependency "pegged" version="~>0.4.2"
 configuration "library" {
-    excludedSourceFiles "source/tests/*.d" 
+    targetName "quantities"
 }
 configuration "unittest" {
-    excludedSourceFiles ""
+	sourcePaths "source" "tests"
+    importPaths "tests"
 }
-configuration "printing-unittest" {
-    versions "QuantitiesPrintTests"
-    excludedSourceFiles ""
+configuration "benchmark" {
+    targetName "quantities-benchmark"
+    targetType "executable"
+	sourcePaths "bench"
 }

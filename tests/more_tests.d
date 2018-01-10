@@ -52,7 +52,7 @@ unittest
 }
 
 @("Quantity/QVariant")
-@safe unittest
+unittest
 {
     Time duration = Time(parseSI("60 min"));
     assert(duration.value(parseSI("min")) == 60);
@@ -62,7 +62,7 @@ unittest
 }
 
 @("Functions with QVariant parameters")
-@safe unittest
+unittest
 {
     static QVariant!double catc(QVariant!double deltaAbs, QVariant!double deltaTime = 1 * minute)
     out (result)
@@ -82,7 +82,7 @@ unittest
 }
 
 @("Functions with Quantity parameters")
-@safe pure unittest
+pure unittest
 {
     static auto catc(Dimensionless deltaAbs, Time deltaTime = 1 * minute)
     {
@@ -97,21 +97,11 @@ unittest
 }
 
 @("siFormat RT")
-@safe unittest
+unittest
 {
     QVariant!double speed = 12.5 * kilo(meter) / hour;
 
     assert(siFormat("%.2f m/s", speed) == "3.47 m/s");
     assert(siFormat("%.2f m/s"w, speed) == "3.47 m/s"w);
     assert(siFormat("%.2f m/s"d, speed) == "3.47 m/s"d);
-}
-
-@("siFormat RT")
-@safe unittest
-{
-    QVariant!double speed = 12.5 * kilo(meter) / hour;
-
-    assert(siFormat!"%.2f m/s"(speed) == "3.47 m/s");
-    assert(siFormat!"%.2f m/s"w(speed) == "3.47 m/s"w);
-    assert(siFormat!"%.2f m/s"d(speed) == "3.47 m/s"d);
 }

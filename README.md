@@ -100,7 +100,7 @@ now, the `toString` function prints the value and the dimensions vector.
 
 ### Examples
 
-#### Synopsis at compile time
+#### Synopsis at compile-time
 
 ```d
 import quantities.compiletime;
@@ -128,7 +128,7 @@ static assert(!__traits(compiles, distance + speed));
 assert(siFormat!"%.3f s"(time) == "1.282 s");
 ``` 
 
-#### Synopsis at run time
+#### Synopsis at run-time
 
 ```d
 import quantities.runtime;

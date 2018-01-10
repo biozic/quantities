@@ -1,5 +1,5 @@
 /++
-Importing `quantities.si` istantiate all the definitions of the SI units,
+Importing `quantities.si` instantiate all the definitions of the SI units,
 prefixes, parsing functions and formatting functions, both at run-time and
 compile-time, storint their values as a `double`.
 

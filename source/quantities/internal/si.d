@@ -18,7 +18,7 @@ mixin template SIDefinitions(N)
 {
     import quantities.compiletime : Quantity, isQuantity, unit, square, cubic;
     import quantities.runtime : QVariant, isQVariantOrQuantity, prefix;
-    import quantities.internal.parsing : SymbolList, Parser;
+    import quantities.parsing : SymbolList, Parser;
     import std.conv : parse;
     import std.math : PI;
     import std.traits : isNumeric, isSomeString;
@@ -214,7 +214,7 @@ mixin template SIDefinitions(N)
     static
     {
         SymbolList!N siSymbols;
-        Parser!(N, (ref s) @safe => parse!N(s)) siParser;
+        Parser!(N, (ref s) => parse!N(s)) siParser;
     }
     static this()
     {
@@ -232,7 +232,7 @@ mixin template SIDefinitions(N)
         Q = the type of the returned quantity.
         str = the string to parse.
     +/
-    Q parseSI(Q, S)(S str) @safe
+    Q parseSI(Q, S)(S str)
             if (isQuantity!Q && isSomeString!S)
     {
         return Q(siParser.parse(str));
@@ -252,9 +252,6 @@ mixin template SIDefinitions(N)
     +/
     template si(string str)
     {
-        import quantities.internal.parsing : Parser;
-        import std.conv : parse;
-
         enum ctSIParser = Parser!(N, (ref s) => parse!N(s))(siSymbolList);
         enum qty = ctSIParser.parse(str);
         enum spec = QVariant!N(1, qty.dimensions);
@@ -265,8 +262,8 @@ mixin template SIDefinitions(N)
     {
         alias Time = typeof(second);
         enum t = si!"90 min";
-        static assert(is(typeof(t) == Time));
-        static assert(si!"h" == 60 * 60 * second);
+        assert(is(typeof(t) == Time));
+        assert(si!"h" == 60 * 60 * second);
     }
 
     /++
@@ -280,7 +277,7 @@ mixin template SIDefinitions(N)
     {
         if (__ctfe)
         {
-            import quantities.internal.parsing : Parser;
+            import quantities.parsing : Parser;
             import std.conv : parse;
 
             auto ctSIParser = Parser!(N, (ref s) => parse!N(s))(siSymbolList);
@@ -388,8 +385,6 @@ mixin template SIDefinitions(N)
     ///
     unittest
     {
-        import std.conv : text;
-
         enum speed = 12.5 * kilo(meter) / hour;
         assert(siFormat!"%.2f m/s"(speed) == "3.47 m/s");
     }

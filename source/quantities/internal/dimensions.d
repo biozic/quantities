@@ -1,5 +1,5 @@
 /++
-Structs used to define units: raional numbers and dimensions.
+Structs used to define units: rational numbers and dimensions.
 
 Copyright: Copyright 2013-2018, Nicolas Sicard
 Authors: Nicolas Sicard
@@ -31,6 +31,8 @@ private:
 
     void normalize() @safe pure nothrow
     {
+        if (den == 1)
+            return;
         if (den < 0)
         {
             num = -num;
@@ -41,7 +43,7 @@ private:
         den /= g;
     }
 
-    private bool isNormalized() @safe pure nothrow const
+    bool isNormalized() @safe pure nothrow const
     {
         return den >= 0 && gcd(num, den) == 1;
     }
@@ -56,9 +58,24 @@ public:
     +/
     this(int num, int den = 1) @safe pure nothrow
     {
+        assert(den != 0, "Denominator is zero");
         this.num = num;
         this.den = den;
         normalize();
+    }
+
+    bool isInt() @property @safe pure nothrow const
+    {
+        return den == 1;
+    }
+
+    Rational inverted() @property @safe pure nothrow const
+    {
+        Rational result;
+        result.num = den;
+        result.den = num;
+        assert(isNormalized);
+        return result;
     }
 
     void opOpAssign(string op)(Rational other) @safe pure nothrow 
@@ -149,10 +166,9 @@ public:
     T opCast(T)() @safe pure nothrow const 
             if (isNumeric!T)
     {
-        return cast(T) num / cast(T) den;
+        return num / cast(T) den;
     }
 
-    ///
     void toString(scope void delegate(const(char)[]) sink) const
     {
         sink.formattedWrite!"%d"(num);
@@ -181,35 +197,7 @@ private int gcd(int x, int y) @safe pure nothrow
     return b;
 }
 
-unittest
-{
-    const r = Rational(6, -8);
-    assert(r.text == "-3/4");
-    assert((+r).text == "-3/4");
-    assert((-r).text == "3/4");
-
-    const r1 = Rational(4, 3) + Rational(2, 5);
-    assert(r1.text == "26/15");
-    const r2 = Rational(4, 3) - Rational(2, 5);
-    assert(r2.text == "14/15");
-    const r3 = Rational(8, 7) * Rational(3, -2);
-    assert(r3.text == "-12/7");
-    const r4 = Rational(8, 7) / Rational(3, -2);
-    assert(r4.text == "-16/21");
-
-    auto r5 = Rational(4, 3);
-    r5 += Rational(2, 5);
-    assert(r5.text == "26/15");
-
-    auto r6 = Rational(8, 7);
-    r6 /= Rational(2, -3);
-    assert(r6.text == "-12/7");
-
-    assert(Rational(8, 7) == Rational(-16, -14));
-    assert(Rational(2, 5) < Rational(3, 7));
-}
-
-/// Struct describind properties of a dimension in a dimension vector.
+/// Struct describing properties of a dimension in a dimension vector.
 struct Dim
 {
     string symbol; /// The symbol of the dimension
@@ -260,13 +248,6 @@ private immutable(Dim)[] inverted(immutable(Dim)[] source) @safe pure nothrow
     return target.immut;
 }
 
-@safe pure nothrow unittest
-{
-    auto list = [Dim("A", 2), Dim("B", -2)].idup;
-    auto inv = [Dim("A", -2), Dim("B", 2)].idup;
-    assert(list.inverted == inv);
-}
-
 private void insertAndSort(ref Dim[] list, string symbol, Rational power) @safe pure nothrow
 {
     auto pos = list.countUntil!(d => d.symbol == symbol)();
@@ -295,17 +276,6 @@ private void insertAndSort(ref Dim[] list, string symbol, Rational power) @safe 
         list.insertInPlace(pos, Dim(symbol, power));
     }
     //assert(list.isSorted);
-}
-
-@safe pure nothrow unittest
-{
-    Dim[] list;
-    list.insertAndSort("A", Rational(1));
-    assert(list == [Dim("A", 1)]);
-    list.insertAndSort("A", Rational(1));
-    assert(list == [Dim("A", 2)]);
-    list.insertAndSort("A", Rational(-2));
-    assert(list.length == 0);
 }
 
 private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
@@ -368,6 +338,7 @@ public:
     {
         return _dims;
     }
+
     alias dims this;
 
     Dimensions opUnary(string op)() @safe pure nothrow const 
@@ -382,24 +353,10 @@ public:
         return Dimensions(_dims.insertSorted(other._dims));
     }
 
-    @safe pure nothrow unittest
-    {
-        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-        auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
-        assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
-    }
-
     Dimensions opBinary(string op)(const Dimensions other) @safe pure nothrow const 
             if (op == "/")
     {
         return Dimensions(_dims.insertSorted(other._dims.inverted));
-    }
-
-    @safe pure nothrow unittest
-    {
-        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-        auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
-        assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
     }
 
     Dimensions pow(Rational n) @safe pure nothrow const
@@ -418,13 +375,6 @@ public:
         return pow(Rational(n));
     }
 
-    @safe pure nothrow unittest
-    {
-        auto dim = Dimensions([Dim("a", 5), Dim("b", -2)]);
-        assert(dim.pow(Rational(2)) == Dimensions([Dim("a", 10), Dim("b", -4)]));
-        assert(dim.pow(Rational(0)) == Dimensions.init);
-    }
-
     Dimensions powinverse(Rational n) @safe pure nothrow const
     {
         import std.exception : enforce;
@@ -441,29 +391,98 @@ public:
         return powinverse(Rational(n));
     }
 
-    @safe pure nothrow unittest
-    {
-        auto dim = Dimensions([Dim("a", 6), Dim("b", -2)]);
-        assert(dim.powinverse(Rational(2)) == Dimensions([Dim("a", 3), Dim("b", -1)]));
-    }
-
-    ///
     void toString(scope void delegate(const(char)[]) sink) const
     {
         sink.formattedWrite!"[%(%s %)]"(_dims);
     }
-
-    unittest
-    {
-        auto dim = Dimensions([Dim("a", 1), Dim("b", -2)]);
-        assert(dim.text == "[a b^-2]");
-    }
 }
 
-@safe pure nothrow unittest  // Compile-time
+// Tests
+
+@("Rational")
+unittest
 {
-    enum a = Dimensions([Dim("a", 1)]);
-    enum b = Dimensions([Dim("b", 2)]);
-    enum c = a / b;
-    static assert(c.text == "[a b^-2]");
+    const r = Rational(6, -8);
+    assert(r.text == "-3/4");
+    assert((+r).text == "-3/4");
+    assert((-r).text == "3/4");
+
+    const r1 = Rational(4, 3) + Rational(2, 5);
+    assert(r1.text == "26/15");
+    const r2 = Rational(4, 3) - Rational(2, 5);
+    assert(r2.text == "14/15");
+    const r3 = Rational(8, 7) * Rational(3, -2);
+    assert(r3.text == "-12/7");
+    const r4 = Rational(8, 7) / Rational(3, -2);
+    assert(r4.text == "-16/21");
+
+    auto r5 = Rational(4, 3);
+    r5 += Rational(2, 5);
+    assert(r5.text == "26/15");
+
+    auto r6 = Rational(8, 7);
+    r6 /= Rational(2, -3);
+    assert(r6.text == "-12/7");
+
+    assert(Rational(8, 7) == Rational(-16, -14));
+    assert(Rational(2, 5) < Rational(3, 7));
+}
+
+@("Dim[].inverted")
+@safe pure nothrow unittest
+{
+    auto list = [Dim("A", 2), Dim("B", -2)].idup;
+    auto inv = [Dim("A", -2), Dim("B", 2)].idup;
+    assert(list.inverted == inv);
+}
+
+@("Dim[].insertAndSort")
+@safe pure nothrow unittest
+{
+    Dim[] list;
+    list.insertAndSort("A", Rational(1));
+    assert(list == [Dim("A", 1)]);
+    list.insertAndSort("A", Rational(1));
+    assert(list == [Dim("A", 2)]);
+    list.insertAndSort("A", Rational(-2));
+    assert(list.length == 0);
+}
+
+@("Dimensions *")
+@safe pure nothrow unittest
+{
+    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+    auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
+    assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
+}
+
+@("Dimensions /")
+@safe pure nothrow unittest
+{
+    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+    auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
+    assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
+}
+
+@("Dimensions pow")
+@safe pure nothrow unittest
+{
+    auto dim = Dimensions([Dim("a", 5), Dim("b", -2)]);
+    assert(dim.pow(Rational(2)) == Dimensions([Dim("a", 10), Dim("b", -4)]));
+    assert(dim.pow(Rational(0)) == Dimensions.init);
+}
+
+@("Dimensions.powinverse")
+@safe pure nothrow unittest
+{
+    auto dim = Dimensions([Dim("a", 6), Dim("b", -2)]);
+    assert(dim.powinverse(Rational(2)) == Dimensions([Dim("a", 3), Dim("b", -1)]));
+}
+
+@("Dimensions.toString")
+unittest
+{
+    auto dim = Dimensions([Dim("a", 1), Dim("b", -2)]);
+    assert(dim.text == "[a b^-2]");
+    assert(Dimensions.init.text == "[]");
 }

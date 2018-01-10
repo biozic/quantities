@@ -1,5 +1,9 @@
 /++
-This module defines dimensionally variant quantities, for use mainly at run time.
+This module defines dimensionally variant quantities, mainly for use at run-time.
+
+The dimensions are stored in a field, along with the numerical value of the
+quantity. Operations and function calls fail if they are not dimensionally
+consistent, by throwing a `DimensionException`.
 
 Copyright: Copyright 2013-2018, Nicolas Sicard
 Authors: Nicolas Sicard
@@ -8,21 +12,13 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.runtime;
 
-import quantities.compiletime;
-import quantities.internal.dimensions;
-
-import std.conv;
-import std.exception;
-import std.format;
-import std.math;
-import std.string;
-import std.traits;
-
 ///
 unittest
 {
     import quantities.runtime;
     import quantities.si;
+    import std.format : format;
+    import std.math : approxEqual;
 
     // Note: the types of the predefined SI units (gram, mole, liter...)
     // are Quantity instances, not QVariant instance.
@@ -30,17 +26,17 @@ unittest
     // Introductory example
     {
         // I have to make a new solution at the concentration of 5 mmol/L
-        QVariant!double concentration = 5.0 * milli(mole)/liter;
+        QVariant!double concentration = 5.0 * milli(mole) / liter;
 
         // The final volume is 100 ml.
         QVariant!double volume = 100.0 * milli(liter);
 
         // The molar mass of my compound is 118.9 g/mol
-        QVariant!double molarMass = 118.9 * gram/mole;
+        QVariant!double molarMass = 118.9 * gram / mole;
 
         // What mass should I weigh?
         QVariant!double mass = concentration * volume * molarMass;
-        assert(format("%s", mass) == "5.945e-05 [M]"); 
+        assert(format("%s", mass) == "5.945e-05 [M]");
         // Wait! That's not really useful!
         assert(siFormat!"%.1f mg"(mass) == "59.5 mg");
     }
@@ -48,7 +44,7 @@ unittest
     // Working with predefined units
     {
         QVariant!double distance = 384_400 * kilo(meter); // From Earth to Moon
-        QVariant!double speed = 299_792_458  * meter/second; // Speed of light
+        QVariant!double speed = 299_792_458 * meter / second; // Speed of light
         QVariant!double time = distance / speed;
         assert(time.siFormat!"%.3f s" == "1.282 s");
     }
@@ -56,6 +52,7 @@ unittest
     // Dimensional correctness
     {
         import std.exception : assertThrown;
+
         QVariant!double mass = 4 * kilogram;
         assertThrown!DimensionException(mass + meter);
         assertThrown!DimensionException(mass == 1.2);
@@ -81,15 +78,23 @@ unittest
 
     // Run-time parsing
     {
-        auto data = [
-            "distance-to-the-moon": "384_400 km",
-            "speed-of-light": "299_792_458 m/s"
-        ];
+        auto data = ["distance-to-the-moon" : "384_400 km", "speed-of-light" : "299_792_458 m/s"];
         QVariant!double distance = parseSI(data["distance-to-the-moon"]);
         QVariant!double speed = parseSI(data["speed-of-light"]);
         QVariant!double time = distance / speed;
     }
 }
+
+import quantities.internal.dimensions;
+import quantities.common;
+import quantities.compiletime;
+
+import std.conv;
+import std.exception;
+import std.format;
+import std.math;
+import std.string;
+import std.traits;
 
 /++
 Exception thrown when operating on two units that are not interconvertible.
@@ -118,7 +123,7 @@ unittest
 
     enum meter = unit!double("L");
     enum second = unit!double("T");
-
+    assertThrown!DimensionException(meter + second);
 }
 
 /++
@@ -378,7 +383,7 @@ public:
     QVariant!N opBinary(string op, Q)(auto ref const Q qty) const 
             if (isQVariantOrQuantity!Q && (op == "*" || op == "/"))
     {
-        return QVariant(mixin("(_value" ~ op ~ "qty.rawValue)"),
+        return QVariant(mixin("_value" ~ op ~ "qty.rawValue"),
                 mixin("_dimensions" ~ op ~ "qty.dimensions"));
     }
 
@@ -386,7 +391,7 @@ public:
     QVariant!N opBinaryRight(string op, Q)(auto ref const Q qty) const 
             if (isQVariantOrQuantity!Q && (op == "*" || op == "/"))
     {
-        return QVariant(mixin("(qty.rawValue" ~ op ~ "_value)"),
+        return QVariant(mixin("qty.rawValue" ~ op ~ "_value"),
                 mixin("qty.dimensions" ~ op ~ "_dimensions"));
     }
 
@@ -417,7 +422,13 @@ public:
     QVariant!N opBinary(string op)(Rational power) const 
             if (op == "^^")
     {
-        return QVariant(std.math.pow(_value, cast(N) power), _dimensions.pow(power));
+        static if (isIntegral!N)
+            auto newValue = std.math.pow(_value, cast(real) power).roundTo!N;
+        else static if (isFloatingPoint!N)
+            auto newValue = std.math.pow(_value, cast(real) power);
+        else
+            static assert(false, "Operation not defined for " ~ QVariant!N.stringof);
+        return QVariant(newValue, _dimensions.pow(power));
     }
 
     // Add/sub assign with a quantity that shares the same dimensions
@@ -550,30 +561,6 @@ auto qVariant(N)(N scalar)
     return QVariant!N(scalar, Dimensions.init);
 }
 
-/++
-Creates a new prefix function that multiplies a QVariant by a _factor.
-+/
-template prefix(alias factor)
-{
-    alias N = typeof(factor);
-    static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
-
-    auto prefix(Q)(auto ref const Q base)
-            if (isQVariantOrQuantity!Q)
-    {
-        return base * factor;
-    }
-}
-///
-@safe pure unittest
-{
-    import std.math : approxEqual;
-
-    auto meter = unit!double("L");
-    alias milli = prefix!1e-3;
-    assert(milli(meter).value(meter).approxEqual(1e-3));
-}
-
 /// Basic math functions that work with QVariant.
 auto square(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
@@ -603,29 +590,29 @@ auto cbrt(Q)(auto ref const Q quantity)
 }
 
 /// ditto
+auto pow(Q)(auto ref const Q quantity, Rational r)
+        if (isQVariant!Q)
+{
+    return quantity ^^ r;
+}
+
 auto pow(Q, I)(auto ref const Q quantity, I n)
         if (isQVariant!Q && isIntegral!I)
 {
-    return Q(std.math.pow(quantity._value, n), quantity._dimensions.pow(Rational(n)));
-}
-
-auto pow(int n, Q)(auto ref const Q quantity)
-        if (isQVariant!Q)
-{
-    return Q(std.math.pow(quantity._value, n), quantity._dimensions.pow(Rational(n)));
+    return quantity ^^ Rational(n);
 }
 
 /// ditto
+auto nthRoot(Q)(auto ref const Q quantity, Rational r)
+        if (isQVariant!Q)
+{
+    return quantity ^^ r.inverted;
+}
+
 auto nthRoot(Q, I)(auto ref const Q quantity, I n)
         if (isQVariant!Q && isIntegral!I)
 {
-    return Q(std.math.pow(quantity._value, 1.0 / n), quantity._dimensions.powinverse(Rational(n)));
-}
-
-auto nthRoot(int n, Q)(auto ref const Q quantity)
-        if (isQVariant!Q)
-{
-    return Q(std.math.pow(quantity._value, 1.0 / n), quantity._dimensions.powinverse(Rational(n)));
+    return nthRoot(quantity, Rational(n));
 }
 
 /// ditto

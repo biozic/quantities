@@ -1,6 +1,9 @@
 /++
-This module quantities that are checked at compile-time for
-dimensional consistency.
+This module defines quantities that are statically checked for dimensional
+consistency at compile-time.
+
+The dimensions are part of their types, so that the compilation fails if an
+operation or a function call is not dimensionally consistent.
 
 Copyright: Copyright 2013-2018, Nicolas Sicard
 Authors: Nicolas Sicard
@@ -9,12 +12,6 @@ Source: $(LINK https://github.com/biozic/quantities)
 +/
 module quantities.compiletime;
 
-import quantities.internal.dimensions;
-import quantities.runtime;
-import std.format;
-import std.math;
-import std.traits : isNumeric, isIntegral;
-
 ///
 unittest
 {
@@ -22,7 +19,7 @@ unittest
     import quantities.si;
     import std.format : format;
     import std.math : approxEqual;
-    
+
     // Introductory example
     {
         // Use the predefined quantity types (in module quantities.si)
@@ -31,20 +28,20 @@ unittest
         Mass mass;
 
         // Define a new quantity type
-        alias MolarMass = typeof(kilogram/mole);
+        alias MolarMass = typeof(kilogram / mole);
 
         // I have to make a new solution at the concentration of 5 mmol/L
-        concentration = 5.0 * milli(mole)/liter;
+        concentration = 5.0 * milli(mole) / liter;
 
         // The final volume is 100 ml.
         volume = 100.0 * milli(liter);
 
         // The molar mass of my compound is 118.9 g/mol
-        MolarMass mm = 118.9 * gram/mole;
+        MolarMass mm = 118.9 * gram / mole;
 
         // What mass should I weigh?
         mass = concentration * volume * mm;
-        assert(format("%s", mass) == "5.945e-05 [M]"); 
+        assert(format("%s", mass) == "5.945e-05 [M]");
         // Wait! That's not really useful!
         assert(siFormat!"%.1f mg"(mass) == "59.5 mg");
     }
@@ -52,7 +49,7 @@ unittest
     // Working with predefined units
     {
         auto distance = 384_400 * kilo(meter); // From Earth to Moon
-        auto speed = 299_792_458  * meter/second; // Speed of light
+        auto speed = 299_792_458 * meter / second; // Speed of light
         auto time = distance / speed;
         assert(time.siFormat!"%.3f s" == "1.282 s");
     }
@@ -60,16 +57,17 @@ unittest
     // Dimensional correctness is check at compile-time
     {
         Mass mass;
-        static assert(!__traits(compiles, mass = 15 * meter));
-        static assert(!__traits(compiles, mass = 1.2));
+        assert(!__traits(compiles, mass = 15 * meter));
+        assert(!__traits(compiles, mass = 1.2));
     }
 
     // Calculations can be done at compile-time
     {
         enum distance = 384_400 * kilo(meter); // From Earth to Moon
-        enum speed = 299_792_458  * meter/second; // Speed of light
+        enum speed = 299_792_458 * meter / second; // Speed of light
         enum time = distance / speed;
-        /* static */ assert(time.siFormat!"%.3f s" == "1.282 s");
+        /* static */
+        assert(time.siFormat!"%.3f s" == "1.282 s");
         // NB. Phobos can't format floating point values at run-time.
     }
 
@@ -95,20 +93,24 @@ unittest
     {
         enum distance = si!"384_400 km";
         enum speed = si!"299_792_458 m/s";
-        static assert(is(typeof(distance) == Length));
-        static assert(is(typeof(speed) == Speed));
+        assert(is(typeof(distance) == Length));
+        assert(is(typeof(speed) == Speed));
     }
 
     // Run-time parsing of statically typed Quantities
     {
-        auto data = [
-            "distance-to-the-moon": "384_400 km",
-            "speed-of-light": "299_792_458 m/s"
-        ];
+        auto data = ["distance-to-the-moon" : "384_400 km", "speed-of-light" : "299_792_458 m/s"];
         auto distance = parseSI!Length(data["distance-to-the-moon"]);
         auto speed = parseSI!Speed(data["speed-of-light"]);
     }
 }
+
+import quantities.internal.dimensions;
+import quantities.common;
+import quantities.runtime;
+import std.format;
+import std.math;
+import std.traits : isNumeric, isIntegral;
 
 /++
 A quantity checked at compile-time for dimensional consistency.
@@ -387,7 +389,7 @@ public:
             if (isQuantity!Q && (op == "*" || op == "/"))
     {
         alias RQ = Quantity!(N, mixin("unit" ~ op ~ "Q.unit"));
-        return RQ.make(mixin("(_value" ~ op ~ "qty._value)"));
+        return RQ.make(mixin("_value" ~ op ~ "qty._value"));
     }
 
     /// ditto
@@ -395,7 +397,7 @@ public:
             if (isQuantity!Q && (op == "%"))
     {
         mixin checkDim!(Q.unit);
-        return Quantity.make(mixin("(_value" ~ op ~ "qty._value)"));
+        return Quantity.make(mixin("_value" ~ op ~ "qty._value"));
     }
 
     // Add/sub assign with a quantity that shares the same dimensions

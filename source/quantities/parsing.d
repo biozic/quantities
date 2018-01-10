@@ -1,115 +1,31 @@
 /++
 This module defines functions to parse units and quantities.
 
-The text input is parsed according to the following grammar.
-For example:
-$(DL
-$(DT Prefixes and unit symbols must be joined:)
-    $(DD "1 mm" = 1 millimeter)
-    $(DD "1 m m" = 1 square meter)
-$(BR)
-$(DT Standalone units are preferred over prefixed ones:)
-    $(DD "1 cd" = 1 candela, not 1 centiday)
-$(BR)
-$(DT Powers of units:)
-    $(DD "1 m^2")
-    $(DD "1 m^-1/2" $(I (rational exponent)))
-    $(DD "1 m²" $(I (superscript integer)))
-$(BR)
-$(DT Multiplication of to units:)
-    $(DD "1 N m" $(I (whitespace)))
-    $(DD "1 N . m")
-    $(DD "1 N ⋅ m" $(I (centered dot)))
-    $(DD "1 N * m")
-    $(DD "1 N × m" $(I (times sign)))
-$(BR)
-$(DT Division of to units:)
-    $(DD "1 mol / s")
-    $(DD "1 mol ÷ s")
-$(BR)
-$(DT Grouping of units with parentheses:)
-    $(DD "1 kg/(m.s^2)" = 1 kg m⁻¹ s⁻²)
-)
-
-Grammar: (whitespace not significant)
-$(DL
-$(DT Quantity:)
-    $(DD Units)
-    $(DD Number Units)
-$(BR)
-$(DT Number:)
-    $(DD $(I Numeric value parsed by std.conv.parse!double))
-$(BR)
-$(DT Units:)
-    $(DD Unit)
-    $(DD Unit Units)
-    $(DD Unit Operator Units)
-$(BR)
-$(DT Operator:)
-    $(DD $(B *))
-    $(DD $(B .))
-    $(DD $(B ⋅))
-    $(DD $(B ×))
-    $(DD $(B /))
-    $(DD $(B ÷))
-$(BR)
-$(DT Unit:)
-    $(DD Base)
-    $(DD Base $(B ^) Integer)
-    $(DD Base $(B ^) Rational)
-    $(DD Base SupInteger)
-$(BR)
-$(DT Base:)
-    $(DD Symbol)
-    $(DD Prefix Symbol)
-    $(DD $(B $(LPAREN)) Units $(B $(RPAREN)))
-$(BR)
-$(DT Symbol:)
-    $(DD $(I The symbol of a valid unit))
-$(BR)
-$(DT Prefix:)
-    $(DD $(I The symbol of a valid prefix))
-$(BR)
-$(DT Rational:)
-    $(DD Integer $(B /) Integer)
-$(BR)
-$(DT Integer:)
-    $(DD $(I Integer value parsed by std.conv.parse!int))
-$(BR)
-$(DT SupInteger:)
-    $(DD $(I Superscript version of Integer))
-)
-
-Copyright: Copyright 2013-2018, Nicolas Sicard
-Authors: Nicolas Sicard
-License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
-Source: $(LINK https://github.com/biozic/quantities)
+Copyright: Copyright 2013-2018, Nicolas Sicard  
+Authors: Nicolas Sicard  
+License: $(LINK www.boost.org/LICENSE_1_0.txt, Boost License 1.0)  
+Source: $(LINK https://github.com/biozic/quantities)  
 +/
-module quantities.internal.parsing;
+module quantities.parsing;
 
 import quantities.internal.dimensions;
 import quantities.runtime;
 import quantities.compiletime;
-
-import std.array;
-import std.algorithm;
-import std.conv;
-import std.exception;
-import std.math;
-import std.range;
-import std.string;
-import std.traits;
-import std.typetuple;
-import std.utf;
+import pegged.grammar;
+import std.conv : parse;
+import std.exception : basicExceptionCtors, enforceEx;
+import std.format : format;
+import std.traits : isNumeric, isSomeString;
 
 /++
 Contains the symbols of the units and the prefixes that a parser can handle.
 +/
 struct SymbolList(N)
+        if (isNumeric!N)
 {
     static assert(isNumeric!N, "Incompatible type: " ~ N.stringof);
 
-    private
+    package
     {
         QVariant!N[string] units;
         N[string] prefixes;
@@ -145,10 +61,10 @@ A quantity parser.
 
 Params:
     N = The numeric type of the quantities.
-    numberParser = a function that takes a reference to a string and returns the
-        parsed number.
+    numberParser = a function that takes a reference to any kind of string and
+        returns the parsed number.
 +/
-struct Parser(N, alias numberParser)
+struct Parser(N, alias numberParser = (ref s) => parse!N(s))
         if (isNumeric!N)
 {
     /// A list of registered symbols for units and prefixes.
@@ -174,26 +90,11 @@ unittest
     alias LectureLength = typeof(century);
 
     auto symbolList = SymbolList!real().addUnit("Cy", century).addPrefix("µ", 1e-6L);
-    alias numberParser = (ref string s) => std.conv.parse!real(s);
+    alias numberParser = (ref s) => parse!real(s);
     auto parser = Parser!(real, numberParser)(symbolList);
 
     auto timing = 1e-6L * century;
     assert(timing == parser.parse("1 µCy"));
-}
-
-version (none) unittest  // Compile-time
-{
-    import std.conv : parse;
-
-    enum euro = unit!int("@");
-    alias Currency = typeof(euro);
-
-    enum symbolList = SymbolList!int().addUnit("€", euro).addPrefix("k", 1000);
-    alias intParser = (ref string s) => std.conv.parse!int(s);
-    enum parser = Parser!(int, intParser)(symbolList);
-
-    enum cost = 2_500_000 * euro;
-    static assert(cost == parser.parse("2500 k€"));
 }
 
 /// Exception thrown when parsing encounters an unexpected token.
@@ -202,90 +103,35 @@ class ParsingException : Exception
     mixin basicExceptionCtors;
 }
 
-private:
+package(quantities):
 
-QVariant!N parseQuantityImpl(N, alias parseFun, S)(S input, SymbolList!N symbolList)
+QVariant!N parseQuantityImpl(N, alias numberParser, S)(S input, SymbolList!N symbolList)
         if (isSomeString!S)
 {
-    N value;
-    auto str = input[];
+    import std.range.primitives : empty;
 
+    N value;
     try
-        value = parseFun(str);
+        value = numberParser(input);
     catch (Exception)
         value = 1;
 
-    if (str.empty)
+    if (input.empty)
         return QVariant!N(value, Dimensions.init);
 
-    auto parser = QuantityParser!(N, S)(str, symbolList);
-
-    return value * parser.parseCompoundUnit();
-}
-
-unittest  // Test parsing
-{
-    auto meter = unit!double("L");
-    auto kilogram = unit!double("M");
-    auto second = unit!double("T");
-    auto one = meter / meter;
-    auto unknown = one;
-
-    auto siSL = SymbolList!double().addUnit("m", meter).addUnit("kg", kilogram)
-        .addUnit("s", second).addPrefix("c", 0.01L).addPrefix("m", 0.001L);
-
-    bool checkParse(S, Q)(S input, Q quantity)
-            if (isSomeString!S)
-    {
-        alias numberParser = std.conv.parse!(Q.valueType, S);
-        return parseQuantityImpl!(double, numberParser)(input, siSL) == quantity;
-    }
-
-    assert(checkParse("1    m    ", meter));
-    assert(checkParse("1m", meter));
-    assert(checkParse("1 mm", 0.001 * meter));
-    assert(checkParse("1 m^-1", 1 / meter));
-    assert(checkParse("1 m^2/2", meter));
-    assert(checkParse("1 m^-2/2", 1 / meter));
-    assert(checkParse("1 m²", meter * meter));
-    assert(checkParse("1 m⁺²", meter * meter));
-    assert(checkParse("1 m⁻¹", 1 / meter));
-    assert(checkParse("1 (m)", meter));
-    assert(checkParse("1 (m^-1)", 1 / meter));
-    assert(checkParse("1 ((m)^-1)^-1", meter));
-    assert(checkParse("1 (s/(s/m))", meter));
-    assert(checkParse("1 m*m", meter * meter));
-    assert(checkParse("1 m m", meter * meter));
-    assert(checkParse("1 m.m", meter * meter));
-    assert(checkParse("1 m⋅m", meter * meter));
-    assert(checkParse("1 m×m", meter * meter));
-    assert(checkParse("1 m/m", meter / meter));
-    assert(checkParse("1 m÷m", meter / meter));
-    assert(checkParse("1 m.s", second * meter));
-    assert(checkParse("1 m s", second * meter));
-    assert(checkParse("1 m²s", meter * meter * second));
-    assert(checkParse("1 m*m/m", meter));
-    assert(checkParse("0.8 m⁰", 0.8 * one));
-    assert(checkParse("0.8", 0.8 * one));
-    assert(checkParse("0.8 ", 0.8 * one));
-
-    assertThrown!ParsingException(checkParse("1 c m", unknown));
-    assertThrown!ParsingException(checkParse("1 c", unknown));
-    assertThrown!ParsingException(checkParse("1 Qm", unknown));
-    assertThrown!ParsingException(checkParse("1 m + m", unknown));
-    assertThrown!ParsingException(checkParse("1 m/", unknown));
-    assertThrown!ParsingException(checkParse("1 m^", unknown));
-    assertThrown!ParsingException(checkParse("1 m^m", unknown));
-    assertThrown!ParsingException(checkParse("1 m ) m", unknown));
-    assertThrown!ParsingException(checkParse("1 m * m) m", unknown));
-    assertThrown!ParsingException(checkParse("1 m^²", unknown));
-    assertThrown!ParsingException(checkParse("1-⁺⁵", unknown));
+    auto parser = QuantityParser!(N, S)(input, symbolList);
+    return value * parser.parsedQuantity();
 }
 
 // A parser that can parse a text for a unit or a quantity
 struct QuantityParser(N, S)
         if (isNumeric!N && isSomeString!S)
 {
+    import std.conv : to;
+    import std.exception : enforceEx;
+    import std.format : format;
+    import std.range.primitives : empty, front, popFront;
+
     private
     {
         S input;
@@ -297,10 +143,15 @@ struct QuantityParser(N, S)
     {
         this.input = input;
         this.symbolList = symbolList;
-        tokens = lex(input);
+        lex(input);
     }
 
-    QVariant!N parseCompoundUnit(bool inParens = false) pure @safe
+    QVariant!N parsedQuantity()
+    {
+        return parseCompoundUnit();
+    }
+
+    QVariant!N parseCompoundUnit(bool inParens = false)
     {
         QVariant!N ret = parseExponentUnit();
         if (tokens.empty || (inParens && tokens.front.type == Tok.rparen))
@@ -308,7 +159,7 @@ struct QuantityParser(N, S)
 
         do
         {
-            check(tokens);
+            check();
             auto cur = tokens.front;
 
             bool multiply = true;
@@ -317,8 +168,8 @@ struct QuantityParser(N, S)
 
             if (cur.type == Tok.mul || cur.type == Tok.div)
             {
-                advance(tokens);
-                check(tokens);
+                advance();
+                check();
                 cur = tokens.front;
             }
 
@@ -338,68 +189,71 @@ struct QuantityParser(N, S)
         return ret;
     }
 
-    QVariant!N parseExponentUnit() pure @safe
+    QVariant!N parseExponentUnit()
     {
         QVariant!N ret = parseUnit();
 
+        // If no exponent is found
         if (tokens.empty)
             return ret;
 
+        // The next token should be '^', an integer or a superior integer
         auto next = tokens.front;
-        if (next.type != Tok.exp && next.type != Tok.supinteger)
+        if (next.type != Tok.exp && next.type != Tok.integer && next.type != Tok.supinteger)
             return ret;
 
+        // Skip the '^' if present, and expect an integer
         if (next.type == Tok.exp)
-            advance(tokens, Tok.integer);
+            advance(Tok.integer);
 
         Rational r = parseRationalOrInteger();
         return ret ^^ r;
     }
 
-    Rational parseRationalOrInteger() pure @safe
+    Rational parseRationalOrInteger()
     {
         int num = parseInteger();
         int den = 1;
         if (tokens.length && tokens.front.type == Tok.div)
         {
-            advance(tokens);
+            advance();
             den = parseInteger();
         }
         return Rational(num, den);
     }
 
-    int parseInteger() pure @safe
+    int parseInteger()
     {
-        check(tokens, Tok.integer, Tok.supinteger);
+        check(Tok.integer, Tok.supinteger);
         int n = tokens.front.integer;
         if (tokens.length)
-            advance(tokens);
+            advance();
         return n;
     }
 
-    QVariant!N parseUnit() pure @safe
+    QVariant!N parseUnit()
     {
         if (!tokens.length)
             return QVariant!N(1, Dimensions.init);
 
         if (tokens.front.type == Tok.lparen)
         {
-            advance(tokens);
+            advance();
             auto ret = parseCompoundUnit(true);
-            check(tokens, Tok.rparen);
-            advance(tokens);
+            check(Tok.rparen);
+            advance();
             return ret;
         }
         else
             return parsePrefixUnit();
     }
 
-    QVariant!N parsePrefixUnit() pure @safe
+    QVariant!N parsePrefixUnit()
     {
-        check(tokens, Tok.symbol);
+        check(Tok.symbol);
         auto str = input[tokens.front.begin .. tokens.front.end].to!string;
         if (tokens.length)
-            advance(tokens);
+            advance();
 
         // Try a standalone unit symbol (no prefix)
         auto uptr = str in symbolList.units;
@@ -450,8 +304,13 @@ struct QuantityParser(N, S)
         int integer = int.max;
     }
 
-    Token[] lex(S input) pure @safe
+    void lex(S input) @safe
     {
+        import std.array : appender;
+        import std.conv : parse;
+        import std.exception : enforce;
+        import std.utf : codeLength;
+
         enum State
         {
             none,
@@ -460,12 +319,10 @@ struct QuantityParser(N, S)
             supinteger
         }
 
-        Token[] tokens;
         auto tokapp = appender(tokens);
-
-        auto original = input;
         size_t i, j;
         State state = State.none;
+        auto intapp = appender!string;
 
         void pushToken(Tok type)
         {
@@ -476,70 +333,20 @@ struct QuantityParser(N, S)
 
         void pushInteger(Tok type)
         {
-            auto slice = original[i .. j];
-
-            if (type == Tok.supinteger)
-            {
-                auto a = appender!S;
-                foreach (dchar c; slice)
-                {
-                    switch (c)
-                    {
-                    case '⁰':
-                        a.put('0');
-                        break;
-                    case '¹':
-                        a.put('1');
-                        break;
-                    case '²':
-                        a.put('2');
-                        break;
-                    case '³':
-                        a.put('3');
-                        break;
-                    case '⁴':
-                        a.put('4');
-                        break;
-                    case '⁵':
-                        a.put('5');
-                        break;
-                    case '⁶':
-                        a.put('6');
-                        break;
-                    case '⁷':
-                        a.put('7');
-                        break;
-                    case '⁸':
-                        a.put('8');
-                        break;
-                    case '⁹':
-                        a.put('9');
-                        break;
-                    case '⁺':
-                        a.put('+');
-                        break;
-                    case '⁻':
-                        a.put('-');
-                        break;
-                    default:
-                        assert(false, "Error in pushInteger()");
-                    }
-                }
-                slice = a.data;
-            }
-
             int n;
+            auto slice = intapp.data;
             try
             {
-                n = std.conv.parse!int(slice);
-                enforce(slice.empty);
+                n = parse!int(slice);
+                assert(slice.empty);
             }
             catch (Exception)
-                throw new ParsingException("Unexpected integer format: %s".format(original[i .. j]));
+                throw new ParsingException("Unexpected integer format: %s".format(slice));
 
             tokapp.put(Token(type, i, j, n));
             i = j;
             state = State.none;
+            intapp = appender!string;
         }
 
         void push()
@@ -557,7 +364,6 @@ struct QuantityParser(N, S)
             auto len = cur.codeLength!char;
             switch (cur)
             {
-                // Whitespace
             case ' ':
             case '\t':
             case '\u00A0':
@@ -574,24 +380,28 @@ struct QuantityParser(N, S)
                 j += len;
                 pushToken(Tok.lparen);
                 break;
-
             case ')':
                 push();
                 j += len;
                 pushToken(Tok.rparen);
                 break;
 
-            case '*':
-            case '.':
-            case '⋅':
-            case '×':
+            case '*': // Asterisk
+            case '.': // Dot
+            case '\u00B7': // Middle dot (·)         
+            case '\u00D7': // Multiplication sign (×)
+            case '\u2219': // Bullet operator (∙)    
+            case '\u22C5': // Dot operator (⋅)       
+            case '\u2022': // Bullet (•)             
+            case '\u2715': // Multiplication X (✕)   
                 push();
                 j += len;
                 pushToken(Tok.mul);
                 break;
 
-            case '/':
-            case '÷':
+            case '/': // Slash
+            case '\u00F7': // Division sign (÷)
+            case '\u2215': // Division slash (∕)
                 push();
                 j += len;
                 pushToken(Tok.div);
@@ -603,9 +413,18 @@ struct QuantityParser(N, S)
                 pushToken(Tok.exp);
                 break;
 
+            case '-': // Hyphen
+            case '\u2212': // Minus sign (−)
+            case '\u2012': // Figure dash (‒)
+            case '\u2013': // En dash (–)
+                intapp.put('-');
+                goto PushIntChar;
+            case '+': // Plus sign
+                intapp.put('+');
+                goto PushIntChar;
             case '0': .. case '9':
-            case '-':
-            case '+':
+                intapp.put(cur);
+            PushIntChar:
                 if (state != State.integer)
                     push();
                 state = State.integer;
@@ -613,17 +432,41 @@ struct QuantityParser(N, S)
                 break;
 
             case '⁰':
+                intapp.put('0');
+                goto PushSupIntChar;
             case '¹':
+                intapp.put('1');
+                goto PushSupIntChar;
             case '²':
+                intapp.put('2');
+                goto PushSupIntChar;
             case '³':
+                intapp.put('3');
+                goto PushSupIntChar;
             case '⁴':
+                intapp.put('4');
+                goto PushSupIntChar;
             case '⁵':
+                intapp.put('5');
+                goto PushSupIntChar;
             case '⁶':
+                intapp.put('6');
+                goto PushSupIntChar;
             case '⁷':
+                intapp.put('7');
+                goto PushSupIntChar;
             case '⁸':
+                intapp.put('8');
+                goto PushSupIntChar;
             case '⁹':
+                intapp.put('9');
+                goto PushSupIntChar;
             case '⁻':
+                intapp.put('-');
+                goto PushSupIntChar;
             case '⁺':
+                intapp.put('+');
+            PushSupIntChar:
                 if (state != State.supinteger)
                     push();
                 state = State.supinteger;
@@ -639,37 +482,102 @@ struct QuantityParser(N, S)
             }
         }
         push();
-
-        return tokapp.data;
+        tokens = tokapp.data;
     }
 
-    void advance(Types...)(ref Token[] tokens, Types types) pure @safe
+    void advance(Types...)(Types types)
     {
         enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
         tokens.popFront();
 
         static if (Types.length)
-            check(tokens, types);
+            check(types);
     }
 
-    void check(Token[] tokens) pure @safe
+    void check()
     {
         enforceEx!ParsingException(tokens.length, "Unexpected end of input");
     }
 
-    void check(Token[] tokens, Tok tok) pure @safe
+    void check(Tok tok)
     {
-        check(tokens);
+        check();
         enforceEx!ParsingException(tokens[0].type == tok,
                 format("Found '%s' while expecting %s", input[tokens[0].begin .. tokens[0].end],
                     tok));
     }
 
-    void check(Token[] tokens, Tok tok1, Tok tok2) pure @safe
+    void check(Tok tok1, Tok tok2)
     {
-        check(tokens);
+        check();
         enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
                 format("Found '%s' while expecting %s or %s",
                     input[tokens[0].begin .. tokens[0].end], tok1, tok2));
     }
+}
+
+// Tests
+
+@("Generic parsing")
+unittest
+{
+    import std.exception : assertThrown;
+
+    auto meter = unit!double("L");
+    auto kilogram = unit!double("M");
+    auto second = unit!double("T");
+    auto one = meter / meter;
+    auto unknown = one;
+
+    auto siSL = SymbolList!double().addUnit("m", meter).addUnit("kg", kilogram)
+        .addUnit("s", second).addPrefix("c", 0.01L).addPrefix("m", 0.001L);
+
+    bool checkParse(S, Q)(S input, Q quantity)
+    {
+        import std.conv : parse;
+
+        return parseQuantityImpl!(double, (ref s) => parse!double(s))(input, siSL) == quantity;
+    }
+
+    assert(checkParse("1    m    ", meter));
+    assert(checkParse("1m", meter));
+    assert(checkParse("1 mm", 0.001 * meter));
+    assert(checkParse("1 m2", meter * meter));
+    assert(checkParse("1 m^-1", 1 / meter));
+    assert(checkParse("1 m-1", 1 / meter));
+    assert(checkParse("1 m^1/1", meter));
+    assert(checkParse("1 m^-1/1", 1 / meter));
+    assert(checkParse("1 m²", meter * meter));
+    assert(checkParse("1 m⁺²", meter * meter));
+    assert(checkParse("1 m⁻¹", 1 / meter));
+    assert(checkParse("1 (m)", meter));
+    assert(checkParse("1 (m^-1)", 1 / meter));
+    assert(checkParse("1 ((m)^-1)^-1", meter));
+    assert(checkParse("1 (s/(s/m))", meter));
+    assert(checkParse("1 m*m", meter * meter));
+    assert(checkParse("1 m m", meter * meter));
+    assert(checkParse("1 m.m", meter * meter));
+    assert(checkParse("1 m⋅m", meter * meter));
+    assert(checkParse("1 m×m", meter * meter));
+    assert(checkParse("1 m/m", meter / meter));
+    assert(checkParse("1 m÷m", meter / meter));
+    assert(checkParse("1 m.s", second * meter));
+    assert(checkParse("1 m s", second * meter));
+    assert(checkParse("1 m²s", meter * meter * second));
+    assert(checkParse("1 m*m/m", meter));
+    assert(checkParse("0.8 m⁰", 0.8 * one));
+    assert(checkParse("0.8", 0.8 * one));
+    assert(checkParse("0.8 ", 0.8 * one));
+
+    assertThrown!ParsingException(checkParse("1 c m", unknown));
+    assertThrown!ParsingException(checkParse("1 c", unknown));
+    assertThrown!ParsingException(checkParse("1 Qm", unknown));
+    assertThrown!ParsingException(checkParse("1 m + m", unknown));
+    assertThrown!ParsingException(checkParse("1 m/", unknown));
+    assertThrown!ParsingException(checkParse("1 m^", unknown));
+    assertThrown!ParsingException(checkParse("1 m^m", unknown));
+    assertThrown!ParsingException(checkParse("1 m ) m", unknown));
+    assertThrown!ParsingException(checkParse("1 m * m) m", unknown));
+    assertThrown!ParsingException(checkParse("1 m^²", unknown));
+    assertThrown!ParsingException(checkParse("1-⁺⁵", unknown));
 }

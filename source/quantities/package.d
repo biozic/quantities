@@ -20,10 +20,12 @@ module quantities;
 
 public import quantities.compiletime;
 public import quantities.runtime;
+public import quantities.common;
+public import quantities.parsing;
 public import quantities.si;
 
-///
-@("Synopsis at compile time")
+/// Synopsis at compile-time
+@("Synopsis at compile-time")
 unittest
 {
     import quantities.compiletime;
@@ -45,14 +47,14 @@ unittest
     Time time = calculateTime(distance, speed);
 
     // Dimensions are checked at compile time for consistency
-    static assert(!__traits(compiles, distance + speed));
+    assert(!__traits(compiles, distance + speed));
 
     // Format a quantity with a format specification known at compile-time
     assert(siFormat!"%.3f s"(time) == "1.282 s");
 }
 
-///
-@("Synopsis at run time")
+/// Synopsis at run-time
+@("Synopsis at run-time")
 unittest
 {
     import quantities.runtime;
