@@ -28,7 +28,7 @@ void checkNotDimensionless(E)(lazy E expression, QVariant!double operand)
 }
 
 @("this()")
-@safe unittest
+@safe pure nothrow unittest
 {
     auto distance = 2 * meter;
     auto angle = 3.14 * radian;
@@ -50,7 +50,7 @@ void checkNotDimensionless(E)(lazy E expression, QVariant!double operand)
 }
 
 @("isDimensionless")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     assert(!meter.isDimensionless);
     assert(radian.isDimensionless);
