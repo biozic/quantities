@@ -496,11 +496,11 @@ public:
 }
 
 /// Creates a new monodimensional unit as a Quantity.
-auto unit(N, string symbol)()
+auto unit(N, string symbol, size_t rank = size_t.max)()
 {
     import quantities.runtime;
 
-    enum u = quantities.runtime.unit!N(symbol);
+    enum u = quantities.runtime.unit!N(symbol, rank);
     return Quantity!(N, u).make(1);
 }
 

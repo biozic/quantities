@@ -29,14 +29,14 @@ mixin template SIDefinitions(N)
     enum one = unit!(N, "");
 
     /// Base SI units.
-    enum meter = unit!(N, "L");
+    enum meter = unit!(N, "L", 1);
     alias metre = meter; /// ditto
-    enum kilogram = unit!(N, "M"); /// ditto
-    enum second = unit!(N, "T"); /// ditto
-    enum ampere = unit!(N, "I"); /// ditto
-    enum kelvin = unit!(N, "Θ"); /// ditto
-    enum mole = unit!(N, "N"); /// ditto
-    enum candela = unit!(N, "J"); /// ditto
+    enum kilogram = unit!(N, "M", 2); /// ditto
+    enum second = unit!(N, "T", 3); /// ditto
+    enum ampere = unit!(N, "I", 4); /// ditto
+    enum kelvin = unit!(N, "Θ", 5); /// ditto
+    enum mole = unit!(N, "N", 6); /// ditto
+    enum candela = unit!(N, "J", 7); /// ditto
 
     /// Derived SI units
     enum radian = meter / meter; // ditto

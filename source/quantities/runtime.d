@@ -530,9 +530,9 @@ public:
 }
 
 /// Creates a new monodimensional unit as a QVariant
-QVariant!N unit(N)(string symbol)
+QVariant!N unit(N)(string symbol, size_t rank = size_t.max)
 {
-    return QVariant!N(N(1), Dimensions.mono(symbol));
+    return QVariant!N(N(1), Dimensions.mono(symbol, rank));
 }
 
 // Tests whether T is a quantity type

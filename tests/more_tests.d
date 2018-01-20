@@ -6,17 +6,17 @@ import std.math : approxEqual;
 @("qVariant")
 unittest
 {
-    static assert(is(typeof(meter.qVariant) == QVariant!double));
-    static assert(meter == unit!double("L"));
-    static assert(QVariant!double(meter) == unit!double("L"));
+    assert(is(typeof(meter.qVariant) == QVariant!double));
+    assert(meter == unit!double("L", 1));
+    assert(QVariant!double(meter) == unit!double("L", 1));
 }
 
 @("QVariant/Quantity")
 @safe pure unittest
 {
     enum meterVariant = meter.qVariant;
-    static assert(meterVariant.value(meter) == 1);
-    static assert(meterVariant.isConsistentWith(meter));
+    assert(meterVariant.value(meter) == 1);
+    assert(meterVariant.isConsistentWith(meter));
     meterVariant = meter + (meter * meter) / meter;
     assert(meterVariant.value(meter) == 1);
     meterVariant += meter;
@@ -25,8 +25,8 @@ unittest
     meterVariant *= meter;
     meterVariant /= meter;
     assert(meterVariant.value(meter) == 1);
-    static assert(meterVariant == meter);
-    static assert(meterVariant < 2 * meter);
+    assert(meterVariant == meter);
+    assert(meterVariant < 2 * meter);
 
     immutable secondVariant = (2 * second).qVariant;
     auto test = secondVariant + second;
@@ -94,6 +94,15 @@ pure unittest
     }
 
     static assert(catc(0.031 * one).value(si!"µmol/min/L").approxEqual(93.5));
+}
+
+@("toString")
+unittest
+{
+    import std.conv : text;
+
+    auto resistance = 4000 * ohm;
+    assert(resistance.text == "4000 [L^2 M T^-3 I^-2]");
 }
 
 @("siFormat RT")
