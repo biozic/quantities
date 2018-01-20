@@ -26,7 +26,7 @@ mixin template SIDefinitions(N)
     static assert(isNumeric!N);
 
     /// The dimensionless unit 1.
-    enum one = unit!(N, "");
+    enum one = unit!(N, "", 0);
 
     /// Base SI units.
     enum meter = unit!(N, "L", 1);
