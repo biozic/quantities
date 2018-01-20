@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>API documentation</title>
+		<link rel="stylesheet" type="text/css" href="./styles/ddox.css"/>
+		<link rel="stylesheet" href="./prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="./scripts/jquery.js">/**/</script><script type="text/javascript" src="./scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="./symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "./";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="./quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="./quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>API documentation</h1>
+			<table>
+				<col class="caption"/>
+				<tr>
+					<th>Module</th><th>Description</th>
+				</tr>
+			<tr>
+				<td>
+					<a href="./quantities/internal/dimensions.html">quantities.internal.dimensions</a>
+				</td>
+				<td>
+					Structs used to define units: rational numbers and dimensions.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities/internal/si.html">quantities.internal.si</a>
+				</td>
+				<td>
+					This module only contains the template mixins that define
+SI units, prefixes and symbols for use at compile-time and/or
+at run-time.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities/compiletime.html">quantities.compiletime</a>
+				</td>
+				<td>
+					This module defines quantities that are statically checked for dimensional
+consistency at compile-time.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities/parsing.html">quantities.parsing</a>
+				</td>
+				<td>
+					This module defines functions to parse units and quantities.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities/runtime.html">quantities.runtime</a>
+				</td>
+				<td>
+					This module defines dimensionally variant quantities, mainly for use at run-time.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities/si.html">quantities.si</a>
+				</td>
+				<td>
+					Importing <code class="lang-d"><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">si</span></code> instantiate all the definitions of the SI units,
+prefixes, parsing functions and formatting functions, both at run-time and
+compile-time, storint their values as a <code class="lang-d"><span class="typ">double</span></code>.
+
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<a href="./quantities.html">quantities</a>
+				</td>
+				<td>
+					The purpose of this small library is to perform automatic compile-time or
+run-time dimensional checking when dealing with quantities and units.
+
+				</td>
+			</tr>
+			</table>
+			<footer>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

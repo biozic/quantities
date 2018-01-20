@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Enum member SIDefinitions.siSymbolList</title>
+		<link rel="stylesheet" type="text/css" href="../../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Enum member SIDefinitions.siSymbolList</h1><p>A list of common SI symbols and prefixes
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">template</span> <a href="../../../quantities/internal/si/SIDefinitions.html"><span class="typ">SIDefinitions</span></a>
+			<br/>
+			<span class="pun">
+				{
+				<br/>
+			</span>
+			&nbsp;&nbsp;<span class="com">// ...</span>
+			<br/>
+			&nbsp;&nbsp;<span class="kwd">enum</span> <span class="pln">siSymbolList</span>
+			 <span class="pun">=</span> <span class="typ">SymbolList</span><span class="pun">!</span><span class="pln">N</span><span class="pun">()<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"m"</span><span class="pun">, </span><span class="pln">meter</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"kg"</span><span class="pun">, </span><span class="pln">kilogram</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"s"</span><span class="pun">, </span><span class="pln">second</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"A"</span><span class="pun">, </span><span class="pln">ampere</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"K"</span><span class="pun">, </span><span class="pln">kelvin</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"mol"</span><span class="pun">, </span><span class="pln">mole</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"cd"</span><span class="pun">, </span><span class="pln">candela</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"rad"</span><span class="pun">, </span><span class="pln">radian</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"sr"</span><span class="pun">, </span><span class="pln">steradian</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Hz"</span><span class="pun">, </span><span class="pln">hertz</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"N"</span><span class="pun">, </span><span class="pln">newton</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Pa"</span><span class="pun">, </span><span class="pln">pascal</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"J"</span><span class="pun">, </span><span class="pln">joule</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"W"</span><span class="pun">, </span><span class="pln">watt</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"C"</span><span class="pun">, </span><span class="pln">coulomb</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"V"</span><span class="pun">, </span><span class="pln">volt</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"F"</span><span class="pun">, </span><span class="pln">farad</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"\xce\xa9"</span><span class="pun">, </span><span class="pln">ohm</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"S"</span><span class="pun">, </span><span class="pln">siemens</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Wb"</span><span class="pun">, </span><span class="pln">weber</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"T"</span><span class="pun">, </span><span class="pln">tesla</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"H"</span><span class="pun">, </span><span class="pln">henry</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"lm"</span><span class="pun">, </span><span class="pln">lumen</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"lx"</span><span class="pun">, </span><span class="pln">lux</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Bq"</span><span class="pun">, </span><span class="pln">becquerel</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Gy"</span><span class="pun">, </span><span class="pln">gray</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Sv"</span><span class="pun">, </span><span class="pln">sievert</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"kat"</span><span class="pun">, </span><span class="pln">katal</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"g"</span><span class="pun">, </span><span class="pln">gram</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"min"</span><span class="pun">, </span><span class="pln">minute</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"h"</span><span class="pun">, </span><span class="pln">hour</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"d"</span><span class="pun">, </span><span class="pln">day</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"l"</span><span class="pun">, </span><span class="pln">liter</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"L"</span><span class="pun">, </span><span class="pln">liter</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"t"</span><span class="pun">, </span><span class="pln">ton</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"eV"</span><span class="pun">, </span><span class="pln">electronVolt</span><span class="pun">)<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Da"</span><span class="pun">, </span><span class="pln">dalton</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"Y"</span><span class="pun">, </span><span class="lit">1e+24</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"Z"</span><span class="pun">, </span><span class="lit">1e+21</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"E"</span><span class="pun">, </span><span class="lit">1.00000e+18</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"P"</span><span class="pun">, </span><span class="lit">1.00000e+15</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"T"</span><span class="pun">, </span><span class="lit">1.00000e+12</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"G"</span><span class="pun">, </span><span class="lit">1.00000e+09</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"M"</span><span class="pun">, </span><span class="lit">1.00000e+06</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"k"</span><span class="pun">, </span><span class="lit">1000.00</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"h"</span><span class="pun">, </span><span class="lit">100.000</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"da"</span><span class="pun">, </span><span class="lit">10.0000</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"d"</span><span class="pun">, </span><span class="lit">0.1</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"c"</span><span class="pun">, </span><span class="lit">0.01</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"m"</span><span class="pun">, </span><span class="lit">0.001</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"\xc2\xb5"</span><span class="pun">, </span><span class="lit">1e-06</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"n"</span><span class="pun">, </span><span class="lit">1e-09</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"p"</span><span class="pun">, </span><span class="lit">1e-12</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"f"</span><span class="pun">, </span><span class="lit">1e-15</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"a"</span><span class="pun">, </span><span class="lit">1e-18</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"z"</span><span class="pun">, </span><span class="lit">1e-21</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"y"</span><span class="pun">, </span><span class="lit">1e-24</span><span class="pun">)</span><span class="pun">;</span>
+			<br/>
+			&nbsp;&nbsp;<span class="com">// ...</span>
+			<br/>
+			<span class="pun">}</span>
+					</div>
+				</code>
+			</div>
+			
+			
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

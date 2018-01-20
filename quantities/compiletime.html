@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module quantities.compiletime</title>
+		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
+		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../scripts/jquery.js">/**/</script><script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module quantities.compiletime</h1><p>This module defines quantities that are statically checked for dimensional
+consistency at compile-time.
+</p><section><p>The dimensions are part of their types, so that the compilation fails if an
+operation or a function call is not dimensionally consistent.
+</p>
+</section>
+
+			<section><section><h2>Example</h2>
+
+<pre class="code"><code class="lang-d"><span class="kwd">import </span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">compiletime</span><span class="pun">;
+</span><span class="kwd">import <a href="../quantities/si.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">si</span></a><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">format </span><span class="pun">: </span><span class="pln">format</span><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">math </span><span class="pun">: </span><span class="pln">approxEqual</span><span class="pun">;
+
+</span><span class="com">// Introductory example
+</span><span class="pun">{
+    </span><span class="com">// Use the predefined quantity types (in module quantities.si)
+    </span><span class="typ">Volume </span><span class="pln">volume</span><span class="pun">;
+    </span><span class="typ">Concentration </span><span class="pln">concentration</span><span class="pun">;
+    </span><span class="typ">Mass </span><span class="pln">mass</span><span class="pun">;
+
+    </span><span class="com">// Define a new quantity type
+    </span><span class="kwd">alias </span><span class="typ">MolarMass </span><span class="pun">= </span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">kilogram </span><span class="pun">/ </span><span class="pln">mole</span><span class="pun">);
+
+    </span><span class="com">// I have to make a new solution at the concentration of 5 mmol/L
+    </span><span class="pln">concentration </span><span class="pun">= </span><span class="lit">5.0 </span><span class="pun">* </span><span class="pln">milli</span><span class="pun">(</span><span class="pln">mole</span><span class="pun">) / </span><span class="pln">liter</span><span class="pun">;
+
+    </span><span class="com">// The final volume is 100 ml.
+    </span><span class="pln">volume </span><span class="pun">= </span><span class="lit">100.0 </span><span class="pun">* </span><span class="pln">milli</span><span class="pun">(</span><span class="pln">liter</span><span class="pun">);
+
+    </span><span class="com">// The molar mass of my compound is 118.9 g/mol
+    </span><span class="typ">MolarMass </span><span class="pln">mm </span><span class="pun">= </span><span class="lit">118.9 </span><span class="pun">* </span><span class="pln">gram </span><span class="pun">/ </span><span class="pln">mole</span><span class="pun">;
+
+    </span><span class="com">// What mass should I weigh?
+    </span><span class="pln">mass </span><span class="pun">= </span><span class="pln">concentration </span><span class="pun">* </span><span class="pln">volume </span><span class="pun">* </span><span class="pln">mm</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">format</span><span class="pun">(</span><span class="str">"%s"</span><span class="pun">, </span><span class="pln">mass</span><span class="pun">) == </span><span class="str">"5.945e-05 [M]"</span><span class="pun">);
+    </span><span class="com">// Wait! That's not really useful!
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.1f mg"</span><span class="pun">(</span><span class="pln">mass</span><span class="pun">) == </span><span class="str">"59.5 mg"</span><span class="pun">);
+}
+
+</span><span class="com">// Working with predefined units
+</span><span class="pun">{
+    </span><span class="kwd">auto </span><span class="pln">distance </span><span class="pun">= </span><span class="lit">384_400 </span><span class="pun">* </span><span class="pln">kilo</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">); </span><span class="com">// From Earth to Moon
+    </span><span class="kwd">auto </span><span class="pln">speed </span><span class="pun">= </span><span class="lit">299_792_458 </span><span class="pun">* </span><span class="pln">meter </span><span class="pun">/ </span><span class="pln">second</span><span class="pun">; </span><span class="com">// Speed of light
+    </span><span class="kwd">auto </span><span class="pln">time </span><span class="pun">= </span><span class="pln">distance </span><span class="pun">/ </span><span class="pln">speed</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.3f s" </span><span class="pun">== </span><span class="str">"1.282 s"</span><span class="pun">);
+}
+
+</span><span class="com">// Dimensional correctness is check at compile-time
+</span><span class="pun">{
+    </span><span class="typ">Mass </span><span class="pln">mass</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(!</span><span class="kwd">__traits</span><span class="pun">(</span><span class="pln">compiles</span><span class="pun">, </span><span class="pln">mass </span><span class="pun">= </span><span class="lit">15 </span><span class="pun">* </span><span class="pln">meter</span><span class="pun">));
+    </span><span class="kwd">assert</span><span class="pun">(!</span><span class="kwd">__traits</span><span class="pun">(</span><span class="pln">compiles</span><span class="pun">, </span><span class="pln">mass </span><span class="pun">= </span><span class="lit">1.2</span><span class="pun">));
+}
+
+</span><span class="com">// Calculations can be done at compile-time
+</span><span class="pun">{
+    </span><span class="kwd">enum </span><span class="pln">distance </span><span class="pun">= </span><span class="lit">384_400 </span><span class="pun">* </span><span class="pln">kilo</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">); </span><span class="com">// From Earth to Moon
+    </span><span class="kwd">enum </span><span class="pln">speed </span><span class="pun">= </span><span class="lit">299_792_458 </span><span class="pun">* </span><span class="pln">meter </span><span class="pun">/ </span><span class="pln">second</span><span class="pun">; </span><span class="com">// Speed of light
+    </span><span class="kwd">enum </span><span class="pln">time </span><span class="pun">= </span><span class="pln">distance </span><span class="pun">/ </span><span class="pln">speed</span><span class="pun">;
+    </span><span class="com">/* static */
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.3f s" </span><span class="pun">== </span><span class="str">"1.282 s"</span><span class="pun">);
+    </span><span class="com">// NB. Phobos can't format floating point values at run-time.
+</span><span class="pun">}
+
+</span><span class="com">// Create a new unit from the predefined ones
+</span><span class="pun">{
+    </span><span class="kwd">auto </span><span class="pln">inch </span><span class="pun">= </span><span class="lit">2.54 </span><span class="pun">* </span><span class="pln">centi</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">);
+    </span><span class="kwd">auto </span><span class="pln">mile </span><span class="pun">= </span><span class="lit">1609 </span><span class="pun">* </span><span class="pln">meter</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">mile<wbr/></span><span class="pun">.</span><span class="pln">value</span><span class="pun">(</span><span class="pln">inch</span><span class="pun">)<wbr/>.</span><span class="pln">approxEqual</span><span class="pun">(</span><span class="lit">63_346</span><span class="pun">)); </span><span class="com">// inches in a mile
+    // NB. Cannot use siFormatter, because inches are not SI units
+</span><span class="pun">}
+
+</span><span class="com">// Create a new unit with new dimensions
+</span><span class="pun">{
+    </span><span class="com">// Create a new base unit of currency
+    </span><span class="kwd">auto </span><span class="pln">euro </span><span class="pun">= <a href="../quantities/compiletime/unit.html"></span><span class="pln">unit</span></a><span class="pun">!(</span><span class="typ">double</span><span class="pun">, </span><span class="str">"C"</span><span class="pun">); </span><span class="com">// C is the chosen dimension symol (for currency...)
+
+    </span><span class="kwd">auto </span><span class="pln">dollar </span><span class="pun">= </span><span class="pln">euro </span><span class="pun">/ </span><span class="lit">1.35</span><span class="pun">;
+    </span><span class="kwd">auto </span><span class="pln">price </span><span class="pun">= </span><span class="lit">2000 </span><span class="pun">* </span><span class="pln">dollar</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">price<wbr/></span><span class="pun">.</span><span class="pln">value</span><span class="pun">(</span><span class="pln">euro</span><span class="pun">)<wbr/>.</span><span class="pln">approxEqual</span><span class="pun">(</span><span class="lit">1481</span><span class="pun">)); </span><span class="com">// Price in euros
+</span><span class="pun">}
+
+</span><span class="com">// Compile-time parsing
+</span><span class="pun">{
+    </span><span class="kwd">enum </span><span class="pln">distance </span><span class="pun">= </span><span class="pln">si</span><span class="pun">!</span><span class="str">"384_400 km"</span><span class="pun">;
+    </span><span class="kwd">enum </span><span class="pln">speed </span><span class="pun">= </span><span class="pln">si</span><span class="pun">!</span><span class="str">"299_792_458 m/s"</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="kwd">is</span><span class="pun">(</span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">distance</span><span class="pun">) == </span><span class="typ">Length</span><span class="pun">));
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="kwd">is</span><span class="pun">(</span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">speed</span><span class="pun">) == </span><span class="typ">Speed</span><span class="pun">));
+}
+
+</span><span class="com">// Run-time parsing of statically typed Quantities
+</span><span class="pun">{
+    </span><span class="kwd">auto </span><span class="pln">data </span><span class="pun">= [</span><span class="str">"distance-to-the-moon" </span><span class="pun">: </span><span class="str">"384_400 km"</span><span class="pun">, </span><span class="str">"speed-of-light" </span><span class="pun">: </span><span class="str">"299_792_458 m/s"</span><span class="pun">];
+    </span><span class="kwd">auto </span><span class="pln">distance </span><span class="pun">= </span><span class="pln">parseSI</span><span class="pun">!</span><span class="typ">Length</span><span class="pun">(</span><span class="pln">data</span><span class="pun">[</span><span class="str">"distance-to-the-moon"</span><span class="pun">]);
+    </span><span class="kwd">auto </span><span class="pln">speed </span><span class="pun">= </span><span class="pln">parseSI</span><span class="pun">!</span><span class="typ">Speed</span><span class="pun">(</span><span class="pln">data</span><span class="pun">[</span><span class="str">"speed-of-light"</span><span class="pun">]);
+}
+</span></code></pre>
+</section>
+</section>
+			<section>
+				<h2>Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="abs" class="public" href="../quantities/compiletime/abs.html">abs</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="cbrt" class="public" href="../quantities/compiletime/cbrt.html">cbrt</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="cubic" class="public" href="../quantities/compiletime/cubic.html">cubic</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="nthRoot" class="public" href="../quantities/compiletime/nthRoot.html">nthRoot</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="pow" class="public" href="../quantities/compiletime/pow.html">pow</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="sqrt" class="public" href="../quantities/compiletime/sqrt.html">sqrt</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="square" class="public" href="../quantities/compiletime/square.html">square</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with Quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="unit" class="public" href="../quantities/compiletime/unit.html">unit</a><span class="decoration">()</span>
+							</code>
+						</td>
+						<td>Creates a new monodimensional unit as a Quantity.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Structs</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="Quantity" class="public" href="../quantities/compiletime/Quantity.html">Quantity</a>
+							</code>
+						</td>
+						<td>A quantity checked at compile-time for dimensional consistency.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Manifest constants</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a id="isQuantity" class="public" href="../quantities/compiletime/isQuantity.html">
+								<code>isQuantity</code>
+							</a>
+						</td>
+						<td>
+						</td>
+						<td>Tests whether T is a quantity type.
+</td>
+					</tr>
+				</table>
+			</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

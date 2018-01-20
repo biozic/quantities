@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module quantities</title>
+		<link rel="stylesheet" type="text/css" href="./styles/ddox.css"/>
+		<link rel="stylesheet" href="./prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="./scripts/jquery.js">/**/</script><script type="text/javascript" src="./scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="./symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "./";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package selected">
+						<a href="./quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="./quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="./quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module quantities</h1><p>The purpose of this small library is to perform automatic compile-time or
+run-time dimensional checking when dealing with quantities and units.
+</p><section><p>There is no actual distinction between units and quantities, so there are no
+distinct quantity and unit types. All operations are actually done on
+quantities. For example, <code class="lang-d"><span class="pln">meter</span></code> is both the unit meter_ and the quantity _1m_.
+New quantities can be derived from other ones using operators or dedicated
+functions.
+</p>
+
+<p>Quantities can be parsed from strings at run time and compile time.
+</p>
+
+<p>The main SI units and prefixes are predefined. Units with other dimensions can
+be defined by the user.
+</p>
+</section>
+
+			<section><section><h2>Example</h2>
+<p>Synopsis at compile-time
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">import <a href="./quantities/compiletime.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">compiletime</span></a><span class="pun">;
+</span><span class="kwd">import <a href="./quantities/si.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">si</span></a><span class="pun">;
+
+</span><span class="com">// Define a quantity from SI units
+</span><span class="kwd">auto </span><span class="pln">distance </span><span class="pun">= </span><span class="lit">384_400 </span><span class="pun">* </span><span class="pln">kilo</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">);
+
+</span><span class="com">// Define a quantity from a string
+</span><span class="kwd">auto </span><span class="pln">speed </span><span class="pun">= </span><span class="pln">si</span><span class="pun">!</span><span class="str">"299_792_458 m/s"</span><span class="pun">;
+</span><span class="com">// Define a type for a quantity
+</span><span class="kwd">alias </span><span class="typ">Speed </span><span class="pun">= </span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">speed</span><span class="pun">);
+
+</span><span class="com">// Calculations on quantities
+</span><span class="kwd">auto </span><span class="pln">calculateTime</span><span class="pun">(</span><span class="typ">Length </span><span class="pln">d</span><span class="pun">, </span><span class="typ">Speed </span><span class="pln">s</span><span class="pun">)
+{
+    </span><span class="kwd">return </span><span class="pln">d </span><span class="pun">/ </span><span class="pln">s</span><span class="pun">;
+}
+</span><span class="typ">Time </span><span class="pln">time </span><span class="pun">= </span><span class="pln">calculateTime</span><span class="pun">(</span><span class="pln">distance</span><span class="pun">, </span><span class="pln">speed</span><span class="pun">);
+
+</span><span class="com">// Dimensions are checked at compile time for consistency
+</span><span class="kwd">assert</span><span class="pun">(!</span><span class="kwd">__traits</span><span class="pun">(</span><span class="pln">compiles</span><span class="pun">, </span><span class="pln">distance </span><span class="pun">+ </span><span class="pln">speed</span><span class="pun">));
+
+</span><span class="com">// Format a quantity with a format specification known at compile-time
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.3f s"</span><span class="pun">(</span><span class="pln">time</span><span class="pun">) == </span><span class="str">"1.282 s"</span><span class="pun">);
+</span></code></pre>
+</section>
+<section><h2>Example</h2>
+<p>Synopsis at run-time
+</p>
+<pre class="code"><code class="lang-d"><span class="kwd">import <a href="./quantities/runtime.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">runtime</span></a><span class="pun">;
+</span><span class="kwd">import <a href="./quantities/si.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">si</span></a><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">exception </span><span class="pun">: </span><span class="pln">assertThrown</span><span class="pun">;
+
+</span><span class="com">// Define a quantity from SI units (using the helper function `qVariant`)
+</span><span class="kwd">auto </span><span class="pln">distance </span><span class="pun">= </span><span class="pln">qVariant</span><span class="pun">(</span><span class="lit">384_400 </span><span class="pun">* </span><span class="pln">kilo</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">));
+
+</span><span class="com">// Define a quantity from a string
+</span><span class="kwd">auto </span><span class="pln">speed </span><span class="pun">= </span><span class="pln">parseSI</span><span class="pun">(</span><span class="str">"299_792_458 m/s"</span><span class="pun">);
+
+</span><span class="com">// Calculations on quantities (checked at compile time for consistency)
+</span><span class="typ">QVariant</span><span class="pun">!</span><span class="typ">double </span><span class="pln">calculateTime</span><span class="pun">(</span><span class="typ">QVariant</span><span class="pun">!</span><span class="typ">double </span><span class="pln">d</span><span class="pun">, </span><span class="typ">QVariant</span><span class="pun">!</span><span class="typ">double </span><span class="pln">s</span><span class="pun">)
+{
+    </span><span class="kwd">return </span><span class="pln">d </span><span class="pun">/ </span><span class="pln">s</span><span class="pun">;
+}
+</span><span class="kwd">auto </span><span class="pln">time </span><span class="pun">= </span><span class="pln">calculateTime</span><span class="pun">(</span><span class="pln">distance</span><span class="pun">, </span><span class="pln">speed</span><span class="pun">);
+
+</span><span class="com">// Dimensions are checked at run time for consistency
+</span><span class="pln">assertThrown</span><span class="pun">!</span><span class="typ">DimensionException</span><span class="pun">(</span><span class="pln">distance </span><span class="pun">+ </span><span class="pln">speed</span><span class="pun">);
+
+</span><span class="com">// Format a quantity with a format specification known at run-time
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">siFormat</span><span class="pun">(</span><span class="str">"%.3f s"</span><span class="pun">, </span><span class="pln">time</span><span class="pun">) == </span><span class="str">"1.282 s"</span><span class="pun">);
+</span></code></pre>
+</section>
+</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard.
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p>Boost License 1.0.
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

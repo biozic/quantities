@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Template SIDefinitions</title>
+		<link rel="stylesheet" type="text/css" href="../../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Template SIDefinitions</h1><p>Generates SI units, prefixes and several utility functions
+(parsing and formatting) usable at compile-time and/or at run-time.
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">template</span> <span class="pln">SIDefinitions</span>(N)
+			;
+					</div>
+				</code>
+			</div>
+			
+			<section><h2>Contained Variables</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.siParser.html">siParser</a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../../quantities/parsing/Parser.html"><span class="typ">Parser</span></a>!(N,(refs)=>parse!N(s))</code></td><td>A list of common SI symbols and prefixes
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.siSymbols.html">siSymbols</a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../../quantities/parsing/SymbolList.html"><span class="typ">SymbolList</span></a>!N</code></td><td>A list of common SI symbols and prefixes
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Contained Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.parseSI.html">parseSI</a>
+						</td>
+						<td>Parses a statically-typed Quantity from a string at run time.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.parseSI.html">parseSI</a>
+						</td>
+						<td>Parses a string for a quantity at run time.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.siFormat.html">siFormat</a>
+						</td>
+						<td>Formats a SI quantity according to a format string known at run-time.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.siFormat.html">siFormat</a>
+						</td>
+						<td>Formats a SI quantity according to a format string known at compile-time.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Contained Structs</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.SIFormatter.html">SIFormatter</a>
+						</td>
+						<td>A struct able to format a SI quantity.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Contained Aliases</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.AbsorbedDose.html">AbsorbedDose</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Acceleration.html">Acceleration</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.AmountOfSubstance.html">AmountOfSubstance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Angle.html">Angle</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Area.html">Area</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.atto.html">atto</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Capacitance.html">Capacitance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.CatalyticActivity.html">CatalyticActivity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.CelsiusTemperature.html">CelsiusTemperature</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.centi.html">centi</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Concentration.html">Concentration</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.CurrentDensity.html">CurrentDensity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.deca.html">deca</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.deci.html">deci</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Dimensionless.html">Dimensionless</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.DoseEquivalent.html">DoseEquivalent</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.ElectricCharge.html">ElectricCharge</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.ElectricConductance.html">ElectricConductance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.ElectricCurrent.html">ElectricCurrent</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.ElectricPotential.html">ElectricPotential</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.ElectricResistance.html">ElectricResistance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Energy.html">Energy</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.exa.html">exa</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.femto.html">femto</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Force.html">Force</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Frequency.html">Frequency</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.giga.html">giga</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Heat.html">Heat</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.hecto.html">hecto</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Illuminance.html">Illuminance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Inductance.html">Inductance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.kilo.html">kilo</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.litre.html">litre</a>
+						</td>
+						<td>Units compatible with the SI
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Luminance.html">Luminance</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.LuminousFlux.html">LuminousFlux</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.LuminousIntensity.html">LuminousIntensity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MagneticFieldStrength.html">MagneticFieldStrength</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MagneticFlux.html">MagneticFlux</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MagneticFluxDensity.html">MagneticFluxDensity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Mass.html">Mass</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MassDensity.html">MassDensity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MassicConcentration.html">MassicConcentration</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.mega.html">mega</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.metre.html">metre</a>
+						</td>
+						<td>Base SI units.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.micro.html">micro</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.milli.html">milli</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.MolarConcentration.html">MolarConcentration</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.nano.html">nano</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.peta.html">peta</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.pico.html">pico</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Power.html">Power</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Pressure.html">Pressure</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Radioactivity.html">Radioactivity</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.RefractiveIndex.html">RefractiveIndex</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.SolidAngle.html">SolidAngle</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Speed.html">Speed</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Temperature.html">Temperature</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.tera.html">tera</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Time.html">Time</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Volume.html">Volume</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.Work.html">Work</a>
+						</td>
+						<td>Predefined quantity type templates for SI quantities
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.yocto.html">yocto</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.yotta.html">yotta</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.zepto.html">zepto</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../../quantities/internal/si/SIDefinitions.zetta.html">zetta</a>
+						</td>
+						<td>SI prefixes.
+</td>
+					</tr>
+				</table>
+			</section>
+			
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

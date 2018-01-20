@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Struct QVariant</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Struct QVariant</h1><p>A dimensionnaly variant quantity.
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">struct</span> <span class="typ">QVariant</span>(N)
+			<span class="pun">;</span>
+					</div>
+				</code>
+			</div>
+			<section></section>
+
+			<section><h2>Constructors</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.this.html" class="public">
+								<code>this</code>
+							</a>
+						</td>
+						<td>Creates a new quantity from another one with the same dimensions
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.this.html" class="public">
+								<code>this</code>
+							</a>
+						</td>
+						<td>Creates a new dimensionless quantity from a number
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Properties</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.baseUnit.html" class="public property"><code>baseUnit</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../quantities/runtime/QVariant.html"><span class="typ">QVariant</span></a></code></td><td>Returns the base unit of this quantity.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.dimensions.html" class="public property"><code>dimensions</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../quantities/internal/dimensions/Dimensions.html"><span class="typ">Dimensions</span></a></code></td><td>Returns the dimensions of the quantity
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.isDimensionless.html" class="public property"><code>isDimensionless</code></a><span class="tableEntryAnnotation">[get]</span>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><span class="typ">bool</span></code></td><td>Test whether this quantity is dimensionless
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.get.html" class="public">
+								<code>get</code>
+							</a>
+						</td>
+						<td>Implicitly convert a dimensionless value to the value type.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.isConsistentWith.html" class="public">
+								<code>isConsistentWith</code>
+							</a>
+						</td>
+						<td>Tests wheter this quantity has the same dimensions as another one.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opAssign.html" class="public">
+								<code>opAssign</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opBinary.html" class="public">
+								<code>opBinary</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opBinaryRight.html" class="public">
+								<code>opBinaryRight</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opCast.html" class="public">
+								<code>opCast</code>
+							</a>
+						</td>
+						<td>Cast a dimensionless quantity to a numeric type.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opCmp.html" class="public">
+								<code>opCmp</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opEquals.html" class="public">
+								<code>opEquals</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opOpAssign.html" class="public">
+								<code>opOpAssign</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.opUnary.html" class="public">
+								<code>opUnary</code>
+							</a>
+						</td>
+						<td>Operator overloading
+</td>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/runtime/QVariant.value.html" class="public">
+								<code>value</code>
+							</a>
+						</td>
+						<td>Gets the value of this quantity when expressed in the given target unit.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Parameters</h2>
+<table><col class="caption"><tr><th>Name</th><th>Description</th></tr>
+<tr><td id="N">N</td><td> the numeric type of the quantity.</td></tr>
+</table>
+</section>
+<section><h2>See Also</h2>
+<p>QVariant has the same public members and overloaded operators as Quantity.
+</p>
+</section>
+
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

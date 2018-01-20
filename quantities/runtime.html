@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Module quantities.runtime</title>
+		<link rel="stylesheet" type="text/css" href="../styles/ddox.css"/>
+		<link rel="stylesheet" href="../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../scripts/jquery.js">/**/</script><script type="text/javascript" src="../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Module quantities.runtime</h1><p>This module defines dimensionally variant quantities, mainly for use at run-time.
+</p><section><p>The dimensions are stored in a field, along with the numerical value of the
+quantity. Operations and function calls fail if they are not dimensionally
+consistent, by throwing a <code class="lang-d"><a href="../quantities/runtime/DimensionException.html"><span class="typ">DimensionException</span></a></code>.
+</p>
+</section>
+
+			<section><section><h2>Example</h2>
+
+<pre class="code"><code class="lang-d"><span class="kwd">import </span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">runtime</span><span class="pun">;
+</span><span class="kwd">import <a href="../quantities/si.html"></span><span class="pln">quantities<wbr/></span><span class="pun">.</span><span class="pln">si</span></a><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">format </span><span class="pun">: </span><span class="pln">format</span><span class="pun">;
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">math </span><span class="pun">: </span><span class="pln">approxEqual</span><span class="pun">;
+
+</span><span class="com">// Note: the types of the predefined SI units (gram, mole, liter...)
+// are Quantity instances, not QVariant instance.
+
+// Introductory example
+</span><span class="pun">{
+    </span><span class="com">// I have to make a new solution at the concentration of 5 mmol/L
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">concentration </span><span class="pun">= </span><span class="lit">5.0 </span><span class="pun">* </span><span class="pln">milli</span><span class="pun">(</span><span class="pln">mole</span><span class="pun">) / </span><span class="pln">liter</span><span class="pun">;
+
+    </span><span class="com">// The final volume is 100 ml.
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">volume </span><span class="pun">= </span><span class="lit">100.0 </span><span class="pun">* </span><span class="pln">milli</span><span class="pun">(</span><span class="pln">liter</span><span class="pun">);
+
+    </span><span class="com">// The molar mass of my compound is 118.9 g/mol
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">molarMass </span><span class="pun">= </span><span class="lit">118.9 </span><span class="pun">* </span><span class="pln">gram </span><span class="pun">/ </span><span class="pln">mole</span><span class="pun">;
+
+    </span><span class="com">// What mass should I weigh?
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">mass </span><span class="pun">= </span><span class="pln">concentration </span><span class="pun">* </span><span class="pln">volume </span><span class="pun">* </span><span class="pln">molarMass</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">format</span><span class="pun">(</span><span class="str">"%s"</span><span class="pun">, </span><span class="pln">mass</span><span class="pun">) == </span><span class="str">"5.945e-05 [M]"</span><span class="pun">);
+    </span><span class="com">// Wait! That's not really useful!
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.1f mg"</span><span class="pun">(</span><span class="pln">mass</span><span class="pun">) == </span><span class="str">"59.5 mg"</span><span class="pun">);
+}
+
+</span><span class="com">// Working with predefined units
+</span><span class="pun">{
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">distance </span><span class="pun">= </span><span class="lit">384_400 </span><span class="pun">* </span><span class="pln">kilo</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">); </span><span class="com">// From Earth to Moon
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">speed </span><span class="pun">= </span><span class="lit">299_792_458 </span><span class="pun">* </span><span class="pln">meter </span><span class="pun">/ </span><span class="pln">second</span><span class="pun">; </span><span class="com">// Speed of light
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">time </span><span class="pun">= </span><span class="pln">distance </span><span class="pun">/ </span><span class="pln">speed</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">time<wbr/></span><span class="pun">.</span><span class="pln">siFormat</span><span class="pun">!</span><span class="str">"%.3f s" </span><span class="pun">== </span><span class="str">"1.282 s"</span><span class="pun">);
+}
+
+</span><span class="com">// Dimensional correctness
+</span><span class="pun">{
+    </span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">exception </span><span class="pun">: </span><span class="pln">assertThrown</span><span class="pun">;
+
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">mass </span><span class="pun">= </span><span class="lit">4 </span><span class="pun">* </span><span class="pln">kilogram</span><span class="pun">;
+    </span><span class="pln">assertThrown</span><span class="pun">!<a href="../quantities/runtime/DimensionException.html"></span><span class="typ">DimensionException</span></a><span class="pun">(</span><span class="pln">mass </span><span class="pun">+ </span><span class="pln">meter</span><span class="pun">);
+    </span><span class="pln">assertThrown</span><span class="pun">!<a href="../quantities/runtime/DimensionException.html"></span><span class="typ">DimensionException</span></a><span class="pun">(</span><span class="pln">mass </span><span class="pun">== </span><span class="lit">1.2</span><span class="pun">);
+}
+
+</span><span class="com">// Create a new unit from the predefined ones
+</span><span class="pun">{
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">inch </span><span class="pun">= </span><span class="lit">2.54 </span><span class="pun">* </span><span class="pln">centi</span><span class="pun">(</span><span class="pln">meter</span><span class="pun">);
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">mile </span><span class="pun">= </span><span class="lit">1609 </span><span class="pun">* </span><span class="pln">meter</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">mile<wbr/></span><span class="pun">.</span><span class="pln">value</span><span class="pun">(</span><span class="pln">inch</span><span class="pun">)<wbr/>.</span><span class="pln">approxEqual</span><span class="pun">(</span><span class="lit">63_346</span><span class="pun">)); </span><span class="com">// inches in a mile
+    // NB. Cannot use siFormatter, because inches are not SI units
+</span><span class="pun">}
+
+</span><span class="com">// Create a new unit with new dimensions
+</span><span class="pun">{
+    </span><span class="com">// Create a new base unit of currency
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">euro </span><span class="pun">= <a href="../quantities/runtime/unit.html"></span><span class="pln">unit</span></a><span class="pun">!</span><span class="typ">double</span><span class="pun">(</span><span class="str">"C"</span><span class="pun">); </span><span class="com">// C is the chosen dimension symol (for currency...)
+
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">dollar </span><span class="pun">= </span><span class="pln">euro </span><span class="pun">/ </span><span class="lit">1.35</span><span class="pun">;
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">price </span><span class="pun">= </span><span class="lit">2000 </span><span class="pun">* </span><span class="pln">dollar</span><span class="pun">;
+    </span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">price<wbr/></span><span class="pun">.</span><span class="pln">value</span><span class="pun">(</span><span class="pln">euro</span><span class="pun">)<wbr/>.</span><span class="pln">approxEqual</span><span class="pun">(</span><span class="lit">1481</span><span class="pun">)); </span><span class="com">// Price in euros
+</span><span class="pun">}
+
+</span><span class="com">// Run-time parsing
+</span><span class="pun">{
+    </span><span class="kwd">auto </span><span class="pln">data </span><span class="pun">= [</span><span class="str">"distance-to-the-moon" </span><span class="pun">: </span><span class="str">"384_400 km"</span><span class="pun">, </span><span class="str">"speed-of-light" </span><span class="pun">: </span><span class="str">"299_792_458 m/s"</span><span class="pun">];
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">distance </span><span class="pun">= </span><span class="pln">parseSI</span><span class="pun">(</span><span class="pln">data</span><span class="pun">[</span><span class="str">"distance-to-the-moon"</span><span class="pun">]);
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">speed </span><span class="pun">= </span><span class="pln">parseSI</span><span class="pun">(</span><span class="pln">data</span><span class="pun">[</span><span class="str">"speed-of-light"</span><span class="pun">]);
+    <a href="../quantities/runtime/QVariant.html"></span><span class="typ">QVariant</span></a><span class="pun">!</span><span class="typ">double </span><span class="pln">time </span><span class="pun">= </span><span class="pln">distance </span><span class="pun">/ </span><span class="pln">speed</span><span class="pun">;
+}
+</span></code></pre>
+</section>
+</section>
+			<section>
+				<h2>Functions</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="abs" class="public" href="../quantities/runtime/abs.html">abs</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="cbrt" class="public" href="../quantities/runtime/cbrt.html">cbrt</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="cubic" class="public" href="../quantities/runtime/cubic.html">cubic</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="nthRoot" class="public" href="../quantities/runtime/nthRoot.html">nthRoot</a><span class="decoration">(quantity, r)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="pow" class="public" href="../quantities/runtime/pow.html">pow</a><span class="decoration">(quantity, r)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="qVariant" class="public" href="../quantities/runtime/qVariant.html">qVariant</a><span class="decoration">(qty)</span>
+							</code>
+						</td>
+						<td>Turns a Quantity into a QVariant
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="qVariant" class="public" href="../quantities/runtime/qVariant.html">qVariant</a><span class="decoration">(scalar)</span>
+							</code>
+						</td>
+						<td>Turns a scalar into a dimensionless QVariant
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="sqrt" class="public" href="../quantities/runtime/sqrt.html">sqrt</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="square" class="public" href="../quantities/runtime/square.html">square</a><span class="decoration">(quantity)</span>
+							</code>
+						</td>
+						<td>Basic math functions that work with QVariant.
+</td>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="unit" class="public" href="../quantities/runtime/unit.html">unit</a><span class="decoration">(dimSymbol, rank)</span>
+							</code>
+						</td>
+						<td>Creates a new monodimensional unit as a QVariant.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Classes</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="DimensionException" class="public" href="../quantities/runtime/DimensionException.html">DimensionException</a>
+							</code>
+						</td>
+						<td>Exception thrown when operating on two units that are not interconvertible.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section>
+				<h2>Structs</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<code>
+								<a id="QVariant" class="public" href="../quantities/runtime/QVariant.html">QVariant</a>
+							</code>
+						</td>
+						<td>A dimensionnaly variant quantity.
+</td>
+					</tr>
+				</table>
+			</section>
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>

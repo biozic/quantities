@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Struct Parser</title>
+		<link rel="stylesheet" type="text/css" href="../../styles/ddox.css"/>
+		<link rel="stylesheet" href="../../prettify/prettify.css" type="text/css"/>
+		<script type="text/javascript" src="../../scripts/jquery.js">/**/</script><script type="text/javascript" src="../../scripts/ddox.js">/**/</script>
+	</head>
+	<body onload="setupDdox();">
+		<nav id="main-nav">
+			<noscript>
+				<p style="color: red">The search functionality needs JavaScript enabled</p>
+			</noscript>
+			<div id="symbolSearchPane" style="display: none">
+				<form action="#" method="GET">
+					<input id="symbolSearch" type="text" name="q" placeholder="Search for symbols" autocomplete="off" onchange="performSymbolSearch(40);" onkeypress="this.onchange();" onpaste="this.onchange();" oninput="this.onchange();"/>
+				</form>
+				<ul id="symbolSearchResults" class="symbolList" style="display: none"></ul><script type="application/javascript" src="../../symbols.js"></script><script type="application/javascript">var symbolSearchRootDir = "../../";
+$('#symbolSearchPane').show();</script>
+			</div>
+			<ul class="tree-view">
+				<li class="tree-view ">
+					<div class="package ">
+						<a href="../../quantities.html">quantities</a>
+					</div>
+			<ul class="tree-view">
+				<li class="tree-view collapsed">
+					<div class="package ">internal
+					</div>
+			<ul class="tree-view">
+				<li>
+					<div class="module ">
+						<a href="../../quantities/internal/dimensions.html">dimensions</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/internal/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/compiletime.html">compiletime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module selected">
+						<a href="../../quantities/parsing.html">parsing</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/runtime.html">runtime</a>
+					</div>
+				</li>
+				<li>
+					<div class="module ">
+						<a href="../../quantities/si.html">si</a>
+					</div>
+				</li>
+			</ul>
+				</li>
+			</ul>
+		</nav>
+		<div id="main-contents">
+			<h1>Struct Parser</h1><p>A quantity parser.
+</p>
+			<div class="prototype">
+				<code class="lang-d">
+					<div class="single-prototype">
+			<span class="kwd">struct</span> <span class="typ">Parser</span>(N, alias numberParser)
+			<br/>
+			&nbsp;&nbsp;
+			<br/>
+			<span class="kwd">if</span> <span class="pun">(</span><span class="pln">isNumeric</span><span class="pun">!</span><span class="pln">N</span><span class="pun">);</span>
+					</div>
+				</code>
+			</div>
+			<section></section>
+
+			<section><h2>Fields</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Type</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/parsing/Parser.symbolList.html" class="public"><code>symbolList</code></a>
+						</td>
+						<td class="typecol"><code class="prettyprint lang-d"><a href="../../quantities/parsing/SymbolList.html"><span class="typ">SymbolList</span></a>!N</code></td><td>A list of registered symbols for units and prefixes.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Methods</h2>
+				<table>
+					<col class="caption"/>
+					<tr>
+						<th>Name</th><th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							<a href="../../quantities/parsing/Parser.parse.html" class="public">
+								<code>parse</code>
+							</a>
+						</td>
+						<td>Parses a QVariant from str.
+</td>
+					</tr>
+				</table>
+			</section>
+			<section><h2>Parameters</h2>
+<table><col class="caption"><tr><th>Name</th><th>Description</th></tr>
+<tr><td id="N">N</td><td> The numeric type of the quantities.</td></tr>
+<tr><td id="numberParser">numberParser</td><td> a function that takes a reference to any kind of string and
+        returns the parsed number.</td></tr>
+</table>
+</section>
+<section><h2>Example</h2>
+
+<pre class="code"><code class="lang-d"><span class="com">// From http://en.wikipedia.org/wiki/List_of_humorous_units_of_measurement
+
+</span><span class="kwd">import </span><span class="pln">std<wbr/></span><span class="pun">.</span><span class="pln">conv </span><span class="pun">: <a href="../../quantities/parsing/Parser.parse.html"></span><span class="pln">parse</span></a><span class="pun">;
+
+</span><span class="kwd">auto </span><span class="pln">century </span><span class="pun">= </span><span class="pln">unit</span><span class="pun">!</span><span class="typ">real</span><span class="pun">(</span><span class="str">"T"</span><span class="pun">);
+</span><span class="kwd">alias </span><span class="typ">LectureLength </span><span class="pun">= </span><span class="kwd">typeof</span><span class="pun">(</span><span class="pln">century</span><span class="pun">);
+
+</span><span class="kwd">auto <a href="../../quantities/parsing/Parser.symbolList.html"></span><span class="pln">symbolList</span></a><span class="pln"> </span><span class="pun">= <a href="../../quantities/parsing/SymbolList.html"></span><span class="typ">SymbolList</span></a><span class="pun">!</span><span class="typ">real</span><span class="pun">()<wbr/>.</span><span class="pln">addUnit</span><span class="pun">(</span><span class="str">"Cy"</span><span class="pun">, </span><span class="pln">century</span><span class="pun">)<wbr/>.</span><span class="pln">addPrefix</span><span class="pun">(</span><span class="str">"µ"</span><span class="pun">, </span><span class="lit">1e-6L</span><span class="pun">);
+</span><span class="kwd">alias </span><span class="pln">numberParser </span><span class="pun">= (</span><span class="kwd">ref </span><span class="pln">s</span><span class="pun">) =&gt; <a href="../../quantities/parsing/Parser.parse.html"></span><span class="pln">parse</span></a><span class="pun">!</span><span class="typ">real</span><span class="pun">(</span><span class="pln">s</span><span class="pun">);
+</span><span class="kwd">auto </span><span class="pln">parser </span><span class="pun">= </span><span class="typ">Parser</span><span class="pun">!(</span><span class="typ">real</span><span class="pun">, </span><span class="pln">numberParser</span><span class="pun">)(<a href="../../quantities/parsing/Parser.symbolList.html"></span><span class="pln">symbolList</span></a><span class="pun">);
+
+</span><span class="kwd">auto </span><span class="pln">timing </span><span class="pun">= </span><span class="lit">1e-6L </span><span class="pun">* </span><span class="pln">century</span><span class="pun">;
+</span><span class="kwd">assert</span><span class="pun">(</span><span class="pln">timing </span><span class="pun">== </span><span class="pln">parser<wbr/></span><span class="pun">.</span><span class="pln">parse</span><span class="pun">(</span><span class="str">"1 µCy"</span><span class="pun">));
+</span></code></pre>
+</section>
+
+			<footer>
+				<table class="license-info">
+					<tr>
+						<th>Authors</th>
+						<td>
+							<p>Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>Copyright</th>
+						<td>
+							<p>Copyright 2013-2018, Nicolas Sicard
+</p>
+
+						</td>
+					</tr>
+					<tr>
+						<th>License</th>
+						<td>
+							<p><a href="www.boost.org/LICENSE_1_0.txt, Boost License 1.0">www.boost.org/LICENSE_1_0.txt, Boost License 1.0</a>
+</p>
+
+						</td>
+					</tr>
+				</table>
+				<p class="faint">Generated using the DDOX documentation generator</p>
+			</footer>
+		</div>
+	</body>
+</html>
