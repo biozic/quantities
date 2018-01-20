@@ -479,11 +479,28 @@ public:
     }
 }
 
-/// Creates a new monodimensional unit as a Quantity.
-auto unit(N, string symbol, size_t rank = size_t.max)()
+/++
+Creates a new monodimensional unit as a Quantity.
+
+Params:
+    N = The numeric type of the value part of the quantity.
+
+    dimSymbol = The symbol of the dimension of this quantity.
+
+    rank = The rank of the dimensions of this quantity in the dimension vector,
+           when combining this quantity with other oned.
++/
+auto unit(N, string dimSymbol, size_t rank = size_t.max)()
 {
-    enum dims = Dimensions.mono(symbol, rank);
+    enum dims = Dimensions.mono(dimSymbol, rank);
     return Quantity!(N, dims).make(1);
+}
+///
+unittest
+{
+    enum meter = unit!(double, "L", 1);
+    enum kilogram = unit!(double, "M", 2);
+    // Dimensions will be in this order: L M
 }
 
 /// Tests whether T is a quantity type.
