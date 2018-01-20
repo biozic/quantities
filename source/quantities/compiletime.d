@@ -121,15 +121,14 @@ Params:
 See_Also:
     QVariant has the same public members and overloaded operators as Quantity.
 +/
-struct Quantity(N, alias unitSpec)
+struct Quantity(N, alias dims)
 {
     static assert(isNumeric!N);
-    static assert(isQVariant!(typeof(unitSpec)));
+    static assert(is(typeof(dims) : Dimensions));
     static assert(Quantity.sizeof == N.sizeof);
 
 private:
     N _value;
-    alias unit = unitSpec;
 
     // Creates a new quantity with non-empty dimensions
     static Quantity make(T)(T scalar)
@@ -140,17 +139,15 @@ private:
         return result;
     }
 
-    mixin template checkDim(alias u)
+    void ensureSameDim(const Dimensions d)() const
     {
-        static if (unit.dimensions != u.dimensions)
-            static assert(false,
-                    "Dimension error: %s is not consistent with %s".format(unit.dimensions,
-                        u.dimensions));
+        static assert(dimensions == d,
+                "Dimension error: %s is not consistent with %s".format(dimensions, d));
     }
 
-    mixin template checkDimensionless(alias u)
+    void ensureEmpty(const Dimensions d)() const
     {
-        static assert(u.isDimensionless, "Dimension error: %s instead of no dimensions");
+        static assert(d.empty, "Dimension error: %s instead of no dimensions".format(d));
     }
 
 package(quantities):
@@ -172,7 +169,7 @@ public:
     this(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         _value = qty._value;
     }
 
@@ -182,25 +179,25 @@ public:
     {
         import std.exception;
 
-        enforce(unit.dimensions == qty.dimensions,
-                new DimensionException("Incompatible dimensions", unit.dimensions, qty.dimensions));
+        enforce(dimensions == qty.dimensions,
+                new DimensionException("Incompatible dimensions", dimensions, qty.dimensions));
         _value = qty.rawValue;
     }
 
     /// Creates a new dimensionless quantity from a number
     this(T)(T scalar)
-            if (isNumeric!T && unit.isDimensionless)
+            if (isNumeric!T && isDimensionless)
     {
         _value = scalar;
     }
 
-    /// Returns the dimensions of the quantity
-    enum dimensions = unit.dimensions;
+    /// The dimensions of the quantity
+    enum dimensions = dims;
 
     /++
     Implicitly convert a dimensionless value to the value type.
     +/
-    static if (unit.isDimensionless)
+    static if (isDimensionless)
     {
         N get() const
         {
@@ -220,7 +217,7 @@ public:
     N value(Q)(auto ref const Q target) const 
             if (isQuantity!Q)
     {
-        mixin checkDim!(Q.unit);
+        mixin ensureSameDim!(Q.dimensions);
         return _value / target._value;
     }
 
@@ -230,36 +227,23 @@ public:
     {
         import std.exception;
 
-        enforce(unit.dimensions == target.dimensions,
-                new DimensionException("Incompatible dimensions",
-                    unit.dimensions, target.dimensions));
+        enforce(dimensions == target.dimensions,
+                new DimensionException("Incompatible dimensions", dimensions, target.dimensions));
         return _value / target.rawValue;
     }
 
     /++
     Test whether this quantity is dimensionless
     +/
-    enum bool isDimensionless = unit.isDimensionless;
+    enum bool isDimensionless = dimensions.length == 0;
 
     /++
     Tests wheter this quantity has the same dimensions as another one.
-
-    If Q is a QVariant, throws a DimensionException if the parsed quantity
-    doesn't have the same dimensions as Q. If Q is a Quantity, inconsistent
-    dimensions produce a compilation error.
     +/
     bool isConsistentWith(Q)(auto ref const Q qty) const 
-            if (isQuantity!Q)
+            if (isQVariantOrQuantity!Q)
     {
-        enum yesOrNo = unit.isConsistentWith(Q.unit);
-        return yesOrNo;
-    }
-
-    /// ditto
-    bool isConsistentWith(Q)(auto ref const Q qty) const 
-            if (isQVariant!Q)
-    {
-        return unit.dimensions == qty.dimensions;
+        return dimensions == qty.dimensions;
     }
 
     /++
@@ -276,7 +260,7 @@ public:
     The cast operation will throw DimensionException if the quantity is not
     dimensionless.
     +/
-    static if (unit.isDimensionless)
+    static if (isDimensionless)
     {
         T opCast(T)() const 
                 if (isNumeric!T)
@@ -290,7 +274,7 @@ public:
     ref Quantity opAssign(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         _value = qty._value;
         return this;
     }
@@ -301,8 +285,8 @@ public:
     {
         import std.exception;
 
-        enforce(unit.dimensions == qty.dimensions,
-                new DimensionException("Incompatible dimensions", unit.dimensions, qty.dimensions));
+        enforce(dimensions == qty.dimensions,
+                new DimensionException("Incompatible dimensions", dimensions, qty.dimensions));
         _value = qty.rawValue;
         return this;
     }
@@ -312,7 +296,7 @@ public:
     ref Quantity opAssign(T)(T scalar)
             if (isNumeric!T)
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         _value = scalar;
         return this;
     }
@@ -339,7 +323,7 @@ public:
     Quantity opBinary(string op, Q)(auto ref const Q qty) const 
             if (isQuantity!Q && (op == "+" || op == "-"))
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         return Quantity.make(mixin("_value" ~ op ~ "qty._value"));
     }
 
@@ -348,7 +332,7 @@ public:
     Quantity opBinary(string op, T)(T scalar) const 
             if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         return Quantity.make(mixin("_value" ~ op ~ "scalar"));
     }
 
@@ -356,7 +340,7 @@ public:
     Quantity opBinaryRight(string op, T)(T scalar) const 
             if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         return Quantity.make(mixin("scalar" ~ op ~ "_value"));
     }
 
@@ -379,7 +363,7 @@ public:
     auto opBinaryRight(string op, T)(T scalar) const 
             if (isNumeric!T && (op == "/" || op == "%"))
     {
-        alias RQ = Quantity!(N, 1 / unit);
+        alias RQ = Quantity!(N, dimensions.inverted());
         return RQ.make(mixin("scalar" ~ op ~ "_value"));
     }
 
@@ -388,7 +372,7 @@ public:
     auto opBinary(string op, Q)(auto ref const Q qty) const 
             if (isQuantity!Q && (op == "*" || op == "/"))
     {
-        alias RQ = Quantity!(N, mixin("unit" ~ op ~ "Q.unit"));
+        alias RQ = Quantity!(N, mixin("dimensions" ~ op ~ "Q.dimensions"));
         return RQ.make(mixin("_value" ~ op ~ "qty._value"));
     }
 
@@ -396,7 +380,7 @@ public:
     Quantity opBinary(string op, Q)(auto ref const Q qty) const 
             if (isQuantity!Q && (op == "%"))
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         return Quantity.make(mixin("_value" ~ op ~ "qty._value"));
     }
 
@@ -405,7 +389,7 @@ public:
     void opOpAssign(string op, Q)(auto ref const Q qty)
             if (isQuantity!Q && (op == "+" || op == "-"))
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         mixin("_value " ~ op ~ "= qty._value;");
     }
 
@@ -414,7 +398,7 @@ public:
     void opOpAssign(string op, T)(T scalar)
             if (isNumeric!T && (op == "+" || op == "-"))
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         mixin("_value " ~ op ~ "= scalar;");
     }
 
@@ -423,7 +407,7 @@ public:
     void opOpAssign(string op, Q)(auto ref const Q qty)
             if (isQuantity!Q && (op == "*" || op == "/" || op == "%"))
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         mixin("_value" ~ op ~ "= qty._value;");
     }
 
@@ -439,7 +423,7 @@ public:
     void opOpAssign(string op, T)(T scalar)
             if (isNumeric!T && op == "%")
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         mixin("_value" ~ op ~ "= scalar;");
     }
 
@@ -448,7 +432,7 @@ public:
     bool opEquals(Q)(auto ref const Q qty) const 
             if (isQuantity!Q)
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         return _value == qty._value;
     }
 
@@ -457,7 +441,7 @@ public:
     bool opEquals(T)(T scalar) const 
             if (isNumeric!T)
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         return _value == scalar;
     }
 
@@ -466,7 +450,7 @@ public:
     int opCmp(Q)(auto ref const Q qty) const 
             if (isQuantity!Q)
     {
-        mixin checkDim!(Q.unit);
+        ensureSameDim!(Q.dimensions);
         if (_value == qty._value)
             return 0;
         if (_value < qty._value)
@@ -479,7 +463,7 @@ public:
     int opCmp(T)(T scalar) const 
             if (isNumeric!T)
     {
-        mixin checkDimensionless!unit;
+        ensureEmpty!dimensions;
         if (_value < scalar)
             return -1;
         if (_value > scalar)
@@ -491,17 +475,32 @@ public:
     {
         sink.formatValue(_value, fmt);
         sink(" ");
-        sink.formattedWrite!"%s"(unit.dimensions);
+        sink.formattedWrite!"%s"(dimensions);
     }
 }
 
-/// Creates a new monodimensional unit as a Quantity.
-auto unit(N, string symbol)()
-{
-    import quantities.runtime;
+/++
+Creates a new monodimensional unit as a Quantity.
 
-    enum u = quantities.runtime.unit!N(symbol);
-    return Quantity!(N, u).make(1);
+Params:
+    N = The numeric type of the value part of the quantity.
+
+    dimSymbol = The symbol of the dimension of this quantity.
+
+    rank = The rank of the dimensions of this quantity in the dimension vector,
+           when combining this quantity with other oned.
++/
+auto unit(N, string dimSymbol, size_t rank = size_t.max)()
+{
+    enum dims = Dimensions.mono(dimSymbol, rank);
+    return Quantity!(N, dims).make(1);
+}
+///
+unittest
+{
+    enum meter = unit!(double, "L", 1);
+    enum kilogram = unit!(double, "M", 2);
+    // Dimensions will be in this order: L M
 }
 
 /// Tests whether T is a quantity type.
@@ -520,48 +519,43 @@ template isQuantity(T)
 auto square(Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.pow(2)); }();
-    return Quantity!(Q.valueType, u).make(quantity._value ^^ 2);
+    return Quantity!(Q.valueType, Q.dimensions.pow(2)).make(quantity._value ^^ 2);
 }
 
 /// ditto
 auto sqrt(Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.powinverse(2)); }();
-    return Quantity!(Q.valueType, u).make(std.math.sqrt(quantity._value));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(2)).make(std.math.sqrt(quantity._value));
 }
 
 /// ditto
 auto cubic(Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.pow(3)); }();
-    return Quantity!(Q.valueType, u).make(quantity._value ^^ 3);
+    return Quantity!(Q.valueType, Q.dimensions.pow(3)).make(quantity._value ^^ 3);
 }
 
 /// ditto
 auto cbrt(Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.powinverse(3)); }();
-    return Quantity!(Q.valueType, u).make(std.math.cbrt(quantity._value));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(3)).make(std.math.cbrt(quantity._value));
 }
 
 /// ditto
 auto pow(int n, Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.pow(n)); }();
-    return Quantity!(Q.valueType, u).make(std.math.pow(quantity._value, n));
+    return Quantity!(Q.valueType, Q.dimensions.pow(n)).make(std.math.pow(quantity._value, n));
 }
 
 /// ditto
 auto nthRoot(int n, Q)(auto ref const Q quantity)
         if (isQuantity!Q)
 {
-    enum u = { return QVariant!(Q.valueType)(1, Q.dimensions.powinverse(n)); }();
-    return Quantity!(Q.valueType, u).make(std.math.pow(quantity._value, 1.0 / n));
+    return Quantity!(Q.valueType, Q.dimensions.powinverse(n)).make(
+            std.math.pow(quantity._value, 1.0 / n));
 }
 
 /// ditto

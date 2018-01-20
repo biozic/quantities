@@ -21,6 +21,9 @@ Copyright 2013-2018, Nicolas Sicard.
 
 License: Boost License 1.0.
 
+### Online documentation
+
+Check online documentation [here](https://biozic.github.io/quantities/quantities.html).
 
 ### Design rationale
 
@@ -156,6 +159,6 @@ assert(siFormat("%.3f s", time) == "1.282 s");
 ```
 
 See more complete examples [at run
-time](https://github.com/biozic/quantities/blob/master/source/quantities/runtime.d#L13)
+time](https://biozic.github.io/quantities/quantities/runtime.html)
 and [at compile
-time](https://github.com/biozic/quantities/blob/master/source/quantities/compiletime.d#L12).
+time](https://biozic.github.io/quantities/quantities/compiletime.html).

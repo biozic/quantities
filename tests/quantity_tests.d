@@ -14,7 +14,7 @@ alias Time = typeof(second);
 alias Angle = typeof(radian);
 
 @("this()")
-@safe unittest
+@safe pure nothrow unittest
 {
     auto distance = Length(meter);
     auto angle = Angle(3.14);
@@ -24,42 +24,42 @@ alias Angle = typeof(radian);
 }
 
 @("get/alias this for dimensionless values")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     double scalar = radian;
     assert(scalar == 1);
 }
 
 @("value(Q)")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto distance = meter;
     assert(distance.value(meter) == 1);
 }
 
 @("isDimensionless")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     assert(!meter.isDimensionless);
     assert(radian.isDimensionless);
 }
 
 @("isConsistentWith")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     assert(meter.isConsistentWith(meter));
     assert(!meter.isConsistentWith(second));
 }
 
 @("opCast")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto value = cast(double) radian;
     assert(!__traits(compiles, cast(double) meter));
 }
 
 @("opAssign Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     Length l1, l2;
     l1 = l2 = meter;
@@ -68,14 +68,14 @@ alias Angle = typeof(radian);
 }
 
 @("opAssign T")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     Angle angle;
     angle = 1;
 }
 
 @("opUnary + -")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto plus = +meter;
     assert(plus.value(meter) == 1);
@@ -84,7 +84,7 @@ alias Angle = typeof(radian);
 }
 
 @("opUnary ++ --")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto len = meter;
     ++len;
@@ -98,7 +98,7 @@ alias Angle = typeof(radian);
 }
 
 @("opBinary Q+Q Q-Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto plus = meter + meter;
     assert(plus.value(meter) == 2);
@@ -110,7 +110,7 @@ alias Angle = typeof(radian);
 }
 
 @("opBinary Q+N N+Q Q-N N-Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto a1 = radian + 10;
     assert(a1.value(radian).approxEqual(11));
@@ -129,7 +129,7 @@ alias Angle = typeof(radian);
 }
 
 @("opBinary Q*N, N*Q, Q/N, N/Q, Q%N, N%Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto m1 = meter * 10;
     assert(m1.value(meter).approxEqual(10));
@@ -147,7 +147,7 @@ alias Angle = typeof(radian);
 }
 
 @("opBinary Q*Q, Q/Q, Q%Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto surface = (10 * meter) * (10 * meter);
     assert(surface.value(meter * meter).approxEqual(100));
@@ -165,13 +165,13 @@ alias Angle = typeof(radian);
 }
 
 @("opBinary Q^^I Q^^R")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     // Operator ^^ is not available for Quantity
 }
 
 @("opOpAssign Q+=Q Q-=Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto time = 10 * second;
     time += 50 * second;
@@ -181,7 +181,7 @@ alias Angle = typeof(radian);
 }
 
 @("opOpAssign Q*=N Q/=N Q%=N")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto time = 20 * second;
     time *= 2;
@@ -201,7 +201,7 @@ alias Angle = typeof(radian);
 }
 
 @("opOpAssign Q*=Q Q/=Q Q%=Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto angle = 50 * radian;
     angle *= 2 * radian;
@@ -218,7 +218,7 @@ alias Angle = typeof(radian);
 }
 
 @("opEquals Q==Q Q==N")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto minute = 60 * second;
     assert(minute == 60 * second);
@@ -229,7 +229,7 @@ alias Angle = typeof(radian);
 }
 
 @("opCmp Q<Q")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto minute = 60 * second;
     auto hour = 60 * minute;
@@ -242,7 +242,7 @@ alias Angle = typeof(radian);
 }
 
 @("opCmp Q<N")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     auto angle = 2 * radian;
     assert(angle < 4);
@@ -263,7 +263,7 @@ unittest
 }
 
 @("immutable")
-@safe pure unittest
+@safe pure nothrow unittest
 {
     immutable inch = 0.0254 * meter;
     immutable minute = 60 * second;
@@ -271,7 +271,7 @@ unittest
 }
 
 @("square/sqrt")
-@safe unittest
+@safe nothrow unittest
 {
     auto m2 = square(3 * meter);
     assert(m2.value(meter * meter).approxEqual(9));
@@ -280,7 +280,7 @@ unittest
 }
 
 @("cubic/cbrt")
-@safe unittest
+@safe nothrow unittest
 {
     auto m3 = cubic(2 * meter);
     assert(m3.value(meter * meter * meter).approxEqual(8));
@@ -291,7 +291,7 @@ unittest
 }
 
 @("pow/nthRoot")
-@safe unittest
+@safe nothrow unittest
 {
     auto m5 = pow!5(2 * meter);
     assert(m5.value(meter * meter * meter * meter * meter).approxEqual(2 ^^ 5));
@@ -301,12 +301,10 @@ unittest
 }
 
 @("abs")
-@safe unittest
+@safe nothrow unittest
 {
     assert(abs(-meter) == meter);
 }
-
-// TODO: test generic parsing
 
 @("parseSI string")
 unittest

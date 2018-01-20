@@ -202,26 +202,40 @@ struct Dim
 {
     string symbol; /// The symbol of the dimension
     Rational power; /// The power of the dimension
+    size_t rank = size_t.max; /// The rank of the dimension in the vector
 
-    this(string symbol, Rational power) @safe pure nothrow
+    this(string symbol, Rational power, size_t rank = size_t.max) @safe pure nothrow
     {
         this.symbol = symbol;
         this.power = power;
+        this.rank = rank;
     }
 
-    this(string symbol, int power) @safe pure nothrow
+    this(string symbol, int power, size_t rank = size_t.max) @safe pure nothrow
     {
-        this(symbol, Rational(power));
+        this(symbol, Rational(power), rank);
     }
 
     int opCmp(Dim other) @safe pure nothrow const
     {
-        if (symbol < other.symbol)
-            return -1;
-        else if (symbol > other.symbol)
-            return 1;
+        if (rank == other.rank)
+        {
+            if (symbol < other.symbol)
+                return -1;
+            else if (symbol > other.symbol)
+                return 1;
+            else
+                return 0;
+        }
         else
-            return 0;
+        {
+            if (rank < other.rank)
+                return -1;
+            else if (rank > other.rank)
+                return 1;
+            else
+                assert(false);
+        }
     }
 
     ///
@@ -248,7 +262,7 @@ private immutable(Dim)[] inverted(immutable(Dim)[] source) @safe pure nothrow
     return target.immut;
 }
 
-private void insertAndSort(ref Dim[] list, string symbol, Rational power) @safe pure nothrow
+private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure nothrow
 {
     auto pos = list.countUntil!(d => d.symbol == symbol)();
     if (pos >= 0)
@@ -270,12 +284,13 @@ private void insertAndSort(ref Dim[] list, string symbol, Rational power) @safe 
     else
     {
         // Insert the new dimension
-        pos = list.countUntil!(d => d.symbol > symbol)();
+        auto dim = Dim(symbol, power, rank);
+        pos = list.countUntil!(d => d > dim);
         if (pos < 0)
             pos = list.length;
-        list.insertInPlace(pos, Dim(symbol, power));
+        list.insertInPlace(pos, dim);
     }
-    //assert(list.isSorted);
+    assert(list.isSorted);
 }
 
 private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
@@ -286,16 +301,17 @@ private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
         return source.assumeUnique;
 }
 
-private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol, Rational power) @safe pure nothrow
+private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
+        Rational power, size_t rank) @safe pure nothrow
 {
     if (power == 0)
         return source;
 
     if (!source.length)
-        return [Dim(symbol, power)].immut;
+        return [Dim(symbol, power, rank)].immut;
 
     Dim[] list = source.dup;
-    insertAndSort(list, symbol, power);
+    insertAndSort(list, symbol, power, rank);
     return list.immut;
 }
 
@@ -303,7 +319,7 @@ private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] 
 {
     Dim[] list = source.dup;
     foreach (dim; other)
-        insertAndSort(list, dim.symbol, dim.power);
+        insertAndSort(list, dim.symbol, dim.power, dim.rank);
     return list.immut;
 }
 
@@ -314,11 +330,11 @@ private:
     immutable(Dim)[] _dims;
 
 package(quantities):
-    static Dimensions mono(string symbol) @safe pure nothrow
+    static Dimensions mono(string symbol, size_t rank) @safe pure nothrow
     {
         if (!symbol.length)
             return Dimensions(null);
-        return Dimensions([Dim(symbol, 1)].immut);
+        return Dimensions([Dim(symbol, 1, rank)].immut);
     }
 
 public:
@@ -340,6 +356,16 @@ public:
     }
 
     alias dims this;
+
+    bool empty() @safe pure nothrow const
+    {
+        return _dims.empty;
+    }
+
+    Dimensions inverted() @safe pure nothrow const
+    {
+        return Dimensions(_dims.inverted);
+    }
 
     Dimensions opUnary(string op)() @safe pure nothrow const 
             if (op == "~")
@@ -440,12 +466,17 @@ unittest
 @safe pure nothrow unittest
 {
     Dim[] list;
-    list.insertAndSort("A", Rational(1));
-    assert(list == [Dim("A", 1)]);
-    list.insertAndSort("A", Rational(1));
-    assert(list == [Dim("A", 2)]);
-    list.insertAndSort("A", Rational(-2));
+    list.insertAndSort("A", Rational(1), 1);
+    assert(list == [Dim("A", 1, 1)]);
+    list.insertAndSort("A", Rational(1), 1);
+    assert(list == [Dim("A", 2, 1)]);
+    list.insertAndSort("A", Rational(-2), 1);
     assert(list.length == 0);
+    list.insertAndSort("B", Rational(1), 3);
+    assert(list == [Dim("B", 1, 3)]);
+    list.insertAndSort("C", Rational(1), 1);
+    assert(Dim("C", 1, 1) < Dim("B", 1, 3));
+    assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
 }
 
 @("Dimensions *")

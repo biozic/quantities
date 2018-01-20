@@ -529,10 +529,27 @@ public:
     }
 }
 
-/// Creates a new monodimensional unit as a QVariant
-QVariant!N unit(N)(string symbol)
+/++
+Creates a new monodimensional unit as a QVariant.
+
+Params:
+    N = The numeric type of the value part of the quantity.
+
+    dimSymbol = The symbol of the dimension of this quantity.
+
+    rank = The rank of the dimensions of this quantity in the dimension vector,
+           when combining this quantity with other oned.
++/
+QVariant!N unit(N)(string dimSymbol, size_t rank = size_t.max)
 {
-    return QVariant!N(N(1), Dimensions.mono(symbol));
+    return QVariant!N(N(1), Dimensions.mono(dimSymbol, rank));
+}
+///
+unittest
+{
+    enum meter = unit!double("L", 1);
+    enum kilogram = unit!double("M", 2);
+    // Dimensions will be in this order: L M
 }
 
 // Tests whether T is a quantity type
@@ -565,28 +582,28 @@ auto qVariant(N)(N scalar)
 auto square(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(quantity._value ^^ 2, quantity._dimensions.pow(Rational(2)));
+    return Q(quantity._value ^^ 2, quantity._dimensions.pow(2));
 }
 
 /// ditto
 auto sqrt(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(std.math.sqrt(quantity._value), quantity._dimensions.powinverse(Rational(2)));
+    return Q(std.math.sqrt(quantity._value), quantity._dimensions.powinverse(2));
 }
 
 /// ditto
 auto cubic(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(quantity._value ^^ 3, quantity._dimensions.pow(Rational(3)));
+    return Q(quantity._value ^^ 3, quantity._dimensions.pow(3));
 }
 
 /// ditto
 auto cbrt(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(std.math.cbrt(quantity._value), quantity._dimensions.powinverse(Rational(3)));
+    return Q(std.math.cbrt(quantity._value), quantity._dimensions.powinverse(3));
 }
 
 /// ditto
