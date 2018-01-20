@@ -565,28 +565,28 @@ auto qVariant(N)(N scalar)
 auto square(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(quantity._value ^^ 2, quantity._dimensions.pow(Rational(2)));
+    return Q(quantity._value ^^ 2, quantity._dimensions.pow(2));
 }
 
 /// ditto
 auto sqrt(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(std.math.sqrt(quantity._value), quantity._dimensions.powinverse(Rational(2)));
+    return Q(std.math.sqrt(quantity._value), quantity._dimensions.powinverse(2));
 }
 
 /// ditto
 auto cubic(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(quantity._value ^^ 3, quantity._dimensions.pow(Rational(3)));
+    return Q(quantity._value ^^ 3, quantity._dimensions.pow(3));
 }
 
 /// ditto
 auto cbrt(Q)(auto ref const Q quantity)
         if (isQVariant!Q)
 {
-    return Q(std.math.cbrt(quantity._value), quantity._dimensions.powinverse(Rational(3)));
+    return Q(std.math.cbrt(quantity._value), quantity._dimensions.powinverse(3));
 }
 
 /// ditto

@@ -357,6 +357,16 @@ public:
 
     alias dims this;
 
+    bool empty() @safe pure nothrow const
+    {
+        return _dims.empty;
+    }
+
+    Dimensions inverted() @safe pure nothrow const
+    {
+        return Dimensions(_dims.inverted);
+    }
+
     Dimensions opUnary(string op)() @safe pure nothrow const 
             if (op == "~")
     {

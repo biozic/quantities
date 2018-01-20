@@ -254,8 +254,7 @@ mixin template SIDefinitions(N)
     {
         enum ctSIParser = Parser!(N, (ref s) => parse!N(s))(siSymbolList);
         enum qty = ctSIParser.parse(str);
-        enum spec = QVariant!N(1, qty.dimensions);
-        enum si = Quantity!(N, spec)(qty);
+        enum si = Quantity!(N, qty.dimensions())(qty);
     }
     ///
     unittest
