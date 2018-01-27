@@ -11,7 +11,6 @@ module quantities.parsing;
 import quantities.internal.dimensions;
 import quantities.runtime;
 import quantities.compiletime;
-import pegged.grammar;
 import std.conv : parse;
 import std.exception : basicExceptionCtors, enforceEx;
 import std.format : format;
