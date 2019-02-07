@@ -12,7 +12,7 @@ import quantities.internal.dimensions;
 import quantities.runtime;
 import quantities.compiletime;
 import std.conv : parse;
-import std.exception : basicExceptionCtors, enforceEx;
+import std.exception : basicExceptionCtors, enforce;
 import std.format : format;
 import std.traits : isNumeric, isSomeString;
 
@@ -127,7 +127,7 @@ struct QuantityParser(N, S)
         if (isNumeric!N && isSomeString!S)
 {
     import std.conv : to;
-    import std.exception : enforceEx;
+    import std.exception : enforce;
     import std.format : format;
     import std.range.primitives : empty, front, popFront;
 
@@ -270,7 +270,7 @@ struct QuantityParser(N, S)
                 if (factor)
                 {
                     string unit = str[i .. $].to!string;
-                    enforceEx!ParsingException(unit.length,
+                    enforce!ParsingException(unit.length,
                             "Expecting a unit after the prefix " ~ prefix);
                     uptr = unit in symbolList.units;
                     if (uptr)
@@ -486,7 +486,7 @@ struct QuantityParser(N, S)
 
     void advance(Types...)(Types types)
     {
-        enforceEx!ParsingException(!tokens.empty, "Unexpected end of input");
+        enforce!ParsingException(!tokens.empty, "Unexpected end of input");
         tokens.popFront();
 
         static if (Types.length)
@@ -495,13 +495,13 @@ struct QuantityParser(N, S)
 
     void check()
     {
-        enforceEx!ParsingException(tokens.length, "Unexpected end of input");
+        enforce!ParsingException(tokens.length, "Unexpected end of input");
     }
 
     void check(Tok tok)
     {
         check();
-        enforceEx!ParsingException(tokens[0].type == tok,
+        enforce!ParsingException(tokens[0].type == tok,
                 format("Found '%s' while expecting %s", input[tokens[0].begin .. tokens[0].end],
                     tok));
     }
@@ -509,7 +509,7 @@ struct QuantityParser(N, S)
     void check(Tok tok1, Tok tok2)
     {
         check();
-        enforceEx!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
+        enforce!ParsingException(tokens[0].type == tok1 || tokens[0].type == tok2,
                 format("Found '%s' while expecting %s or %s",
                     input[tokens[0].begin .. tokens[0].end], tok1, tok2));
     }
