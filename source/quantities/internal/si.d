@@ -16,8 +16,9 @@ Generates SI units, prefixes and several utility functions
 +/
 mixin template SIDefinitions(N)
 {
+    import quantities.common : prefix;
     import quantities.compiletime : Quantity, isQuantity, unit, square, cubic;
-    import quantities.runtime : QVariant, isQVariantOrQuantity, prefix;
+    import quantities.runtime : QVariant, isQVariantOrQuantity;
     import quantities.parsing : SymbolList, Parser;
     import std.conv : parse;
     import std.math : PI;
