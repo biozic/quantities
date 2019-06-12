@@ -184,8 +184,6 @@ public:
     this(Q)(auto ref const Q qty)
             if (isQuantity!Q)
     {
-        import quantities.compiletime : qVariant;
-
         this = qty.qVariant;
     }
 
