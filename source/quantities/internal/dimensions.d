@@ -262,7 +262,7 @@ private immutable(Dim)[] inverted(immutable(Dim)[] source) @safe pure nothrow
     return target.immut;
 }
 
-private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure nothrow
+private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure
 {
     auto pos = list.countUntil!(d => d.symbol == symbol)();
     if (pos >= 0)
@@ -302,7 +302,7 @@ private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
 }
 
 private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
-        Rational power, size_t rank) @safe pure nothrow
+        Rational power, size_t rank) @safe pure
 {
     if (power == 0)
         return source;
@@ -314,8 +314,7 @@ private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
     insertAndSort(list, symbol, power, rank);
     return list.immut;
 }
-
-private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] other) @safe pure nothrow
+private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] other) @safe pure
 {
     Dim[] list = source.dup;
     foreach (dim; other)
@@ -372,19 +371,17 @@ public:
     {
         return Dimensions(_dims.inverted);
     }
-
-    Dimensions opBinary(string op)(const Dimensions other) @safe pure nothrow const 
+    Dimensions opBinary(string op)(const Dimensions other) @safe pure const 
             if (op == "*")
     {
         return Dimensions(_dims.insertSorted(other._dims));
     }
 
-    Dimensions opBinary(string op)(const Dimensions other) @safe pure nothrow const 
+    Dimensions opBinary(string op)(const Dimensions other) @safe pure const 
             if (op == "/")
     {
         return Dimensions(_dims.insertSorted(other._dims.inverted));
     }
-
     Dimensions pow(Rational n) @safe pure nothrow const
     {
         if (n == 0)
@@ -461,9 +458,8 @@ unittest
     auto inv = [Dim("A", -2), Dim("B", 2)].idup;
     assert(list.inverted == inv);
 }
-
 @("Dim[].insertAndSort")
-@safe pure nothrow unittest
+@safe pure unittest
 {
     Dim[] list;
     list.insertAndSort("A", Rational(1), 1);
@@ -480,21 +476,19 @@ unittest
 }
 
 @("Dimensions *")
-@safe pure nothrow unittest
+@safe pure unittest
 {
     auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
     auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
     assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
 }
-
 @("Dimensions /")
-@safe pure nothrow unittest
+@safe pure unittest
 {
     auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
     auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
     assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
 }
-
 @("Dimensions pow")
 @safe pure nothrow unittest
 {
