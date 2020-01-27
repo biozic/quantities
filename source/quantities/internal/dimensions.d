@@ -535,73 +535,73 @@ unittest
     auto inv = [Dim("A", -2), Dim("B", 2)].idup;
     assert(list.inverted == inv);
 }
-version(LDC) // if you have a problem with this, take it up with LDC for having a non-nothrow impl of insertSorted
+version(LDC) // TEMPORARY, I HOPE HOPE HOPE
 {
-@("Dim[].insertAndSort")
-@safe pure unittest
-{
-    Dim[] list;
-    list.insertAndSort("A", Rational(1), 1);
-    assert(list == [Dim("A", 1, 1)]);
-    list.insertAndSort("A", Rational(1), 1);
-    assert(list == [Dim("A", 2, 1)]);
-    list.insertAndSort("A", Rational(-2), 1);
-    assert(list.length == 0);
-    list.insertAndSort("B", Rational(1), 3);
-    assert(list == [Dim("B", 1, 3)]);
-    list.insertAndSort("C", Rational(1), 1);
-    assert(Dim("C", 1, 1) < Dim("B", 1, 3));
-    assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
-}
+    @("Dim[].insertAndSort")
+    @safe pure unittest
+    {
+        Dim[] list;
+        list.insertAndSort("A", Rational(1), 1);
+        assert(list == [Dim("A", 1, 1)]);
+        list.insertAndSort("A", Rational(1), 1);
+        assert(list == [Dim("A", 2, 1)]);
+        list.insertAndSort("A", Rational(-2), 1);
+        assert(list.length == 0);
+        list.insertAndSort("B", Rational(1), 3);
+        assert(list == [Dim("B", 1, 3)]);
+        list.insertAndSort("C", Rational(1), 1);
+        assert(Dim("C", 1, 1) < Dim("B", 1, 3));
+        assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
+    }
 
-@("Dimensions *")
-@safe pure unittest
-{
-    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-    auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
-    assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
-}
-@("Dimensions /")
-@safe pure unittest
-{
-    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-    auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
-    assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
-}
+    @("Dimensions *")
+    @safe pure unittest
+    {
+        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+        auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
+        assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
+    }
+    @("Dimensions /")
+    @safe pure unittest
+    {
+        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+        auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
+        assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
+    }
 }
 else
 {
-@("Dim[].insertAndSort")
-@safe pure nothrow unittest
-{
-    Dim[] list;
-    list.insertAndSort("A", Rational(1), 1);
-    assert(list == [Dim("A", 1, 1)]);
-    list.insertAndSort("A", Rational(1), 1);
-    assert(list == [Dim("A", 2, 1)]);
-    list.insertAndSort("A", Rational(-2), 1);
-    assert(list.length == 0);
-    list.insertAndSort("B", Rational(1), 3);
-    assert(list == [Dim("B", 1, 3)]);
-    list.insertAndSort("C", Rational(1), 1);
-    assert(Dim("C", 1, 1) < Dim("B", 1, 3));
-    assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
-}
+    @("Dim[].insertAndSort")
+    @safe pure nothrow unittest
+    {
+        Dim[] list;
+        list.insertAndSort("A", Rational(1), 1);
+        assert(list == [Dim("A", 1, 1)]);
+        list.insertAndSort("A", Rational(1), 1);
+        assert(list == [Dim("A", 2, 1)]);
+        list.insertAndSort("A", Rational(-2), 1);
+        assert(list.length == 0);
+        list.insertAndSort("B", Rational(1), 3);
+        assert(list == [Dim("B", 1, 3)]);
+        list.insertAndSort("C", Rational(1), 1);
+        assert(Dim("C", 1, 1) < Dim("B", 1, 3));
+        assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
+    }
 
-@("Dimensions *")
-@safe pure nothrow unittest
-{
-    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-    auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
-    assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
-}
-@("Dimensions /")
-@safe pure nothrow unittest
-{
-    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
-    auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
-    assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
-}
+    @("Dimensions *")
+    @safe pure nothrow unittest
+    {
+        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+        auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
+        assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
+    }
+    @("Dimensions /")
+    @safe pure nothrow unittest
+    {
+        auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+        auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
+        assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
+    }
 }
 @("Dimensions pow")
 @safe pure nothrow unittest
