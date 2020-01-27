@@ -145,7 +145,28 @@ alias Angle = typeof(radian);
     auto m6 = 10 % (2 * radian);
     assert(m6.value(radian).approxEqual(0));
 }
+version(LDC)
+{
+@("opBinary Q*Q, Q/Q, Q%Q")
+@safe pure unittest
+{
+    auto surface = (10 * meter) * (10 * meter);
+    assert(surface.value(meter * meter).approxEqual(100));
+    assert(surface.dimensions == meter.dimensions.pow(2));
 
+    auto speed = (10 * meter) / (5 * second);
+    assert(speed.value(meter / second).approxEqual(2));
+    assert(speed.dimensions == meter.dimensions / second.dimensions);
+
+    auto surfaceMod10 = surface % (10 * meter * meter);
+    assert(surfaceMod10.value(meter * meter).approxEqual(0));
+    assert(surfaceMod10.dimensions == surface.dimensions);
+
+    assert(!__traits(compiles, meter % second));
+}
+}
+else
+{
 @("opBinary Q*Q, Q/Q, Q%Q")
 @safe pure nothrow unittest
 {
@@ -163,7 +184,7 @@ alias Angle = typeof(radian);
 
     assert(!__traits(compiles, meter % second));
 }
-
+}
 @("opBinary Q^^I Q^^R")
 @safe pure nothrow unittest
 {

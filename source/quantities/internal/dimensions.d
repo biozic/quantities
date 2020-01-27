@@ -262,37 +262,72 @@ private immutable(Dim)[] inverted(immutable(Dim)[] source) @safe pure nothrow
     return target.immut;
 }
 
-private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure nothrow
+version(LDC) // basic conditional compilation hack cause LDC's impl of insertInPlace is not nothrow
 {
-    auto pos = list.countUntil!(d => d.symbol == symbol)();
-    if (pos >= 0)
+    private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure
     {
-        // Merge the dimensions
-        list[pos].power += power;
-        if (list[pos].power == 0)
+        auto pos = list.countUntil!(d => d.symbol == symbol)();
+        if (pos >= 0)
         {
-            try
-                list = list.remove(pos);
-            catch (Exception) // remove only throws when it has multiple arguments
-                assert(false);
+            // Merge the dimensions
+            list[pos].power += power;
+            if (list[pos].power == 0)
+            {
+                try
+                    list = list.remove(pos);
+                catch (Exception) // remove only throws when it has multiple arguments
+                    assert(false);
 
-            // Necessary to compare dimensionless values
-            if (!list.length)
-                list = null;
+                // Necessary to compare dimensionless values
+                if (!list.length)
+                    list = null;
+            }
         }
+        else
+        {
+            // Insert the new dimension
+            auto dim = Dim(symbol, power, rank);
+            pos = list.countUntil!(d => d > dim);
+            if (pos < 0)
+                pos = list.length;
+            list.insertInPlace(pos, dim);
+        }
+        assert(list.isSorted);
     }
-    else
-    {
-        // Insert the new dimension
-        auto dim = Dim(symbol, power, rank);
-        pos = list.countUntil!(d => d > dim);
-        if (pos < 0)
-            pos = list.length;
-        list.insertInPlace(pos, dim);
-    }
-    assert(list.isSorted);
 }
+else
+{
+    private void insertAndSort(ref Dim[] list, string symbol, Rational power, size_t rank) @safe pure nothrow
+    {
+        auto pos = list.countUntil!(d => d.symbol == symbol)();
+        if (pos >= 0)
+        {
+            // Merge the dimensions
+            list[pos].power += power;
+            if (list[pos].power == 0)
+            {
+                try
+                    list = list.remove(pos);
+                catch (Exception) // remove only throws when it has multiple arguments
+                    assert(false);
 
+                // Necessary to compare dimensionless values
+                if (!list.length)
+                    list = null;
+            }
+        }
+        else
+        {
+            // Insert the new dimension
+            auto dim = Dim(symbol, power, rank);
+            pos = list.countUntil!(d => d > dim);
+            if (pos < 0)
+                pos = list.length;
+            list.insertInPlace(pos, dim);
+        }
+        assert(list.isSorted);
+    }
+}
 private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
 {
     if (__ctfe)
@@ -301,28 +336,52 @@ private immutable(Dim)[] immut(Dim[] source) @trusted pure nothrow
         return source.assumeUnique;
 }
 
-private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
-        Rational power, size_t rank) @safe pure nothrow
+version(LDC)
 {
-    if (power == 0)
-        return source;
+    private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
+            Rational power, size_t rank) @safe pure
+    {
+        if (power == 0)
+            return source;
 
-    if (!source.length)
-        return [Dim(symbol, power, rank)].immut;
+        if (!source.length)
+            return [Dim(symbol, power, rank)].immut;
 
-    Dim[] list = source.dup;
-    insertAndSort(list, symbol, power, rank);
-    return list.immut;
+        Dim[] list = source.dup;
+        insertAndSort(list, symbol, power, rank);
+        return list.immut;
+    }
+    private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] other) @safe pure
+    {
+        Dim[] list = source.dup;
+        foreach (dim; other)
+            insertAndSort(list, dim.symbol, dim.power, dim.rank);
+        return list.immut;
+    }
 }
-
-private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] other) @safe pure nothrow
+else
 {
-    Dim[] list = source.dup;
-    foreach (dim; other)
-        insertAndSort(list, dim.symbol, dim.power, dim.rank);
-    return list.immut;
-}
+    private immutable(Dim)[] insertSorted(immutable(Dim)[] source, string symbol,
+            Rational power, size_t rank) @safe pure nothrow
+    {
+        if (power == 0)
+            return source;
 
+        if (!source.length)
+            return [Dim(symbol, power, rank)].immut;
+
+        Dim[] list = source.dup;
+        insertAndSort(list, symbol, power, rank);
+        return list.immut;
+    }
+    private immutable(Dim)[] insertSorted(immutable(Dim)[] source, immutable(Dim)[] other) @safe pure nothrow
+    {
+        Dim[] list = source.dup;
+        foreach (dim; other)
+            insertAndSort(list, dim.symbol, dim.power, dim.rank);
+        return list.immut;
+    }
+}
 /// A vector of dimensions
 struct Dimensions
 {
@@ -372,7 +431,22 @@ public:
     {
         return Dimensions(_dims.inverted);
     }
+version(LDC)
+{
+    Dimensions opBinary(string op)(const Dimensions other) @safe pure const 
+            if (op == "*")
+    {
+        return Dimensions(_dims.insertSorted(other._dims));
+    }
 
+    Dimensions opBinary(string op)(const Dimensions other) @safe pure const 
+            if (op == "/")
+    {
+        return Dimensions(_dims.insertSorted(other._dims.inverted));
+    }
+}
+else
+{
     Dimensions opBinary(string op)(const Dimensions other) @safe pure nothrow const 
             if (op == "*")
     {
@@ -384,7 +458,7 @@ public:
     {
         return Dimensions(_dims.insertSorted(other._dims.inverted));
     }
-
+}
     Dimensions pow(Rational n) @safe pure nothrow const
     {
         if (n == 0)
@@ -461,7 +535,42 @@ unittest
     auto inv = [Dim("A", -2), Dim("B", 2)].idup;
     assert(list.inverted == inv);
 }
+version(LDC) // if you have a problem with this, take it up with LDC for having a non-nothrow impl of insertSorted
+{
+@("Dim[].insertAndSort")
+@safe pure unittest
+{
+    Dim[] list;
+    list.insertAndSort("A", Rational(1), 1);
+    assert(list == [Dim("A", 1, 1)]);
+    list.insertAndSort("A", Rational(1), 1);
+    assert(list == [Dim("A", 2, 1)]);
+    list.insertAndSort("A", Rational(-2), 1);
+    assert(list.length == 0);
+    list.insertAndSort("B", Rational(1), 3);
+    assert(list == [Dim("B", 1, 3)]);
+    list.insertAndSort("C", Rational(1), 1);
+    assert(Dim("C", 1, 1) < Dim("B", 1, 3));
+    assert(list == [Dim("C", 1, 1), Dim("B", 1, 3)]);
+}
 
+@("Dimensions *")
+@safe pure unittest
+{
+    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+    auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
+    assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
+}
+@("Dimensions /")
+@safe pure unittest
+{
+    auto dim1 = Dimensions([Dim("a", 1), Dim("b", -2)]);
+    auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
+    assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
+}
+}
+else
+{
 @("Dim[].insertAndSort")
 @safe pure nothrow unittest
 {
@@ -486,7 +595,6 @@ unittest
     auto dim2 = Dimensions([Dim("a", -1), Dim("c", 2)]);
     assert(dim1 * dim2 == Dimensions([Dim("b", -2), Dim("c", 2)]));
 }
-
 @("Dimensions /")
 @safe pure nothrow unittest
 {
@@ -494,7 +602,7 @@ unittest
     auto dim2 = Dimensions([Dim("a", 1), Dim("c", 2)]);
     assert(dim1 / dim2 == Dimensions([Dim("b", -2), Dim("c", -2)]));
 }
-
+}
 @("Dimensions pow")
 @safe pure nothrow unittest
 {
